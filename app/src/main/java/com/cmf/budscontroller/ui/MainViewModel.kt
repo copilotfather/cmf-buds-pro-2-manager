@@ -1,0 +1,426 @@
+package com.cmf.budscontroller.ui
+
+import android.app.Application
+import android.bluetooth.BluetoothAdapter
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.cmf.budscontroller.analytics.BatteryAnalyticsManager
+import com.cmf.budscontroller.analytics.BatteryPrediction
+import com.cmf.budscontroller.analytics.HearingProtectionManager
+import com.cmf.budscontroller.analytics.HearingStatus
+import com.cmf.budscontroller.audio.AudioEffectsManager
+import com.cmf.budscontroller.audio.AudioProcessingState
+import com.cmf.budscontroller.audio.EqualizerManager
+import com.cmf.budscontroller.audio.EqualizerState
+import com.cmf.budscontroller.bluetooth.CmfBluetoothManager
+import com.cmf.budscontroller.protocol.AncLevel
+import com.cmf.budscontroller.protocol.AncMode
+import com.cmf.budscontroller.protocol.DeviceStatus
+import com.cmf.budscontroller.sensor.AmbientNoiseDetector
+import com.cmf.budscontroller.sensor.AmbientNoiseState
+import com.cmf.budscontroller.tools.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val bluetoothManager = CmfBluetoothManager.getInstance()
+    val deviceStatus: StateFlow<DeviceStatus> = bluetoothManager.deviceStatus
+
+    // Core Managers
+    val hearingManager = HearingProtectionManager(application)
+    val hearingStatus: StateFlow<HearingStatus> = hearingManager.status
+
+    val noiseDetector = AmbientNoiseDetector()
+    val noiseState: StateFlow<AmbientNoiseState> = noiseDetector.state
+
+    val findMyBudsManager = FindMyBudsManager(application)
+    val isChirping: StateFlow<Boolean> = findMyBudsManager.isChirping
+    val lastLocation: StateFlow<DisconnectLocation?> = findMyBudsManager.lastLocation
+
+    val audioEffectsManager = AudioEffectsManager(application)
+    val audioState: StateFlow<AudioProcessingState> = audioEffectsManager.state
+
+    // New Powerful Feature Managers
+    val equalizerManager = EqualizerManager(application)
+    val eqState: StateFlow<EqualizerState> = equalizerManager.state
+
+    val smartDialManager = SmartDialManager(application)
+    val dialConfig: StateFlow<SmartDialConfig> = smartDialManager.config
+
+    // Advanced Audio Lab (APE/SAC/IWNM/SLG/IBP/ULE интеграция)
+    val audioLab = com.cmf.budscontroller.audio.AdvancedAudioLab(application, equalizerManager)
+    val labState: StateFlow<com.cmf.budscontroller.audio.AdvancedAudioLabState> = audioLab.state
+
+    val waterEjectorManager = WaterEjectorManager()
+    val waterState: StateFlow<WaterEjectState> = waterEjectorManager.state
+
+    val sleepTimerManager = SleepTimerManager(application)
+    val sleepState: StateFlow<SleepTimerState> = sleepTimerManager.state
+
+    val voiceWhisperManager = VoiceWhisperManager(application)
+    val whisperSettings: StateFlow<WhisperSettings> = voiceWhisperManager.settings
+
+    // Music & Media Tracker
+    val mediaTracker = com.cmf.budscontroller.media.CmfMediaTracker.getInstance(application)
+    val mediaState: StateFlow<com.cmf.budscontroller.media.CmfMediaState> = mediaTracker.mediaState
+
+    // 3D Spatial Audio & Ear Tip Diagnostic Engine
+    val spatialAudioEngine = com.cmf.budscontroller.audio.SpatialAudioEngine(application)
+    val spatialState: StateFlow<com.cmf.budscontroller.audio.SpatialAudioState> = spatialAudioEngine.state
+
+    // Buds Usage Deep Analytics (Volume stats, Daily activity, Case opens, 100% avg duration)
+    val usageAnalyticsManager = com.cmf.budscontroller.analytics.BudsUsageAnalyticsManager(application)
+    val usageInsights: StateFlow<com.cmf.budscontroller.analytics.BudsUsageInsights> = usageAnalyticsManager.insights
+
+    // USB Audio Relay Bridge (PC <-> Phone <-> CMF Buds)
+    val audioRelayManager = com.cmf.budscontroller.relay.CmfAudioRelayManager(application)
+    val relayState: StateFlow<com.cmf.budscontroller.relay.AudioRelayState> = audioRelayManager.state
+
+    // Bluetooth High-Res Audio Codec Manager (LDAC, LHDC, aptX HD, AAC)
+    val codecManager = com.cmf.budscontroller.audio.BluetoothCodecManager(application)
+    val codecState: StateFlow<com.cmf.budscontroller.audio.CodecEngineState> = codecManager.state
+
+    fun applyCodec(codec: com.cmf.budscontroller.audio.CodecType) {
+        val dev = bluetoothManager.deviceStatus.value.let {
+            if (it.deviceAddress.isNotBlank()) bluetoothManager.findCmfDevice(BluetoothAdapter.getDefaultAdapter(), it.deviceAddress)
+            else null
+        }
+        codecManager.applyCodecToBuds(dev, codec) {}
+    }
+
+    fun openDevSettings() {
+        codecManager.openSystemDeveloperOptions()
+    }
+
+    // Battery Prediction Flow
+    private val _batteryPrediction = MutableStateFlow(
+        BatteryAnalyticsManager.calculatePrediction(deviceStatus.value)
+    )
+    val batteryPrediction: StateFlow<BatteryPrediction> = _batteryPrediction.asStateFlow()
+
+    private var hasSpokenGreeting = false
+
+    init {
+        audioEffectsManager.initEffects(0)
+        equalizerManager.initEqualizer(0)
+        usageAnalyticsManager.startTracking(
+            isConnectedProvider = { deviceStatus.value.isConnected },
+            batteryProvider = { deviceStatus.value.battery }
+        )
+
+        // Monitor connection and battery
+        viewModelScope.launch {
+            deviceStatus.collect { status ->
+                BatteryAnalyticsManager.recordSample(status.battery)
+                val pred = BatteryAnalyticsManager.calculatePrediction(status)
+                _batteryPrediction.value = pred
+                hearingManager.updateMetrics(status.isConnected)
+
+                if (status.isConnected && !hasSpokenGreeting && (status.battery.leftPercent > 0 || status.battery.rightPercent > 0)) {
+                    hasSpokenGreeting = true
+                    val left = if (status.battery.leftPercent > 0) status.battery.leftPercent else status.battery.rightPercent
+                    val right = if (status.battery.rightPercent > 0) status.battery.rightPercent else status.battery.leftPercent
+                    voiceWhisperManager.speakBatteryStatus(
+                        left,
+                        right,
+                        pred.earbudFormattedTime
+                    )
+                }
+
+                if (!status.isConnected) {
+                    hasSpokenGreeting = false
+                    findMyBudsManager.recordDisconnectLocation()
+                }
+            }
+        }
+
+        // Ticking loop for session and timer refresh every 15 seconds
+        viewModelScope.launch {
+            while (isActive) {
+                delay(15_000)
+                hearingManager.updateMetrics(deviceStatus.value.isConnected)
+                val pred = BatteryAnalyticsManager.calculatePrediction(deviceStatus.value)
+                _batteryPrediction.value = pred
+                // Синхронизация Advanced Audio Lab (SLG + IBP)
+                val hearing = hearingManager.status.value
+                audioLab.updateSafeListening(
+                    dailyMinutes = hearing.dailyListeningMinutes,
+                    dosePercent = hearing.dailySafeDosePercent,
+                    currentVolumePercent = hearing.currentVolumePercent
+                )
+                audioLab.updateBatteryPrediction(pred.earbudMinutesLeft / 60f)
+            }
+        }
+    }
+
+    fun connectDevice(adapter: BluetoothAdapter?, customDevice: android.bluetooth.BluetoothDevice? = null) {
+        if (adapter == null || !adapter.isEnabled) return
+        val app = getApplication<Application>()
+        val prefs = app.getSharedPreferences("cmf_prefs", android.content.Context.MODE_PRIVATE)
+        val savedAddr = prefs.getString("last_device_address", null)
+
+        // Try extracting battery from Android headset/A2DP proxy immediately
+        bluetoothManager.checkProfileBattery()
+
+        val device = customDevice ?: bluetoothManager.findCmfDevice(adapter, savedAddr) ?: return
+        viewModelScope.launch {
+            val success = bluetoothManager.connect(device, app)
+            if (success) {
+                prefs.edit().putString("last_device_address", device.address).apply()
+            }
+        }
+    }
+
+    fun getBondedDevices(adapter: BluetoothAdapter?): List<android.bluetooth.BluetoothDevice> {
+        if (adapter == null || !adapter.isEnabled) return emptyList()
+        return bluetoothManager.getAllBondedDevices(adapter)
+    }
+
+    fun setAncMode(mode: AncMode) {
+        val currentLevel = deviceStatus.value.ancLevel
+        viewModelScope.launch {
+            bluetoothManager.setAnc(mode, currentLevel)
+        }
+    }
+
+    fun setAncLevel(level: AncLevel) {
+        val currentMode = deviceStatus.value.ancMode
+        viewModelScope.launch {
+            bluetoothManager.setAnc(currentMode, level)
+        }
+    }
+
+    fun setUltraBass(level: Int) {
+        viewModelScope.launch {
+            bluetoothManager.setUltraBass(level)
+        }
+    }
+
+    fun setGameMode(enabled: Boolean) {
+        viewModelScope.launch {
+            bluetoothManager.setGameMode(enabled)
+        }
+    }
+
+    fun refreshStatus() {
+        viewModelScope.launch {
+            bluetoothManager.refreshStatus()
+        }
+    }
+
+    // Auto-ANC Toggle
+    fun toggleAutoAnc(enabled: Boolean) {
+        if (enabled) {
+            noiseDetector.startMonitoring { recommendedMode, recommendedLevel ->
+                viewModelScope.launch {
+                    bluetoothManager.setAnc(recommendedMode, recommendedLevel)
+                }
+            }
+        } else {
+            noiseDetector.stopMonitoring()
+        }
+    }
+
+    // Acoustic Chirp / Find Buds
+    fun startChirp(left: Boolean, right: Boolean) {
+        if (deviceStatus.value.isConnected) {
+            viewModelScope.launch {
+                bluetoothManager.startFindMyBuds(left, right)
+            }
+        }
+        findMyBudsManager.startAcousticChirp(left, right)
+    }
+
+    fun stopChirp() {
+        if (deviceStatus.value.isConnected) {
+            viewModelScope.launch {
+                bluetoothManager.stopFindMyBuds()
+            }
+        }
+        findMyBudsManager.stopAcousticChirp()
+    }
+
+    // Audio Tweaks & Equalizer
+    fun setChannelBalance(balance: Float) {
+        audioEffectsManager.setChannelBalance(balance)
+    }
+
+    fun setLoudnessGain(milliBels: Int) {
+        audioEffectsManager.setLoudnessGain(milliBels)
+    }
+
+    fun setMonoAudio(enabled: Boolean) {
+        audioEffectsManager.setMonoAudio(enabled)
+    }
+
+    fun setEqPreset(name: String) {
+        equalizerManager.applyPreset(name)
+    }
+
+    fun setEqBand(band: Int, levelDb: Int) {
+        equalizerManager.setCustomBand(band, levelDb)
+    }
+
+    fun toggleEq(enabled: Boolean) {
+        equalizerManager.toggleEqualizer(enabled)
+    }
+
+    // Water & Dust Eject
+    fun startWaterEject() {
+        waterEjectorManager.startEjection()
+    }
+
+    fun stopWaterEject() {
+        waterEjectorManager.stopEjection()
+    }
+
+    // Sleep Timer
+    fun startSleepTimer(minutes: Int, noise: RelaxNoiseType) {
+        sleepTimerManager.startTimer(minutes, noise)
+    }
+
+    fun stopSleepTimer() {
+        sleepTimerManager.stopTimer()
+    }
+
+    // Voice Whisper
+    fun toggleWhisperConnect(enabled: Boolean) {
+        voiceWhisperManager.toggleAnnounceOnConnect(enabled)
+    }
+
+    fun toggleWhisperHours(enabled: Boolean) {
+        voiceWhisperManager.toggleSpeakHours(enabled)
+    }
+
+    fun testWhisperVoice() {
+        val b = deviceStatus.value.battery
+        val validBuds = listOfNotNull(
+            if (b.leftPercent > 0) b.leftPercent else null,
+            if (b.rightPercent > 0) b.rightPercent else null
+        )
+        val budPercent = validBuds.minOrNull() ?: 100
+        voiceWhisperManager.speak("Тест голоса. Заряд наушников $budPercent процентов. Все системы CMF активны.")
+    }
+
+    // Smart Dial
+    fun setDialRotateAction(action: DialRotateAction) {
+        smartDialManager.setRotateAction(action)
+    }
+
+    fun setDialClickAction(action: DialClickAction) {
+        smartDialManager.setClickAction(action)
+    }
+
+    fun simulateDialRotate(isClockwise: Boolean) {
+        viewModelScope.launch {
+            smartDialManager.handleRotateStep(isClockwise)
+        }
+    }
+
+    fun simulateDialClick() {
+        viewModelScope.launch {
+            smartDialManager.handleClick()
+        }
+    }
+
+    fun resetHearingSession() {
+        hearingManager.resetSession()
+    }
+
+    // Media Controls
+    fun togglePlayPause() {
+        mediaTracker.togglePlayPause()
+    }
+
+    fun skipNextTrack() {
+        mediaTracker.skipNext()
+    }
+
+    fun skipPreviousTrack() {
+        mediaTracker.skipPrevious()
+    }
+
+    fun setMediaVolume(percent: Int) {
+        mediaTracker.setVolumePercent(percent)
+    }
+
+    fun openNotificationSettings(context: android.content.Context) {
+        mediaTracker.openNotificationAccessSettings(context)
+    }
+
+    fun refreshMediaSessions() {
+        mediaTracker.checkAndInitSessions()
+    }
+
+    // Spatial 3D Audio & Ear Tip Seal Test
+    fun setSpatialMode(mode: com.cmf.budscontroller.audio.SpatialMode) {
+        spatialAudioEngine.setSpatialMode(mode)
+    }
+
+    fun setSoundstageWidth(width: Int) {
+        spatialAudioEngine.setSoundstageWidth(width)
+    }
+
+    fun setVocalClarity(clarity: com.cmf.budscontroller.audio.VocalClarity) {
+        spatialAudioEngine.setVocalClarity(clarity)
+    }
+
+    fun startEarTipSealTest() {
+        spatialAudioEngine.startEarTipSealTest()
+    }
+
+    // USB Audio Relay Bridge Controls
+    fun toggleAudioRelay() {
+        if (relayState.value.isRunning) {
+            audioRelayManager.stopRelay()
+        } else {
+            audioRelayManager.startRelay()
+        }
+    }
+
+    fun setRelayMode(mode: com.cmf.budscontroller.relay.RelayMode) {
+        audioRelayManager.setMode(mode)
+    }
+
+    fun setRelayBuffer(preset: com.cmf.budscontroller.relay.BufferPreset) {
+        audioRelayManager.setBufferPreset(preset)
+    }
+
+    // Advanced Audio Lab Controls
+    fun setLabBand(index: Int, gainDb: Float) = audioLab.setParametricBand(index, gainDb)
+    fun setLabPreset(name: String) = audioLab.applyLabPreset(name)
+    fun setLabLeakage(value: Float) = audioLab.setLeakageFactor(value)
+    fun sendAncFeedback(kind: String) = audioLab.ancFeedback(kind)
+    fun toggleLabLayer(layer: com.cmf.budscontroller.audio.LabNoiseLayer, enabled: Boolean) =
+        audioLab.toggleNoiseLayer(layer, enabled)
+    fun setLabLayerVolume(layer: com.cmf.budscontroller.audio.LabNoiseLayer, volume: Float) =
+        audioLab.setLayerVolume(layer, volume)
+    fun setLabMasterVolume(volume: Float) = audioLab.setMixerMasterVolume(volume)
+    fun setLabMixerMinutes(minutes: Int) = audioLab.setMixerMinutes(minutes)
+    fun startLabMixer() = audioLab.startMixer()
+    fun stopLabMixer() = audioLab.stopMixer()
+    fun setLabLatencyPreset(preset: com.cmf.budscontroller.audio.LabLatencyPreset) {
+        audioLab.setLatencyPreset(preset)
+        // ULLE: ULTRA включает игровой режим девайса, QUALITY/BALANCED — обычный
+        setGameMode(preset == com.cmf.budscontroller.audio.LabLatencyPreset.ULTRA)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioRelayManager.stopRelay()
+        noiseDetector.stopMonitoring()
+        findMyBudsManager.stopAcousticChirp()
+        audioEffectsManager.release()
+        equalizerManager.release()
+        waterEjectorManager.stopEjection()
+        sleepTimerManager.stopTimer()
+        voiceWhisperManager.release()
+        spatialAudioEngine.release()
+        audioLab.release()
+    }
+}

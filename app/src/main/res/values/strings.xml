@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CMF Pro Control</string>
+    <string name="tile_anc_label">CMF Шумоподавление</string>
+    <string name="tile_game_label">CMF Игровой режим</string>
+    <string name="status_connected">Подключено</string>
+    <string name="status_disconnected">Отключено</string>
+    <string name="status_connecting">Подключение...</string>
+</resources>

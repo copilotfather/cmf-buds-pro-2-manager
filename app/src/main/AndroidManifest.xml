@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Bluetooth Classic & BLE permissions -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Microphone permission for Ambient Noise Auto-ANC meter -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Audio modify permission for Advanced System Equalizer -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- Network / USB Socket bridge permission for PC-Phone-Headphones Audio Relay -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Notifications & Vibration for Anti-loss alerts & hearing rest timer -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
+    <application
+        android:name=".CmfApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_anc"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_anc"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CMFBudsController">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.CMFBudsController">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Quick Settings Tile for fast ANC toggle in Notification Shade -->
+        <service
+            android:name=".service.CmfAncTileService"
+            android:icon="@drawable/ic_anc"
+            android:label="@string/tile_anc_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Quick Settings Tile for Low Latency / Game Mode -->
+        <service
+            android:name=".service.CmfGameModeTileService"
+            android:icon="@drawable/ic_game"
+            android:label="@string/tile_game_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Notification Listener Service to extract real-time music info & controls -->
+        <service
+            android:name=".media.CmfMediaNotificationListenerService"
+            android:label="CMF Buds Media Tracker"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Automation Broadcast Receiver for Tasker / MacroDroid / Automate -->
+        <receiver
+            android:name=".service.CmfAutomationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.cmf.budscontroller.SET_ANC_MODE" />
+                <action android:name="com.cmf.budscontroller.SET_GAME_MODE" />
+                <action android:name="com.cmf.budscontroller.SET_BASS_LEVEL" />
+                <action android:name="com.cmf.budscontroller.REQUEST_STATUS" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
