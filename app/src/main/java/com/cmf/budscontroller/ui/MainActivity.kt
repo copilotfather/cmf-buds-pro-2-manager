@@ -175,6 +175,7 @@ fun HiFiStudioBudsApp(
     val whisperSettings by viewModel.whisperSettings.collectAsState()
     val insights by viewModel.usageInsights.collectAsState()
     val codecState by viewModel.codecState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
 
     var currentTab by remember { mutableStateOf(StudioTab.DEVICE) }
     var showDevicePicker by remember { mutableStateOf(false) }
@@ -379,13 +380,14 @@ fun HiFiStudioBudsApp(
                                     tint = iconColor
                                 )
                                 if (isSelected) {
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text(
                                         text = tab.label,
-                                        fontSize = 11.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = textColor,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
@@ -609,8 +611,8 @@ fun HiFiStudioBudsApp(
                     // Water Eject
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ОЧИСТКА ОТ ВОДЫ И ПЫЛИ (WATER EJECT)",
-                        subtitle = if (waterState.isRunning) "Выталкивание влаги... (${waterState.progressSeconds}с)" else "Резонансные звуковые волны 140–180 Гц",
+                        title = "ОЧИСТКА ОТ ВОДЫ И ПЫЛИ (SONIC WATER EJECT)",
+                        subtitle = if (waterState.isRunning) "${waterState.currentPhase} • [${waterState.progressSeconds}/${waterState.totalSeconds}с]" else "3-этапный акустический срыв натяжения (130-170 Гц + AM-импульсы + 9.8 кГц)",
                         icon = Icons.Outlined.WaterDrop,
                         accentColor = Color(0xFF0A84FF),
                         onClick = {
@@ -627,7 +629,7 @@ fun HiFiStudioBudsApp(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(if (waterState.isRunning) "Остановить очистку" else "Запустить вибро-волну", fontSize = 12.sp)
+                            Text(if (waterState.isRunning) "Остановить очистку" else "Запустить резонансную очистку (18 сек)", fontSize = 12.sp)
                         }
                     }
 
@@ -650,6 +652,35 @@ fun HiFiStudioBudsApp(
                         accentColor = Color(0xFFFFD60A),
                         onClick = { showWhisperDialog = true }
                     )
+
+                    // GitHub Auto-Updater
+                    BentoCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ (GITHUB OTA)",
+                        subtitle = if (updateState.isChecking) "Проверка обновлений на GitHub..."
+                        else if (updateState.hasUpdate) "Доступна новая версия: v${updateState.latestVersion}! Нажмите для установки"
+                        else "У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})",
+                        icon = Icons.Outlined.CloudDownload,
+                        accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else Color(0xFF30D158),
+                        onClick = {
+                            if (updateState.hasUpdate) {
+                                viewModel.startUpdateDownload()
+                            } else {
+                                viewModel.checkForUpdatesManual()
+                            }
+                        }
+                    ) {
+                        if (updateState.hasUpdate) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FilledTonalButton(
+                                onClick = { viewModel.startUpdateDownload() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Скачать и установить v${updateState.latestVersion}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
 
                 StudioTab.BRIDGE -> {
@@ -1756,9 +1787,14 @@ fun StudioNoiseControlBar(
                     .padding(4.dp)
             ) {
                 val totalWidth = maxWidth
-                val optionWidth = totalWidth / 3f
+                // Weights: 1f, 1.25f, 1f -> sum = 3.25f
+                val unitWidth = totalWidth / 3.25f
+                val (targetOffset, targetWidth) = when (selectedIndex) {
+                    0 -> Pair(0.dp, unitWidth)
+                    1 -> Pair(unitWidth, unitWidth * 1.25f)
+                    else -> Pair(unitWidth * 2.25f, unitWidth)
+                }
 
-                val targetOffset = optionWidth * selectedIndex
                 val animatedOffset by animateDpAsState(
                     targetValue = targetOffset,
                     animationSpec = spring(
@@ -1767,12 +1803,20 @@ fun StudioNoiseControlBar(
                     ),
                     label = "glass_slider_offset"
                 )
+                val animatedWidth by animateDpAsState(
+                    targetValue = targetWidth,
+                    animationSpec = spring(
+                        dampingRatio = 0.78f,
+                        stiffness = 380f
+                    ),
+                    label = "glass_slider_width"
+                )
 
                 // The sliding glass thumb (стекляшка с рефракцией и неоновым свечением)
                 Box(
                     modifier = Modifier
                         .offset(x = animatedOffset)
-                        .width(optionWidth)
+                        .width(animatedWidth)
                         .height(44.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(
@@ -1824,7 +1868,7 @@ fun StudioNoiseControlBar(
 
                         Row(
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(if (mode == AncMode.TRANSPARENCY) 1.25f else 1f)
                                 .height(44.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable(
@@ -1837,15 +1881,17 @@ fun StudioNoiseControlBar(
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(15.dp),
                                 tint = iconColor
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = title,
-                                fontSize = 11.sp,
+                                fontSize = 10.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = textColor
+                                color = textColor,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -1882,9 +1928,11 @@ fun StudioNoiseControlBar(
                             ) {
                                 Text(
                                     text = lvl.title,
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
-                                    color = chipFg
+                                    color = chipFg,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }

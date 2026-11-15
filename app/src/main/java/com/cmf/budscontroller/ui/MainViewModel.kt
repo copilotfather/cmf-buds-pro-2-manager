@@ -56,13 +56,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val audioLab = com.cmf.budscontroller.audio.AdvancedAudioLab(application, equalizerManager)
     val labState: StateFlow<com.cmf.budscontroller.audio.AdvancedAudioLabState> = audioLab.state
 
-    val waterEjectorManager = WaterEjectorManager()
+    val waterEjectorManager = WaterEjectorManager(application)
     val waterState: StateFlow<WaterEjectState> = waterEjectorManager.state
 
     val sleepTimerManager = SleepTimerManager(application)
     val sleepState: StateFlow<SleepTimerState> = sleepTimerManager.state
 
     val voiceWhisperManager = VoiceWhisperManager(application)
+    val updateManager = com.cmf.budscontroller.update.GitHubUpdateManager(application)
+    val updateState = updateManager.updateState
     val whisperSettings: StateFlow<WhisperSettings> = voiceWhisperManager.settings
 
     // Music & Media Tracker
@@ -114,6 +116,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         // Monitor connection and battery
+        viewModelScope.launch {
+            // Background check for GitHub updates silently
+            updateManager.checkForUpdates()
+        }
         viewModelScope.launch {
             deviceStatus.collect { status ->
                 BatteryAnalyticsManager.recordSample(status.battery)
@@ -408,6 +414,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         audioLab.setLatencyPreset(preset)
         // ULLE: ULTRA включает игровой режим девайса, QUALITY/BALANCED — обычный
         setGameMode(preset == com.cmf.budscontroller.audio.LabLatencyPreset.ULTRA)
+    }
+
+    fun checkForUpdatesManual() {
+        viewModelScope.launch {
+            updateManager.checkForUpdates()
+        }
+    }
+
+    fun startUpdateDownload() {
+        val url = updateState.value.downloadUrl
+        if (url.isNotBlank()) {
+            updateManager.startDownloadAndInstall(url)
+        }
     }
 
     override fun onCleared() {

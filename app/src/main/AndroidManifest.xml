@@ -82,6 +82,17 @@
             </intent-filter>
         </service>
 
+        <!-- FileProvider for secure APK installation on Android 8.0 - 15 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Automation Broadcast Receiver for Tasker / MacroDroid / Automate -->
         <receiver
             android:name=".service.CmfAutomationReceiver"
