@@ -272,6 +272,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         equalizerManager.setCustomBand(band, levelDb)
     }
 
+    fun saveEqPreset(name: String): Boolean {
+        return equalizerManager.saveCurrentAsPreset(name)
+    }
+
+    fun deleteEqPreset(name: String) {
+        equalizerManager.deleteCustomPreset(name)
+    }
+
+    fun exportEqPresets(): String {
+        return equalizerManager.exportPresetsToJson()
+    }
+
+    fun importEqPresets(json: String): Result<Int> {
+        return equalizerManager.importPresetsFromJson(json)
+    }
+
     fun toggleEq(enabled: Boolean) {
         equalizerManager.toggleEqualizer(enabled)
     }

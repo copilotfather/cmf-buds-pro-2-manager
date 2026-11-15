@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeOff
@@ -211,6 +212,8 @@ fun HiFiStudioBudsApp(
     }
 
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Box(
         modifier = Modifier
@@ -282,8 +285,8 @@ fun HiFiStudioBudsApp(
                                 .background(Color(0xFF1B202D))
                                 .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(16.dp))
                                 .clickable {
-                                    if (status.isConnected) showDevicePicker = true
-                                    else onConnectClicked()
+                                    onConnectClicked()
+                                    showDevicePicker = true
                                 }
                                 .padding(horizontal = 12.dp, vertical = 7.dp)
                         ) {
@@ -594,12 +597,22 @@ fun HiFiStudioBudsApp(
                         }
                     }
 
-                    // Studio-grade Interactive Multi-band EQ
+                    // Real-Time 60 FPS FFT Spectrum Analyzer (Issue #19)
+                    com.cmf.budscontroller.ui.components.CmfSpectrumVisualizer(
+                        isPlaying = status.isConnected
+                    )
+
+                    // Studio-grade Interactive Multi-band EQ with Morphing & JSON Export/Import (Issue #3 & #38)
                     StudioMasterEqualizerCard(
                         eqState = eqState,
                         onToggle = { viewModel.toggleEq(it) },
                         onPresetSelected = { viewModel.setEqPreset(it) },
-                        onBandChanged = { band, db -> viewModel.setEqBand(band, db) }
+                        onBandChanged = { band, db -> viewModel.setEqBand(band, db) },
+                        onSavePreset = { viewModel.saveEqPreset(it) },
+                        onDeletePreset = { viewModel.deleteEqPreset(it) },
+                        onExportPresets = { viewModel.exportEqPresets() },
+                        onImportPresets = { viewModel.importEqPresets(it) },
+                        haptic = haptic
                     )
 
                     // Spatial Audio 360 Card
@@ -1558,10 +1571,22 @@ fun StudioMasterEqualizerCard(
     eqState: com.cmf.budscontroller.audio.EqualizerState,
     onToggle: (Boolean) -> Unit,
     onPresetSelected: (String) -> Unit,
-    onBandChanged: (Int, Int) -> Unit
+    onBandChanged: (Int, Int) -> Unit,
+    onSavePreset: (String) -> Boolean = { false },
+    onDeletePreset: (String) -> Unit = {},
+    onExportPresets: () -> String = { "" },
+    onImportPresets: (String) -> Unit = {},
+    haptic: com.cmf.budscontroller.ui.haptic.CmfHapticManager? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val effectiveHaptic = haptic ?: remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
     val bandLabels = listOf("60 Hz", "230 Hz", "910 Hz", "3.6 kHz", "14 kHz")
+
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var showJsonDialog by remember { mutableStateOf(false) }
+    var presetNameInput by remember { mutableStateOf("") }
+    var jsonInput by remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1591,16 +1616,47 @@ fun StudioMasterEqualizerCard(
                     )
                 }
 
-                Switch(
-                    checked = eqState.isEnabled,
-                    onCheckedChange = onToggle,
-                    modifier = Modifier.scale(0.85f)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = {
+                            jsonInput = onExportPresets()
+                            showJsonDialog = true
+                            haptic?.click()
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FileDownload,
+                            contentDescription = "JSON Импорт/Экспорт",
+                            tint = Color(0xFF64D2FF),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Switch(
+                        checked = eqState.isEnabled,
+                        onCheckedChange = {
+                            haptic?.click()
+                            onToggle(it)
+                        },
+                        modifier = Modifier.scale(0.85f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Visual Hi-Fi Smooth Response Curve Canvas
+            // Smooth Morphing Kinetic Frequency Curve
+            val b0 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(0) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b0")
+            val b1 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(1) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b1")
+            val b2 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(2) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b2")
+            val b3 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(3) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b3")
+            val b4 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(4) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b4")
+            val animatedBands = listOf(b0, b1, b2, b3, b4)
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1623,11 +1679,11 @@ fun StudioMasterEqualizerCard(
                         strokeWidth = 1.dp.toPx()
                     )
 
-                    val points = eqState.bandLevels.mapIndexed { idx, db ->
-                        val x = if (eqState.bandLevels.size > 1) {
-                            (idx.toFloat() / (eqState.bandLevels.size - 1)) * w
+                    val points = animatedBands.mapIndexed { idx, dbFloat ->
+                        val x = if (animatedBands.size > 1) {
+                            (idx.toFloat() / (animatedBands.size - 1)) * w
                         } else w / 2f
-                        val y = midY - (db.toFloat() / 10f) * (midY * 0.85f)
+                        val y = midY - (dbFloat / 10f) * (midY * 0.85f)
                         Offset(x, y)
                     }
 
@@ -1726,7 +1782,10 @@ fun StudioMasterEqualizerCard(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 IconButton(
-                                    onClick = { onBandChanged(index, (levelDb + 1).coerceAtMost(10)) },
+                                    onClick = {
+                                        haptic?.tick()
+                                        onBandChanged(index, (levelDb + 1).coerceAtMost(10))
+                                    },
                                     modifier = Modifier.size(26.dp)
                                 ) {
                                     Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = null, tint = colorScheme.onSurfaceVariant)
@@ -1740,7 +1799,10 @@ fun StudioMasterEqualizerCard(
                                 )
 
                                 IconButton(
-                                    onClick = { onBandChanged(index, (levelDb - 1).coerceAtLeast(-10)) },
+                                    onClick = {
+                                        haptic?.tick()
+                                        onBandChanged(index, (levelDb - 1).coerceAtLeast(-10))
+                                    },
                                     modifier = Modifier.size(26.dp)
                                 ) {
                                     Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = colorScheme.onSurfaceVariant)
@@ -1761,45 +1823,194 @@ fun StudioMasterEqualizerCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Presets Horizontal Carousel Chips
-            Text(
-                text = "ПРЕДУСТАНОВКИ:",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp,
-                color = colorScheme.onSurfaceVariant
-            )
+            // Presets Horizontal Carousel Chips with Custom Save button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ПРЕДУСТАНОВКИ:",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    color = colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "+ Сохранить пресет",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFF5722),
+                    modifier = Modifier
+                        .clickable {
+                            presetNameInput = ""
+                            showSaveDialog = true
+                            haptic?.click()
+                        }
+                        .padding(4.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                eqState.presets.take(4).forEach { preset ->
+                eqState.presets.forEach { preset ->
                     val isSel = eqState.activePresetName == preset.name
                     val chipBg by animateColorAsState(if (isSel) colorScheme.primary else colorScheme.surface, tween(180))
                     val chipFg = if (isSel) Color.White else colorScheme.onSurfaceVariant
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(chipBg)
                             .border(1.dp, if (isSel) colorScheme.primary else colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-                            .clickable { onPresetSelected(preset.name) }
-                            .padding(vertical = 8.dp),
+                            .clickable {
+                                haptic?.click()
+                                onPresetSelected(preset.name)
+                            }
+                            .padding(vertical = 8.dp, horizontal = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = preset.name.split(" ").first(),
-                            fontSize = 10.sp,
-                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
-                            color = chipFg
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = preset.name,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                color = chipFg
+                            )
+                            if (preset.isCustom) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = "Удалить",
+                                    modifier = Modifier
+                                        .size(13.dp)
+                                        .clickable {
+                                            haptic?.click()
+                                            onDeletePreset(preset.name)
+                                        },
+                                    tint = chipFg.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    // --- Save Custom Preset Dialog ---
+    if (showSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            title = { Text("Сохранить пресет", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Введите имя для текущей конфигурации 5 полос:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = presetNameInput,
+                        onValueChange = { presetNameInput = it },
+                        placeholder = { Text("Мой пресет...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (presetNameInput.isNotBlank()) {
+                            onSavePreset(presetNameInput.trim())
+                            showSaveDialog = false
+                            haptic?.heavyClick()
+                        }
+                    }
+                ) {
+                    Text("Сохранить", color = colorScheme.primary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+
+    // --- JSON Export & Import Dialog (Issue #3) ---
+    if (showJsonDialog) {
+        AlertDialog(
+            onDismissRequest = { showJsonDialog = false },
+            title = { Text("JSON Экспорт / Импорт эквалайзера", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Вы можете скопировать ваши пресеты в буфер обмена или вставить JSON из сообщества:",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = jsonInput,
+                        onValueChange = { jsonInput = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 10.sp),
+                        placeholder = { Text("Вставьте JSON здесь...") }
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("CMF_EQ_Presets", jsonInput)
+                                cm.setPrimaryClip(clip)
+                                haptic?.click()
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Скопировать JSON", fontSize = 11.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = cm.primaryClip
+                                if (clip != null && clip.itemCount > 0) {
+                                    val text = clip.getItemAt(0).text?.toString() ?: ""
+                                    jsonInput = text
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Вставить", fontSize = 11.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onImportPresets(jsonInput)
+                        showJsonDialog = false
+                        haptic?.heavyClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
+                ) {
+                    Text("Применить JSON", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJsonDialog = false }) {
+                    Text("Закрыть")
+                }
+            }
+        )
     }
 }
 
@@ -1810,6 +2021,8 @@ fun StudioMasterEqualizerCard(
 @Composable
 fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Text(
         text = AppStrings.headerDeepAnalytics,
@@ -2057,6 +2270,8 @@ fun VolumeStatPill(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
@@ -2087,6 +2302,8 @@ fun StudioProductStage(
     totalWithCaseFormatted: String
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Box(
         modifier = Modifier
@@ -2293,6 +2510,8 @@ fun StudioNoiseControlBar(
     onLevelSelected: (AncLevel) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -2439,7 +2658,10 @@ fun StudioNoiseControlBar(
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { onModeSelected(mode) },
+                                ) {
+                                    haptic.tick()
+                                    onModeSelected(mode)
+                                },
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -2487,7 +2709,10 @@ fun StudioNoiseControlBar(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(chipBg)
                                     .border(1.dp, if (isSel) colorScheme.primary else colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-                                    .clickable { onLevelSelected(lvl) }
+                                    .clickable {
+                                        haptic.tick()
+                                        onLevelSelected(lvl)
+                                    }
                                     .padding(vertical = 9.dp, horizontal = 2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -2517,6 +2742,8 @@ fun NoiseSliderOption(
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     val bg = if (isSelected) colorScheme.surfaceVariant else Color.Transparent
     val borderCol = if (isSelected) colorScheme.outline else Color.Transparent
@@ -2554,14 +2781,17 @@ fun BentoCard(
     extraContent: (@Composable () -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Card(
         modifier = modifier
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(
-                        onClick = onClick
-                    )
+                    Modifier.clickable {
+                        haptic.click()
+                        onClick()
+                    }
                 } else Modifier
             ),
         shape = RoundedCornerShape(26.dp),
