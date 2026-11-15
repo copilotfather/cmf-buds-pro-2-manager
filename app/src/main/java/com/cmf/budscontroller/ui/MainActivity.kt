@@ -671,26 +671,52 @@ fun HiFiStudioBudsApp(
                         modifier = Modifier.fillMaxWidth(),
                         title = "ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ (GITHUB OTA)",
                         subtitle = if (updateState.isChecking) "Проверка обновлений на GitHub..."
+                        else if (updateState.isDownloading) "Загрузка обновления: ${updateState.downloadProgress}%..."
                         else if (updateState.hasUpdate) "Доступна новая версия: v${updateState.latestVersion}! Нажмите для установки"
                         else "У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})",
                         icon = Icons.Outlined.CloudDownload,
                         accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else Color(0xFF30D158),
                         onClick = {
                             if (updateState.hasUpdate) {
-                                viewModel.startUpdateDownload()
+                                if (!updateState.isDownloading) viewModel.startUpdateDownload()
                             } else {
                                 viewModel.checkForUpdatesManual()
                             }
                         }
                     ) {
                         if (updateState.hasUpdate) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            FilledTonalButton(
-                                onClick = { viewModel.startUpdateDownload() },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("Скачать и установить v${updateState.latestVersion}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            if (updateState.isDownloading) {
+                                LinearProgressIndicator(
+                                    progress = { updateState.downloadProgress / 100f },
+                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                                    color = Color(0xFFFF5722),
+                                    trackColor = colorScheme.surfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Загрузка APK: ${updateState.downloadProgress}%", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = { viewModel.startUpdateDownload() },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                                    ) {
+                                        Text("Скачать v${updateState.latestVersion}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { viewModel.openUpdateInBrowser() },
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Браузер", fontSize = 11.sp)
+                                    }
+                                }
                             }
                         }
                     }
@@ -1382,23 +1408,73 @@ fun HiFiStudioBudsApp(
                             )
                         }
                     }
+
+                    if (updateState.isDownloading) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { updateState.downloadProgress / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = Color(0xFFFF5722),
+                            trackColor = colorScheme.surfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = if (updateState.downloadProgress < 100) "Загрузка обновления..." else "Запуск установщика...",
+                                fontSize = 11.sp,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${updateState.downloadProgress}%",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF5722)
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showUpdatePopupDialog = false
-                        viewModel.startUpdateDownload()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Скачать и обновить", fontWeight = FontWeight.Bold, color = Color.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.openUpdateInBrowser()
+                            showUpdatePopupDialog = false
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Браузер", fontSize = 11.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.startUpdateDownload()
+                        },
+                        enabled = !updateState.isDownloading,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = if (updateState.isDownloading) "Загрузка..." else "Скачать и обновить",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUpdatePopupDialog = false }) {
-                    Text("Позже")
+                if (!updateState.isDownloading) {
+                    TextButton(onClick = { showUpdatePopupDialog = false }) {
+                        Text("Позже")
+                    }
                 }
             },
             shape = RoundedCornerShape(26.dp)

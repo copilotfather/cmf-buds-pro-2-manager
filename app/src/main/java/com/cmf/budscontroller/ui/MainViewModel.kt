@@ -424,9 +424,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startUpdateDownload() {
         val url = updateState.value.downloadUrl
-        if (url.isNotBlank()) {
-            updateManager.startDownloadAndInstall(url)
+        viewModelScope.launch {
+            updateManager.downloadAndInstallDirectly(url)
         }
+    }
+
+    fun openUpdateInBrowser() {
+        val url = updateState.value.downloadUrl
+        updateManager.openInBrowser(url)
     }
 
     override fun onCleared() {

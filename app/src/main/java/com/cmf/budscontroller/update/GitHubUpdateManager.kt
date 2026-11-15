@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +16,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.BufferedInputStream
 import java.io.BufferedReader
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -28,7 +31,8 @@ data class UpdateInfo(
     val downloadUrl: String = "",
     val isChecking: Boolean = false,
     val isDownloading: Boolean = false,
-    val downloadProgress: Int = 0
+    val downloadProgress: Int = 0,
+    val downloadError: String? = null
 )
 
 class GitHubUpdateManager(private val context: Context) {
@@ -185,53 +189,118 @@ class GitHubUpdateManager(private val context: Context) {
         return false
     }
 
-    fun startDownloadAndInstall(apkUrl: String) {
-        if (apkUrl.isBlank()) return
+    fun openInBrowser(url: String = "") {
+        try {
+            val target = if (url.isNotBlank()) url else "https://github.com/$repoOwner/$repoName/releases/latest"
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(target)).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(browserIntent)
+        } catch (e: Exception) {
+            android.util.Log.e("GitHubUpdate", "Failed to open browser: ${e.message}")
+        }
+    }
+
+    suspend fun downloadAndInstallDirectly(apkUrl: String) = withContext(Dispatchers.IO) {
+        val targetUrl = if (apkUrl.isNotBlank()) apkUrl else "https://github.com/$repoOwner/$repoName/releases/latest"
+
+        if (apkUrl.isBlank()) {
+            openInBrowser(targetUrl)
+            return@withContext
+        }
+
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, "Начало загрузки обновления...", Toast.LENGTH_SHORT).show()
+        }
+
+        _updateState.value = _updateState.value.copy(isDownloading = true, downloadProgress = 0, downloadError = null)
+
+        val destination = File(context.cacheDir, "CMF_Buds_Pro_2_Update.apk")
+        if (destination.exists()) destination.delete()
 
         try {
-            val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "CMF_Buds_Pro_2_Update.apk")
-            if (destination.exists()) destination.delete()
+            var currentUrl = apkUrl
+            var connection: HttpURLConnection? = null
+            var redirects = 0
 
-            val request = DownloadManager.Request(Uri.parse(apkUrl))
-                .setTitle("CMF Buds Pro 2 Manager Update")
-                .setDescription("Загрузка обновления с GitHub...")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationUri(Uri.fromFile(destination))
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(true)
+            // Follow HTTP redirects (GitHub releases redirect to AWS S3 / objects.githubusercontent.com)
+            while (redirects < 6) {
+                val url = URL(currentUrl)
+                connection = url.openConnection() as HttpURLConnection
+                connection.instanceFollowRedirects = false
+                connection.connectTimeout = 12000
+                connection.readTimeout = 20000
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 CMFBudsPro2Manager")
 
-            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val downloadId = downloadManager.enqueue(request)
+                val status = connection.responseCode
+                if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
+                    status == HttpURLConnection.HTTP_MOVED_PERM ||
+                    status == 307 || status == 308
+                ) {
+                    val location = connection.getHeaderField("Location") ?: break
+                    currentUrl = location
+                    redirects++
+                    continue
+                }
+                break
+            }
 
-            val onComplete = object : BroadcastReceiver() {
-                override fun onReceive(ctxt: Context?, intent: Intent?) {
-                    val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                    if (id == downloadId) {
-                        context.unregisterReceiver(this)
-                        installApk(destination)
+            val conn = connection ?: throw Exception("Failed to establish connection")
+            if (conn.responseCode !in 200..299) {
+                throw Exception("HTTP ${conn.responseCode}")
+            }
+
+            val totalBytes = conn.contentLength
+            val inputStream = BufferedInputStream(conn.inputStream)
+            val outputStream = FileOutputStream(destination)
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            var downloadedBytes: Long = 0
+
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+                downloadedBytes += bytesRead
+                if (totalBytes > 0) {
+                    val progress = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                    if (progress != _updateState.value.downloadProgress) {
+                        _updateState.value = _updateState.value.copy(downloadProgress = progress)
                     }
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED)
-            } else {
-                context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+            outputStream.flush()
+            outputStream.close()
+            inputStream.close()
+
+            _updateState.value = _updateState.value.copy(isDownloading = false, downloadProgress = 100)
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Загрузка завершена! Запуск установщика...", Toast.LENGTH_SHORT).show()
+                installApk(destination)
             }
-        } catch (_: Exception) {
-            // Direct browser fallback
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        } catch (e: Exception) {
+            android.util.Log.e("GitHubUpdate", "Direct download error: ${e.message}", e)
+            _updateState.value = _updateState.value.copy(isDownloading = false, downloadError = e.message)
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Не удалось загрузить напрямую (${e.message}). Открываем браузер...", Toast.LENGTH_LONG).show()
+                openInBrowser(apkUrl)
             }
-            context.startActivity(browserIntent)
         }
     }
 
     fun installApk(file: File) {
         try {
+            if (!file.exists() || file.length() < 1000) {
+                android.util.Log.w("GitHubUpdate", "APK file missing or too small: ${file.length()} bytes")
+                openInBrowser()
+                return
+            }
+
             // Check if app has permission to install packages on Android 8.0+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
+                    Toast.makeText(context, "Разрешите установку неизвестных приложений для завершения обновления", Toast.LENGTH_LONG).show()
                     val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                         data = Uri.parse("package:${context.packageName}")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -252,12 +321,9 @@ class GitHubUpdateManager(private val context: Context) {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
             context.startActivity(installIntent)
-        } catch (_: Exception) {
-            // Fallback to viewing the release page
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/$repoOwner/$repoName/releases/latest")).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(webIntent)
+        } catch (e: Exception) {
+            android.util.Log.e("GitHubUpdate", "Package installer invocation failed: ${e.message}", e)
+            openInBrowser()
         }
     }
 }
