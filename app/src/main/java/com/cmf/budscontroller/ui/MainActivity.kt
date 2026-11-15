@@ -85,22 +85,22 @@ class MainActivity : ComponentActivity() {
         checkAndRequestPermissions()
 
         setContent {
-            // Ultra Studio Precision Palette (Deep Obsidian + Flame CMF Accent)
+            // Pure Frosted Gray Glass Palette (Liquid Gray Glass & Specular)
             val colorScheme = darkColorScheme(
                 primary = Color(0xFFFF5722),
                 onPrimary = Color(0xFFFFFFFF),
-                primaryContainer = Color(0xFF241410),
-                onPrimaryContainer = Color(0xFFFFCCBC),
+                primaryContainer = Color(0x352E323D),
+                onPrimaryContainer = Color(0xFFF2F2F7),
                 secondary = Color(0xFFE2E2E8),
                 onSecondary = Color(0xFF141416),
-                background = Color(0xFF09090C),
-                onBackground = Color(0xFFEEEEF2),
-                surface = Color(0xFF131317),
-                onSurface = Color(0xFFEEEEF2),
-                surfaceVariant = Color(0xFF18181F),
-                onSurfaceVariant = Color(0xFF8A8A96),
-                outline = Color(0xFF262632),
-                outlineVariant = Color(0xFF1A1A22)
+                background = Color(0xFF0D0E12),          // Deep Tinted Glass Canvas
+                onBackground = Color(0xFFF0F0F5),
+                surface = Color(0x28262933),             // Liquid Gray Frosted Glass
+                onSurface = Color(0xFFF0F0F5),
+                surfaceVariant = Color(0x38181A20),      // Smoked Translucent Glass
+                onSurfaceVariant = Color(0xFF9898A6),    // Refined Specular Gray
+                outline = Color(0x40FFFFFF),             // 25% White Specular Hairline
+                outlineVariant = Color(0x18FFFFFF)       // 9% White Subtle Divider
             )
 
             MaterialTheme(colorScheme = colorScheme) {
@@ -274,11 +274,21 @@ fun HiFiStudioBudsApp(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(26.dp),
-                color = colorScheme.surface.copy(alpha = 0.94f),
-                border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.outline, colorScheme.outlineVariant))),
-                tonalElevation = 6.dp
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .border(
+                        1.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0x60FFFFFF),
+                                Color(0x18FFFFFF),
+                                Color(0x35FFFFFF)
+                            )
+                        ),
+                        RoundedCornerShape(28.dp)
+                    ),
+                shape = RoundedCornerShape(28.dp),
+                color = Color(0x33282C38),
+                tonalElevation = 8.dp
             ) {
                 Row(
                     modifier = Modifier
@@ -290,18 +300,23 @@ fun HiFiStudioBudsApp(
                     StudioTab.values().forEach { tab ->
                         val isSelected = currentTab == tab
                         val animatedBg by animateColorAsState(
-                            targetValue = if (isSelected) colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,
-                            animationSpec = tween(220)
+                            targetValue = if (isSelected) Color(0x40FFFFFF) else Color.Transparent,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+                        )
+                        val animatedBorder by animateColorAsState(
+                            targetValue = if (isSelected) Color(0x55FFFFFF) else Color.Transparent,
+                            animationSpec = tween(200)
                         )
                         val animatedFg by animateColorAsState(
-                            targetValue = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
-                            animationSpec = tween(220)
+                            targetValue = if (isSelected) Color.White else Color(0xFF9898A6),
+                            animationSpec = tween(200)
                         )
 
                         Row(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(20.dp))
                                 .background(animatedBg)
+                                .border(1.dp, animatedBorder, RoundedCornerShape(20.dp))
                                 .clickable { currentTab = tab }
                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -328,37 +343,15 @@ fun HiFiStudioBudsApp(
         },
         containerColor = colorScheme.background
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AnimatedContent(
-            targetState = currentTab,
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing)) +
-                        slideIntoContainer(
-                            towards = if (targetState.ordinal > initialState.ordinal) AnimatedContentTransitionScope.SlideDirection.Left else AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)
-                        ))
-                    .togetherWith(
-                        fadeOut(animationSpec = tween(150)) +
-                                slideOutOfContainer(
-                                    towards = if (targetState.ordinal > initialState.ordinal) AnimatedContentTransitionScope.SlideDirection.Left else AnimatedContentTransitionScope.SlideDirection.Right,
-                                    animationSpec = tween(150)
-                                )
-                    )
-            },
-            label = "TabTransition"
-        ) { activeTab ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                when (activeTab) {
+            when (currentTab) {
                 StudioTab.DEVICE -> {
                     // Studio Stage: All 3 devices + Battery
                     StudioProductStage(
@@ -649,8 +642,6 @@ fun HiFiStudioBudsApp(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}
-}
 
     // --- DIALOGS ---
     if (showCodecDialog) {
@@ -1293,9 +1284,18 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     // 1. Volume Time Distribution (На какой громкости сколько слушаю)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.outline, colorScheme.outlineVariant)))
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x65FFFFFF),
+                    Color(0x20FFFFFF),
+                    Color(0x0CFFFFFF),
+                    Color(0x28FFFFFF)
+                )
+            )
+        )
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -1370,9 +1370,18 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     // 2. Weekly Activity Histogram (Как часто я слушаю музыку и в какие дни)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.outline, colorScheme.outlineVariant)))
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x65FFFFFF),
+                    Color(0x20FFFFFF),
+                    Color(0x0CFFFFFF),
+                    Color(0x28FFFFFF)
+                )
+            )
+        )
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -1638,9 +1647,18 @@ fun StudioNoiseControlBar(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.outline, colorScheme.outlineVariant)))
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x65FFFFFF),
+                    Color(0x20FFFFFF),
+                    Color(0x0CFFFFFF),
+                    Color(0x28FFFFFF)
+                )
+            )
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -1753,39 +1771,17 @@ fun NoiseSliderOption(
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "NoiseSliderScale"
-    )
-
-    val bg by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.surfaceVariant else Color.Transparent,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
-    )
-    val borderCol by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.outline else Color.Transparent,
-        animationSpec = tween(200)
-    )
-    val fg by animateColorAsState(
-        targetValue = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant,
-        animationSpec = tween(200)
-    )
+    val bg = if (isSelected) colorScheme.surfaceVariant else Color.Transparent
+    val borderCol = if (isSelected) colorScheme.outline else Color.Transparent
+    val fg = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
 
     Row(
         modifier = modifier
-            .scale(scale)
             .clip(RoundedCornerShape(16.dp))
             .background(bg)
             .border(1.dp, borderCol, RoundedCornerShape(16.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(color = colorScheme.primary.copy(alpha = 0.2f)),
-                onClick = onClick
-            )
+            .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 6.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -1812,32 +1808,26 @@ fun BentoCard(
     extraContent: (@Composable () -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.965f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "BentoScale"
-    )
 
     Card(
         modifier = modifier
-            .scale(scale)
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = ripple(color = colorScheme.primary.copy(alpha = 0.2f)),
                         onClick = onClick
                     )
                 } else Modifier
             ),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
-                listOf(colorScheme.outline, colorScheme.outlineVariant)
+                listOf(
+                    Color(0x65FFFFFF), // High specular top rim
+                    Color(0x20FFFFFF),
+                    Color(0x0CFFFFFF),
+                    Color(0x28FFFFFF)
+                )
             )
         )
     ) {
