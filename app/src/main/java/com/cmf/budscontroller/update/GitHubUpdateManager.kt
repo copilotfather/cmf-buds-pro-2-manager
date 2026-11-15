@@ -52,6 +52,69 @@ class GitHubUpdateManager(private val context: Context) {
         _updateState.value = _updateState.value.copy(isChecking = true)
         val currentVer = getCurrentVersionName()
 
+        // 1. Try raw CDN version.json (Fastest, zero rate-limit, worldwide CDN)
+        try {
+            val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json"
+            val conn = (URL(rawUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+                useCaches = false
+            }
+            if (conn.responseCode == 200) {
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(text)
+                val ver = json.optString("versionName", "").removePrefix("v").trim()
+                val notes = json.optString("releaseNotes", "Доступно обновление.")
+                val dl = json.optString("downloadUrl", "")
+                val hasNew = isNewerVersion(ver, currentVer)
+                android.util.Log.i("GitHubUpdate", "CDN Check: latest=$ver, current=$currentVer, hasNew=$hasNew")
+
+                val res = UpdateInfo(
+                    hasUpdate = hasNew,
+                    latestVersion = ver,
+                    releaseNotes = notes,
+                    downloadUrl = dl,
+                    isChecking = false
+                )
+                _updateState.value = res
+                return@withContext res
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("GitHubUpdate", "CDN Check failed: ${e.message}")
+        }
+
+        // 2. Try HTTP 302 Redirect of releases/latest (Bypasses GitHub API 60 req/hr rate limits)
+        try {
+            val redirectUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
+            val conn = (URL(redirectUrl).openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = false
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+            }
+            val location = conn.getHeaderField("Location") ?: ""
+            if (location.isNotBlank() && location.contains("/tag/")) {
+                val tag = location.substringAfterLast("/tag/").removePrefix("v").trim()
+                val hasNew = isNewerVersion(tag, currentVer)
+                val dl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
+                android.util.Log.i("GitHubUpdate", "Redirect Check: latest=$tag, current=$currentVer, hasNew=$hasNew")
+
+                val res = UpdateInfo(
+                    hasUpdate = hasNew,
+                    latestVersion = tag,
+                    releaseNotes = "Новое обновление v$tag доступно на GitHub.",
+                    downloadUrl = dl,
+                    isChecking = false
+                )
+                _updateState.value = res
+                return@withContext res
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("GitHubUpdate", "Redirect Check failed: ${e.message}")
+        }
+
+        // 3. Fallback to GitHub REST API
         try {
             val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
             val url = URL(apiUrl)
@@ -85,7 +148,7 @@ class GitHubUpdateManager(private val context: Context) {
                 }
 
                 val hasNew = isNewerVersion(tagName, currentVer)
-                android.util.Log.i("GitHubUpdate", "Latest release from GitHub: $tagName, current installed: $currentVer, hasNew: $hasNew")
+                android.util.Log.i("GitHubUpdate", "API Check: latest=$tagName, current=$currentVer, hasNew=$hasNew")
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
                     latestVersion = tagName,
@@ -99,7 +162,7 @@ class GitHubUpdateManager(private val context: Context) {
                 android.util.Log.w("GitHubUpdate", "GitHub API returned HTTP ${connection.responseCode}")
             }
         } catch (e: Exception) {
-            android.util.Log.e("GitHubUpdate", "Update check failed: ${e.message}", e)
+            android.util.Log.e("GitHubUpdate", "API Check failed: ${e.message}", e)
         } finally {
             _updateState.value = _updateState.value.copy(isChecking = false)
         }

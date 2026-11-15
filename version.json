@@ -1,0 +1,6 @@
+{
+  "versionName": "2.2.2.2",
+  "versionCode": 2222,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.2.2/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "Обновление v2.2.2.2: Исправлены названия вкладок (Обзор, Звук, Статы, Опции, Мост), оптимизирована аналитика и добавлен надежный авто-апдейтер."
+}
