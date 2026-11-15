@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,7 @@ fun HearingHealthCard(
                 text = "${hearingStatus.dailySafeDosePercent}% ДОЗЫ",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
-                color = if (hearingStatus.dailySafeDosePercent > 100) CmfOrange else CmfGreen,
+                color = if (hearingStatus.dailySafeDosePercent > 100) Color(0xFFFF1744) else Color(0xFF00E676),
                 fontFamily = FontFamily.Default
             )
         }
@@ -59,9 +60,9 @@ fun HearingHealthCard(
             progress = { doseFraction },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            color = if (hearingStatus.dailySafeDosePercent > 100) CmfOrange else CmfGreen,
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = if (hearingStatus.dailySafeDosePercent > 100) Color(0xFFFF1744) else Color(0xFF00E676),
             trackColor = CmfSurfaceSubtle
         )
 

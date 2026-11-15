@@ -1779,28 +1779,41 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Multicolored Segmented Progress Bar
-            val total = insights.volumeStats.totalMinutes.coerceAtLeast(1).toFloat()
-            val lowRatio = insights.volumeStats.lowVolumeMinutes / total
-            val midRatio = insights.volumeStats.midVolumeMinutes / total
-            val highRatio = insights.volumeStats.highVolumeMinutes / total
+            // Multicolored Segmented Progress Bar with high-glow neon colors
+            val total = insights.volumeStats.totalMinutes.toFloat()
+            val hasData = total > 0
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(5.dp))
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFF1E2330))
             ) {
-                Box(modifier = Modifier.weight(lowRatio.coerceAtLeast(0.05f)).fillMaxHeight().background(Color(0xFF30D158)))
-                Spacer(modifier = Modifier.width(2.dp))
-                Box(modifier = Modifier.weight(midRatio.coerceAtLeast(0.05f)).fillMaxHeight().background(Color(0xFFFF9F0A)))
-                Spacer(modifier = Modifier.width(2.dp))
-                Box(modifier = Modifier.weight(highRatio.coerceAtLeast(0.05f)).fillMaxHeight().background(Color(0xFFFF453A)))
+                if (hasData) {
+                    val lowRatio = insights.volumeStats.lowVolumeMinutes / total
+                    val midRatio = insights.volumeStats.midVolumeMinutes / total
+                    val highRatio = insights.volumeStats.highVolumeMinutes / total
+
+                    if (lowRatio > 0f) {
+                        Box(modifier = Modifier.weight(lowRatio).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFF00E676), Color(0xFF69F0AE)))))
+                    }
+                    if (midRatio > 0f) {
+                        if (lowRatio > 0f) Spacer(modifier = Modifier.width(2.dp))
+                        Box(modifier = Modifier.weight(midRatio).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFFF9100), Color(0xFFFFAB40)))))
+                    }
+                    if (highRatio > 0f) {
+                        if (lowRatio > 0f || midRatio > 0f) Spacer(modifier = Modifier.width(2.dp))
+                        Box(modifier = Modifier.weight(highRatio).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFFF1744), Color(0xFFFF5252)))))
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(Color(0x30FFFFFF)))
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3 Volume Tier Detail Tiles
+            // 3 Volume Tier Detail Tiles with Neon Highlights
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1809,21 +1822,21 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                     title = "Тихая",
                     range = "0-30%",
                     minutes = insights.volumeStats.lowVolumeMinutes,
-                    color = Color(0xFF30D158),
+                    color = Color(0xFF00E676),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
                     title = "Средняя",
                     range = "31-70%",
                     minutes = insights.volumeStats.midVolumeMinutes,
-                    color = Color(0xFFFF9F0A),
+                    color = Color(0xFFFF9100),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
                     title = "Громкая",
                     range = "71-100%",
                     minutes = insights.volumeStats.highVolumeMinutes,
-                    color = Color(0xFFFF453A),
+                    color = Color(0xFFFF1744),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1862,17 +1875,18 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
             Spacer(modifier = Modifier.height(18.dp))
 
             // Bar Histogram
-            val maxMin = insights.weeklyActivity.maxOfOrNull { it.minutes }?.coerceAtLeast(1) ?: 180
+            val maxMin = insights.weeklyActivity.maxOfOrNull { it.minutes }?.coerceAtLeast(1) ?: 60
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp),
+                    .height(118.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.Bottom
             ) {
                 insights.weeklyActivity.forEach { day ->
-                    val fraction = (day.minutes.toFloat() / maxMin).coerceIn(0.12f, 1f)
-                    val isPeak = day.minutes == maxMin
+                    val hasMins = day.minutes > 0
+                    val fraction = if (hasMins) (day.minutes.toFloat() / maxMin).coerceIn(0.12f, 1f) else 0.04f
+                    val isPeak = day.minutes == maxMin && hasMins
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1880,28 +1894,34 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         modifier = Modifier.fillMaxHeight()
                     ) {
                         Text(
-                            text = "${day.minutes}м",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isPeak) colorScheme.primary else colorScheme.onSurfaceVariant
+                            text = if (hasMins) "${day.minutes}м" else "-",
+                            fontSize = 10.sp,
+                            fontWeight = if (isPeak) FontWeight.Bold else FontWeight.SemiBold,
+                            color = if (isPeak) Color(0xFFFF5722) else colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Box(
                             modifier = Modifier
-                                .width(22.dp)
+                                .width(24.dp)
                                 .fillMaxHeight(fraction)
-                                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                 .background(
-                                    if (isPeak) Brush.verticalGradient(listOf(colorScheme.primary, Color(0xFFFF9F0A)))
-                                    else Brush.verticalGradient(listOf(Color(0xFF2C2C36), Color(0xFF1E1E26)))
+                                    if (isPeak) Brush.verticalGradient(listOf(Color(0xFFFF5722), Color(0xFFFF9100)))
+                                    else if (hasMins) Brush.verticalGradient(listOf(Color(0xFF00E5FF), Color(0xFF0091EA)))
+                                    else Brush.verticalGradient(listOf(Color(0xFF262C3D), Color(0xFF181C26)))
+                                )
+                                .border(
+                                    0.8.dp,
+                                    if (isPeak) Color(0xFFFFAB40) else if (hasMins) Color(0xFF80D8FF) else Color(0x20FFFFFF),
+                                    RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
                                 )
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = day.dayName,
-                            fontSize = 11.sp,
-                            fontWeight = if (isPeak) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isPeak) colorScheme.onSurface else colorScheme.onSurfaceVariant
+                            fontSize = 11.5.sp,
+                            fontWeight = if (isPeak) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isPeak) Color.White else colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -1918,9 +1938,9 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
         BentoCard(
             modifier = Modifier.weight(1f),
             title = "ОТКРЫТИЙ КЕЙСА",
-            subtitle = "${insights.caseOpensToday} раз сегодня",
+            subtitle = if (insights.caseOpensToday > 0) "${insights.caseOpensToday} раз сегодня" else "0 сегодня",
             icon = Icons.Outlined.SensorDoor,
-            accentColor = Color(0xFF64D2FF)
+            accentColor = Color(0xFF00E5FF)
         ) {
             Text(
                 text = "Всего за всё время: ${insights.totalCaseOpens}",
@@ -1934,9 +1954,9 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
         BentoCard(
             modifier = Modifier.weight(1f),
             title = "АВТОНОМНОСТЬ",
-            subtitle = "~${insights.averageFullBatteryHours} ч. работы",
+            subtitle = if (insights.averageFullBatteryHours > 0f) "~${insights.averageFullBatteryHours} ч. работы" else "Калибровка...",
             icon = Icons.Outlined.BatteryChargingFull,
-            accentColor = Color(0xFF30D158)
+            accentColor = Color(0xFF00E676)
         ) {
             Text(
                 text = "Здоровье батареи: ${insights.batteryHealthEstimate}%",
