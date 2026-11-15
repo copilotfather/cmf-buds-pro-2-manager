@@ -2,6 +2,7 @@ package com.cmf.budscontroller.tools
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -85,6 +86,18 @@ class WaterEjectorManager(private val context: Context? = null) {
                     .setBufferSizeInBytes(bufferSize)
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
+
+                if (audioManager != null) {
+                    val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                    val btDevice = devices.firstOrNull { dev ->
+                        dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                        dev.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
+                        dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+                    }
+                    if (btDevice != null) {
+                        track.preferredDevice = btDevice
+                    }
+                }
 
                 track.setVolume(1.0f)
                 track.play()
