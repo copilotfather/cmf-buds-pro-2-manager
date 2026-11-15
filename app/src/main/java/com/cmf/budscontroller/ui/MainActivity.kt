@@ -224,15 +224,15 @@ fun HiFiStudioBudsApp(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(6.dp)
+                                        .size(7.dp)
                                         .clip(CircleShape)
-                                        .background(if (status.isConnected) Color(0xFF30D158) else Color(0xFF8E8E93))
+                                        .background(if (status.isConnected) Color(0xFF00E676) else Color(0xFF8E95A5))
                                 )
                                 Text(
                                     text = if (status.isConnected) "Подключено • Hi-Res LDAC" else "Готов к подключению",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (status.isConnected) Color(0xFF00E676) else colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -2015,24 +2015,25 @@ fun StudioProductStage(
             .background(
                 Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF221A18),
-                        Color(0xFF131317),
-                        Color(0xFF0E0E12)
+                        Color(0xFF351710), // Vivid CMF Orange core glow
+                        Color(0xFF19131C),
+                        Color(0xFF0F1218)
                     ),
-                    radius = 800f
+                    radius = 900f
                 )
             )
             .border(
-                1.dp,
+                1.2.dp,
                 Brush.verticalGradient(
                     listOf(
-                        Color(0x33FFFFFF),
-                        Color(0x0AFFFFFF)
+                        Color(0x80FFFFFF),
+                        Color(0x25FF5722),
+                        Color(0x10FFFFFF)
                     )
                 ),
                 RoundedCornerShape(32.dp)
             )
-            .padding(vertical = 20.dp, horizontal = 16.dp),
+            .padding(vertical = 22.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -2079,16 +2080,17 @@ fun StudioProductStage(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x60000000))
-                    .padding(vertical = 10.dp, horizontal = 12.dp),
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xFF0C0E14))
+                    .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(22.dp))
+                    .padding(vertical = 11.dp, horizontal = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 MiniBatteryTag(name = "L", percent = battery.leftPercent, isCharging = battery.isLeftCharging)
-                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0x22FFFFFF)))
+                Box(modifier = Modifier.width(1.dp).height(18.dp).background(Color(0x35FFFFFF)))
                 MiniBatteryTag(name = "КЕЙС", percent = battery.casePercent, isCharging = battery.isCaseCharging)
-                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0x22FFFFFF)))
+                Box(modifier = Modifier.width(1.dp).height(18.dp).background(Color(0x35FFFFFF)))
                 MiniBatteryTag(name = "R", percent = battery.rightPercent, isCharging = battery.isRightCharging)
             }
 
@@ -2111,13 +2113,20 @@ fun MiniBatteryTag(name: String, percent: Int, isCharging: Boolean) {
     val text = if (percent in 0..100) "$percent%" else "—"
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (isCharging) {
-            Icon(Icons.Outlined.Bolt, contentDescription = null, modifier = Modifier.size(13.dp), tint = Color(0xFF30D158))
+            Icon(Icons.Outlined.Bolt, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF00E676))
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(if (percent in 0..100) Color(0xFF00E676) else Color(0xFF8E95A5))
+            )
         }
-        Text(name, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF8E8E98))
-        Text(text, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isCharging) Color(0xFF30D158) else Color.White)
+        Text(name, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB0B7C6))
+        Text(text, fontSize = 13.5.sp, fontWeight = FontWeight.Black, color = if (isCharging) Color(0xFF00E676) else Color.White)
     }
 }
 
