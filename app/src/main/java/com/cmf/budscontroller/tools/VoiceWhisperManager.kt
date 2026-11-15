@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
 data class WhisperSettings(
-    val announceOnConnect: Boolean = true,
+    val announceOnConnect: Boolean = false,
     val announceHourlyTime: Boolean = false,
-    val speakRemainingHours: Boolean = true
+    val speakRemainingHours: Boolean = false
 )
 
 class VoiceWhisperManager(private val context: Context) : TextToSpeech.OnInitListener {
