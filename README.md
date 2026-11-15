@@ -69,11 +69,10 @@ cd cmf-buds-pro-2-manager
 
 ---
 
-## 📖 Architecture & Technical Documentation
+## 📖 Architecture & Roadmap
 
-For an in-depth breakdown of the internal architecture, BES Bluetooth RFCOMM protocol, packet structures, DSP audio routing, state flow, and analytics engine:
-
-👉 **[Read the Full Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)**
+- 👉 **[Read the Full Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)** — Protocol, packet structure, DSP & MVI state flow.
+- 📋 **[Project Roadmap & Tasklist (ROADMAP.md)](ROADMAP.md)** — Current status, completed milestones, and upcoming features.
 
 ---
 
