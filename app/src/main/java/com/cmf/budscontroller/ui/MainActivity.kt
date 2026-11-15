@@ -190,6 +190,14 @@ fun HiFiStudioBudsApp(
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var showWhisperDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showUpdatePopupDialog by remember { mutableStateOf(false) }
+
+    // Auto-popup when update is detected
+    LaunchedEffect(updateState.hasUpdate) {
+        if (updateState.hasUpdate) {
+            showUpdatePopupDialog = true
+        }
+    }
 
     val colorScheme = MaterialTheme.colorScheme
 
@@ -698,6 +706,7 @@ fun HiFiStudioBudsApp(
                         modifier = Modifier.padding(start = 4.dp, top = 2.dp)
                     )
 
+                    // Card 1: Server Switch & Status
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
                         title = "ТРАНСЛЯЦИЯ ЗВУКА С ПК (LOW LATENCY)",
@@ -716,13 +725,87 @@ fun HiFiStudioBudsApp(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Настройки: ${relayState.mode.title}", fontSize = 12.sp)
+                                Text("Параметры: ${relayState.mode.title}", fontSize = 12.sp)
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Switch(
                                 checked = relayState.isRunning,
                                 onCheckedChange = { viewModel.toggleAudioRelay() }
                             )
+                        }
+                    }
+
+                    // Card 2: Interactive Step-by-Step Setup Guide
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+                        border = CardDefaults.outlinedCardBorder().copy(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color(0x65FFFFFF),
+                                    Color(0x20FFFFFF),
+                                    Color(0x0CFFFFFF),
+                                    Color(0x28FFFFFF)
+                                )
+                            )
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = Color(0xFF64D2FF), modifier = Modifier.size(20.dp))
+                                Text("ПОШАГОВАЯ ИНСТРУКЦИЯ ПОДКЛЮЧЕНИЯ", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64D2FF))
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            // Step 1
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Box(
+                                    modifier = Modifier.size(22.dp).clip(CircleShape).background(colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Включите тумблер выше", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("Телефон запустит локальный TCP сервер на порту 59100 и подготовит аудио-декодер к приёму PCM-потока 48 кГц.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Step 2
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Box(
+                                    modifier = Modifier.size(22.dp).clip(CircleShape).background(colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("2", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Выберите способ передачи (USB или Wi-Fi)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("• По USB (Ultra Low-Latency ~10-15 мс): подключите провод и запустите cmf_pc_relay_usb.bat в папке PC_Client.\n• По Wi-Fi: запустите cmf_pc_relay.bat и укажите локальный IP вашего телефона.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Step 3
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Box(
+                                    modifier = Modifier.size(22.dp).clip(CircleShape).background(colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("3", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Готово! Чистый звук ПК в наушниках", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("Звук с Windows передаётся напрямую без сжатия в наушники CMF Buds Pro 2 с минимальной задержкой для игр и видео.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                 }
@@ -1247,6 +1330,75 @@ fun HiFiStudioBudsApp(
             confirmButton = {
                 TextButton(onClick = { showSettingsDialog = false }) {
                     Text("Закрыть")
+                }
+            },
+            shape = RoundedCornerShape(26.dp)
+        )
+    }
+
+    // Auto-Popup Dialog when an update is available
+    if (showUpdatePopupDialog && updateState.hasUpdate) {
+        AlertDialog(
+            onDismissRequest = { showUpdatePopupDialog = false },
+            icon = {
+                Icon(
+                    Icons.Outlined.CloudDownload,
+                    contentDescription = null,
+                    tint = Color(0xFFFF5722),
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Доступно обновление v${updateState.latestVersion}!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Найдена свежая версия приложения на GitHub:",
+                        fontSize = 13.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                "Что нового:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = Color(0xFFFF5722)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = updateState.releaseNotes.ifBlank { "Оптимизация под Poco X7, улучшенный Sonic Water Eject, меню настроек и скользящие стекляшки." },
+                                fontSize = 11.5.sp,
+                                color = colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUpdatePopupDialog = false
+                        viewModel.startUpdateDownload()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Скачать и обновить", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpdatePopupDialog = false }) {
+                    Text("Позже")
                 }
             },
             shape = RoundedCornerShape(26.dp)
