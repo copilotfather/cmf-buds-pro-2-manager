@@ -1,104 +1,177 @@
 <div align="center">
 
-# 🎧 CMF Buds Pro 2 Manager
+<img src="https://raw.githubusercontent.com/copilotfather/cmf-buds-pro-2-manager/main/app/src/main/res/drawable/cmf_case_dial.png" width="120" alt="CMF Smart Dial Logo" />
 
-**A studio-grade, open-source Android manager & audio suite for CMF Buds Pro 2 by Nothing.**
+# CMF Buds Pro 2 Manager
 
-[![Release](https://img.shields.io/github/v/release/copilotfather/cmf-buds-pro-2-manager?color=FF5722&style=for-the-badge&logo=android)](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B-3DDC84?style=for-the-badge&logo=android)](https://www.android.com)
-[![Architecture](https://img.shields.io/badge/UI-Liquid%20Gray%20Glass-708090?style=for-the-badge)](README.md)
+### The Definitive Audio Suite & Controller for CMF Buds Pro 2
 
-<p align="center">
-  <a href="#-english">English</a> •
-  <a href="#-русский">Русский</a>
-</p>
+[![Latest Release](https://img.shields.io/github/v/release/copilotfather/cmf-buds-pro-2-manager?color=FF5722&label=RELEASE&style=for-the-badge&logo=android)](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases)
+[![APK Size](https://img.shields.io/badge/APK%20Size-11.0%20MB-30D158?style=for-the-badge&logo=googleplay)](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases)
+[![License](https://img.shields.io/badge/License-MIT-0A84FF?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%208.0%2B-FF9F0A?style=for-the-badge&logo=android)](https://www.android.com)
+[![UI Style](https://img.shields.io/badge/UI-Liquid%20Gray%20Glass-BF5AF2?style=for-the-badge)](README.md)
 
----
+<br/>
 
 <p align="center">
-  <img src="docs/screenshots/overview_preview.png" width="300" alt="Overview UI" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/analytics_preview.png" width="300" alt="Analytics UI" />
+  <b><a href="#-english">English Documentation</a></b> • 
+  <b><a href="#-русский">Русская Документация</a></b> • 
+  <b><a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest">Download APK</a></b>
 </p>
+
+<br/>
+
+<table>
+  <tr>
+    <td align="center"><b>📱 Overview Stage</b></td>
+    <td align="center"><b>📊 Deep Analytics</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/overview_preview.png" width="340" alt="Overview UI" /></td>
+    <td><img src="docs/screenshots/analytics_preview.png" width="340" alt="Analytics UI" /></td>
+  </tr>
+</table>
 
 </div>
 
 ---
 
 <a name="-english"></a>
-## 🇬🇧 English
+## 🇬🇧 English Overview
 
-### 🌟 Key Highlights
+CMF Buds Pro 2 Manager is a modern, high-performance Android utility engineered specifically for the **CMF Buds Pro 2** earphones ecosystem by Nothing. Built entirely with Jetpack Compose and modern Android architecture components, it pairs **hardware-level direct protocol communication** with an aesthetic **Liquid Gray Glass** design.
 
-- **Liquid Gray Glass Aesthetics**: Smoked frosted glass cards (`#301E212A`), four-point specular rim gradients, floating navigation pill, and native 60/120 FPS hardware rendering.
-- **Hi-Res Bluetooth Audio Codecs**:
-  - Direct hardware protocol switching (`0xF05A` SPP packet) for Sony LDAC (up to 990 kbps, 24-bit / 96 kHz).
-  - Support for LHDC V5 (Savitech), Qualcomm aptX HD / Adaptive, Apple AAC, and Standard SBC.
-- **Deep Usage Analytics**:
-  - **Volume Time Distribution**: Detailed tracking for Low (0–30%), Mid (31–70%), and High (71–100%) volume sessions.
-  - **Weekly Activity Histogram**: Daily listening duration with peak day detection and favorite listening hours.
-  - **Case Open Counter**: Real-time tracking of case lid opens (daily and cumulative).
-  - **Average 100% Battery Duration**: Smart estimation of full-charge life span and battery health condition.
-- **Studio Master Equalizer**:
-  - Real-time Bezier response curve drawn on GPU Canvas with interactive frequency points.
-  - 5 discrete studio frequency sliders (60 Hz, 230 Hz, 910 Hz, 3.6 kHz, 14 kHz).
-  - Audiophile sound presets (*Reference, Basshead 808, Vocal Clarity, Electronic, Rock & Metal, Acoustic*).
-- **Comprehensive Hardware Controls**:
-  - **Continuous ANC Slider**: Off, Transparency, Active Noise Cancellation (Low, Mid, High up to 50 dB, and Mic-calibrated Auto-ANC).
-  - **Ultra Bass**: Multi-step hardware bass boost (Levels 0–5).
-  - **Smart Dial Config**: Custom assignments for case dial rotation (volume, ANC, bass) and single/double clicks.
-  - **Sonic Water Eject**: 140–180 Hz kinetic acoustic wave for driver mesh clearing.
-  - **Acoustic Sonar Chirp & Find My Buds**: High-pitch dual-tone locating alarm + last-known GPS disconnect coordinates.
+### 💎 Feature Showcase
 
-### 📥 Download & Installation
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🌫️ Liquid Gray Glass Interface</h3>
+      <ul>
+        <li><b>Smoked Glass Cards:</b> Dual-layer translucent surfaces with specular rim lighting (high-refraction edges).</li>
+        <li><b>Hardware Fluidity:</b> 60 / 120 Hz render pipeline with zero frame drops.</li>
+        <li><b>Floating Island Navigation:</b> Minimalist frosted pill bar with responsive active glow.</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📡 Hi-Res Codec Engine</h3>
+      <ul>
+        <li><b>Sony LDAC:</b> High-resolution transmission up to 990 kbps (24-bit / 96 kHz).</li>
+        <li><b>Hardware Switching:</b> Sends direct DSP initialization packets (<code>0xF05A</code>) straight to the earbuds.</li>
+        <li><b>Broad Support:</b> LHDC V5, Qualcomm aptX HD / Adaptive, AAC, SBC.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📊 Deep Usage Analytics</h3>
+      <ul>
+        <li><b>Volume Distribution:</b> Time logged across Low (0–30%), Mid (31–70%), and High (71–100%) sound levels.</li>
+        <li><b>Activity Histogram:</b> Day-by-day weekly breakdown with top peak days and favorite hours.</li>
+        <li><b>Hardware Counters:</b> Daily & cumulative case lid open counter.</li>
+        <li><b>Battery Longevity:</b> Empirical 100% full charge duration and battery health index.</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>🎛️ Studio Master EQ</h3>
+      <ul>
+        <li><b>Live Bezier Curve:</b> Real-time frequency response curve rendered on hardware Canvas.</li>
+        <li><b>5-Band Discrete Tuning:</b> 60 Hz, 230 Hz, 910 Hz, 3.6 kHz, 14 kHz with ±1 dB precision.</li>
+        <li><b>Pro Presets:</b> Reference, Basshead 808, Vocal Clarity, Electronic, Rock & Metal, Acoustic.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-1. Go to the [Latest Releases](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases) page.
-2. Download `CMF_Buds_Pro_2_Manager.apk`.
-3. Install it on your Android smartphone (Android 8.0+ supported).
+### 🚀 Additional Hardware Utilities
 
-### 🛠️ Building from Source
+- 🛡️ **Continuous ANC Slider**: Off, Transparency, Active Noise Cancellation (up to 50 dB depth + Ambient Mic Auto-ANC).
+- 🔊 **Ultra Bass Stepper**: Instant multi-level bass boost (Levels 0 to 5).
+- 🎚️ **Smart Dial Customization**: Custom actions for dial rotation and clicks.
+- 💧 **Sonic Water Eject**: High-amplitude 140–180 Hz resonant acoustic sweeps to clear moisture from driver meshes.
+- 📍 **Find My Buds (Sonar)**: High-pitch dual-tone acoustic locator + last-seen GPS disconnect logging.
+- 💻 **Ultra Low-Latency PC Audio Relay**: Stream high-definition PC audio to earbuds over Wi-Fi or USB.
 
-```bash
-git clone https://github.com/copilotfather/cmf-buds-pro-2-manager.git
-cd cmf-buds-pro-2-manager
-./gradlew assembleRelease
+---
+
+### 📦 Quick Start (Installation)
+
+```markdown
+1. Head over to the [Releases](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases) page.
+2. Download the latest `CMF_Buds_Pro_2_Manager.apk`.
+3. Open the downloaded file on your Android device and install.
 ```
 
 ---
 
 <a name="-русский"></a>
-## 🇷🇺 Русский
+## 🇷🇺 Русская Документация
 
-### 🌟 Основные возможности
+CMF Buds Pro 2 Manager — это флагманский центр управления наушниками **CMF Buds Pro 2** от Nothing. Приложение объединяет **прямой аппаратно-программный протокол управления наушниками** и ультрасовременный интерфейс в стиле **Liquid Gray Glass**.
 
-- **Дизайн Liquid Gray Glass**: Премиальное матовое серое стекло (`#301E212A`) с четырёхточечными зеркальными бликами по контуру (specular reflection), парящим стеклянным островом навигации и плавным рендерингом 60/120 Гц без лагов.
-- **Аудиокодеки высокого разрешения (Hi-Res Wireless)**:
-  - Прямое аппаратное переключение DSP-чипа наушников (пакет `0xF05A`) на кодек Sony LDAC (до 990 кбит/с, 24 бит / 96 кГц).
-  - Поддержка LHDC V5 (Savitech), Qualcomm aptX HD / Adaptive, Apple AAC и стандартного SBC.
-- **Глубокая аналитика использования**:
-  - **Распределение времени по громкости**: Подсчет минут прослушивания на Тихой (0–30%), Средней (31–70%) и Высокой (71–100%) громкости.
-  - **Гистограмма активности по дням недели**: Замер ежедневного времени прослушивания, определение самого активного дня и любимого интервала времени суток.
-  - **Счётчик открытий кейса**: Фиксация каждого открытия крышки (за сегодня и суммарно за всё время).
-  - **Средняя автономность от 100%**: Расчёт реального времени работы на полном заряде и оценка здоровья аккумулятора.
-- **Студийный интерактивный эквалайзер**:
-  - Живая кривая Безье частотного отклика на GPU Canvas со светящимися контрольными точками.
-  - 5 точных дискретных регуляторов частот (60 Гц, 230 Гц, 910 Гц, 3.6 кГц, 14 кГц) с шагом ±1 dB.
-  - Пресеты студийного уровня (*Reference, Basshead 808, Vocal Clarity, Electronic, Rock & Metal, Acoustic*).
-- **Полный спектр аппаратных инструментов**:
-  - **Бесшовный слайдер шумоподавления**: Выкл, Прозрачность, Активный шумодав (до 50 дБ) + Адаптивный авто-ANC по микрофону смартфона.
-  - **Ultra Bass**: 6 ступеней аппаратного усиления низких частот (уровни 0–5).
-  - **Настройка Smart Dial**: Привязка вращения колесика кейса (громкость, ANC, бас) и кликов.
-  - **Очистка от влаги и пыли (Sonic Water Eject)**: Резонансная кинетическая волна 140–180 Гц для выталкивания капель воды из сеток.
-  - **Поиск наушников (Sonar)**: Громкий поисковый сигнал + автосохранение GPS-точки при разрыве связи.
+### 💎 Ключевые возможности
 
-### 📥 Скачивание и установка
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🌫️ Дизайн Liquid Gray Glass</h3>
+      <ul>
+        <li><b>Дымчатое серое стекло:</b> Матовые полупрозрачные карточки с четырёхточечными зеркальными бликами по контуру (specular reflection).</li>
+        <li><b>Аппаратная плавность:</b> Оптимизированный GPU-конвейер со стабильными 60 / 120 FPS без лагов.</li>
+        <li><b>Парящий стеклянный остров:</b> Лаконичный нижний бар с деликатной неоновой подсветкой.</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📡 Hi-Res Аудиокодеки</h3>
+      <ul>
+        <li><b>Sony LDAC:</b> Студийный звук до 990 кбит/с (24 бит / 96 кГц) для аудиофильского звучания.</li>
+        <li><b>Аппаратное переключение:</b> Отправка служебного пакета инициализации (<code>0xF05A</code>) прямо на чипсет наушников.</li>
+        <li><b>Полный набор:</b> LHDC V5, Qualcomm aptX HD / Adaptive, AAC, SBC.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📊 Глубокая Аналитика</h3>
+      <ul>
+        <li><b>Распределение громкости:</b> Точный замер минут на тихой (0–30%), средней (31–70%) и высокой (71–100%) громкости.</li>
+        <li><b>Гистограмма недели:</b> Наглядная активность по дням с подсветкой пиковых дней и любимого времени суток.</li>
+        <li><b>Счётчик открытий кейса:</b> Учёт открытий крышки за сегодня и суммарно за всё время.</li>
+        <li><b>Автономность и ресурс АКБ:</b> Расчёт средней работы от 100% и оценка износа аккумулятора.</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>🎛️ Студийный Мастер-Эквалайзер</h3>
+      <ul>
+        <li><b>Живая кривая Безье:</b> Интерактивный график частотного отклика на GPU Canvas.</li>
+        <li><b>5-полосная точная настройка:</b> 60 Гц, 230 Гц, 910 Гц, 3.6 кГц, 14 кГц с шагом ±1 dB.</li>
+        <li><b>Аудиофильские пресеты:</b> Reference, Basshead 808, Vocal Clarity, Electronic, Rock & Metal, Acoustic.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-1. Перейдите во вкладку [Релизы (Releases)](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases).
-2. Скачайте файл `CMF_Buds_Pro_2_Manager.apk`.
-3. Установите его на ваш телефон (поддерживается Android 8.0 и новее).
+### 🚀 Аппаратный инструментарий
 
-### 🛠️ Сборка из исходников
+- 🛡️ **Слайдер шумоподавления**: Выкл, Прозрачность, Шумодав (до 50 дБ) + адаптивный авто-ANC по внешнему микрофону.
+- 🔊 **Ultra Bass**: 6 ступеней аппаратного усиления баса (0–5).
+- 🎚️ **Smart Dial**: Назначение действий на колесико кейса (вращение и клики).
+- 💧 **Выталкивание воды (Sonic Water Eject)**: Резонансная акустическая волна 140–180 Гц для выдувания капель воды из сеток.
+- 📍 **Поиск наушников (Sonar)**: Громкий поисковый свист + сохранение координат разрыва связи.
+- 💻 **ПК Аудио Мост**: Прямая трансляция звука с компьютера на наушники через Wi-Fi/USB.
+
+---
+
+### 📦 Установка
+
+1. Перейдите в раздел [Релизы (Releases)](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases).
+2. Загрузите файл `CMF_Buds_Pro_2_Manager.apk`.
+3. Запустите файл на смартфоне (требуется Android 8.0 или новее).
+
+---
+
+## 🏗️ Сборка из исходников
 
 ```bash
 git clone https://github.com/copilotfather/cmf-buds-pro-2-manager.git
@@ -108,6 +181,8 @@ cd cmf-buds-pro-2-manager
 
 ---
 
-## 📄 License / Лицензия
+## 📜 License / Лицензия
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+<br/>
+Developed with passion by **[copilotfather](https://github.com/copilotfather)**.
