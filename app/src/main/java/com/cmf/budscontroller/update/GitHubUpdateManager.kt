@@ -56,7 +56,38 @@ class GitHubUpdateManager(private val context: Context) {
         _updateState.value = _updateState.value.copy(isChecking = true)
         val currentVer = getCurrentVersionName()
 
-        // 1. Try raw CDN version.json (Fastest, zero rate-limit, worldwide CDN, instant freshness)
+        // 1. Try HTTP 302 Redirect of releases/latest (Zero cache, zero API rate limits, instantaneous)
+        try {
+            val redirectUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
+            val conn = (URL(redirectUrl).openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = false
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+                useCaches = false
+            }
+            val location = conn.getHeaderField("Location") ?: ""
+            if (location.isNotBlank() && location.contains("/tag/")) {
+                val tag = location.substringAfterLast("/tag/").removePrefix("v").trim()
+                val hasNew = isNewerVersion(tag, currentVer)
+                val dl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
+                android.util.Log.i("GitHubUpdate", "302 Redirect Check: latest=$tag, current=$currentVer, hasNew=$hasNew")
+
+                val res = UpdateInfo(
+                    hasUpdate = hasNew,
+                    latestVersion = tag,
+                    releaseNotes = "Новое обновление v$tag доступно на GitHub.",
+                    downloadUrl = dl,
+                    isChecking = false
+                )
+                _updateState.value = res
+                return@withContext res
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("GitHubUpdate", "Redirect Check failed: ${e.message}")
+        }
+
+        // 2. Try raw CDN version.json (Fast worldwide CDN)
         try {
             val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json?t=${System.currentTimeMillis()}"
             val conn = (URL(rawUrl).openConnection() as HttpURLConnection).apply {
@@ -86,36 +117,6 @@ class GitHubUpdateManager(private val context: Context) {
             }
         } catch (e: Exception) {
             android.util.Log.w("GitHubUpdate", "CDN Check failed: ${e.message}")
-        }
-
-        // 2. Try HTTP 302 Redirect of releases/latest (Bypasses GitHub API 60 req/hr rate limits)
-        try {
-            val redirectUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
-            val conn = (URL(redirectUrl).openConnection() as HttpURLConnection).apply {
-                instanceFollowRedirects = false
-                requestMethod = "GET"
-                connectTimeout = 4000
-                readTimeout = 4000
-            }
-            val location = conn.getHeaderField("Location") ?: ""
-            if (location.isNotBlank() && location.contains("/tag/")) {
-                val tag = location.substringAfterLast("/tag/").removePrefix("v").trim()
-                val hasNew = isNewerVersion(tag, currentVer)
-                val dl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
-                android.util.Log.i("GitHubUpdate", "Redirect Check: latest=$tag, current=$currentVer, hasNew=$hasNew")
-
-                val res = UpdateInfo(
-                    hasUpdate = hasNew,
-                    latestVersion = tag,
-                    releaseNotes = "Новое обновление v$tag доступно на GitHub.",
-                    downloadUrl = dl,
-                    isChecking = false
-                )
-                _updateState.value = res
-                return@withContext res
-            }
-        } catch (e: Exception) {
-            android.util.Log.w("GitHubUpdate", "Redirect Check failed: ${e.message}")
         }
 
         // 3. Fallback to GitHub REST API
