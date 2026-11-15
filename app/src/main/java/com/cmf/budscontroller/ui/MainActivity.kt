@@ -149,8 +149,8 @@ class MainActivity : ComponentActivity() {
 enum class StudioTab(val label: String, val icon: ImageVector) {
     DEVICE("Обзор", Icons.Outlined.Headphones),
     STUDIO("Звук", Icons.Outlined.GraphicEq),
-    INSIGHTS("Аналитика", Icons.Outlined.BarChart),
-    FEATURES("Функции", Icons.Outlined.Tune),
+    INSIGHTS("Статы", Icons.Outlined.BarChart),
+    FEATURES("Опции", Icons.Outlined.Tune),
     BRIDGE("Мост", Icons.Outlined.Devices)
 }
 
@@ -1677,17 +1677,18 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text("РАСПРЕДЕЛЕНИЕ ГРОМКОСТИ", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = colorScheme.onSurfaceVariant)
-                    Text("Время по уровням звука", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text("РАСПРЕДЕЛЕНИЕ ГРОМКОСТИ", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp, color = colorScheme.onSurfaceVariant)
+                    Text("Уровни громкости", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                 }
+                Spacer(modifier = Modifier.width(6.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
                         .background(colorScheme.surface)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("Всего: ${insights.volumeStats.totalMinutes} мин", fontSize = 11.sp, color = colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Text("Всего: ${insights.volumeStats.totalMinutes} мин", fontSize = 11.sp, color = colorScheme.primary, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
             }
 
@@ -1720,19 +1721,22 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 VolumeStatPill(
-                    title = "Тихая (0-30%)",
+                    title = "Тихая",
+                    range = "0-30%",
                     minutes = insights.volumeStats.lowVolumeMinutes,
                     color = Color(0xFF30D158),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
-                    title = "Средняя (31-70%)",
+                    title = "Средняя",
+                    range = "31-70%",
                     minutes = insights.volumeStats.midVolumeMinutes,
                     color = Color(0xFFFF9F0A),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
-                    title = "Громкая (71-100%)",
+                    title = "Громкая",
+                    range = "71-100%",
                     minutes = insights.volumeStats.highVolumeMinutes,
                     color = Color(0xFFFF453A),
                     modifier = Modifier.weight(1f)
@@ -1844,8 +1848,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
         // Average Full Battery Hours Tile
         BentoCard(
             modifier = Modifier.weight(1f),
-            title = "АВТОНОМНОСТЬ 100%",
-            subtitle = "~${insights.averageFullBatteryHours} часов в ср.",
+            title = "АВТОНОМНОСТЬ",
+            subtitle = "~${insights.averageFullBatteryHours} ч. работы",
             icon = Icons.Outlined.BatteryChargingFull,
             accentColor = Color(0xFF30D158)
         ) {
@@ -1862,6 +1866,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
 @Composable
 fun VolumeStatPill(
     title: String,
+    range: String,
     minutes: Int,
     color: Color,
     modifier: Modifier = Modifier
@@ -1872,15 +1877,16 @@ fun VolumeStatPill(
             .clip(RoundedCornerShape(14.dp))
             .background(colorScheme.surface)
             .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(14.dp))
-            .padding(vertical = 8.dp, horizontal = 6.dp),
+            .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
             Spacer(modifier = Modifier.height(4.dp))
-            Text(title, fontSize = 9.sp, color = colorScheme.onSurfaceVariant, maxLines = 1)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text("${minutes} мин", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+            Text(title, fontSize = 10.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface, maxLines = 1, softWrap = false)
+            Text(range, fontSize = 8.sp, color = colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+            Spacer(modifier = Modifier.height(3.dp))
+            Text("${minutes} мин", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface, softWrap = false)
         }
     }
 }

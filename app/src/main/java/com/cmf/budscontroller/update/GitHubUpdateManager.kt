@@ -85,6 +85,7 @@ class GitHubUpdateManager(private val context: Context) {
                 }
 
                 val hasNew = isNewerVersion(tagName, currentVer)
+                android.util.Log.i("GitHubUpdate", "Latest release from GitHub: $tagName, current installed: $currentVer, hasNew: $hasNew")
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
                     latestVersion = tagName,
@@ -94,8 +95,11 @@ class GitHubUpdateManager(private val context: Context) {
                 )
                 _updateState.value = res
                 return@withContext res
+            } else {
+                android.util.Log.w("GitHubUpdate", "GitHub API returned HTTP ${connection.responseCode}")
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.e("GitHubUpdate", "Update check failed: ${e.message}", e)
         } finally {
             _updateState.value = _updateState.value.copy(isChecking = false)
         }
@@ -162,6 +166,18 @@ class GitHubUpdateManager(private val context: Context) {
 
     fun installApk(file: File) {
         try {
+            // Check if app has permission to install packages on Android 8.0+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(settingsIntent)
+                    return
+                }
+            }
+
             val apkUri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.provider",
