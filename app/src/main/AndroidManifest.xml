@@ -31,6 +31,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
+    <!-- Screen compatibility for 1.5K (2712x1220), 2K, AMOLED and ultra-tall aspect ratios -->
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:anyDensity="true"
+        android:requiresSmallestWidthDp="320" />
+
     <application
         android:name=".CmfApplication"
         android:allowBackup="true"
@@ -38,11 +47,18 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_anc"
         android:supportsRtl="true"
+        android:resizeableActivity="true"
+        android:hardwareAccelerated="true"
         android:theme="@style/Theme.CMFBudsController">
+
+        <!-- Support 20:9 and 21:9 displays (POCO X7 Pro, Nothing Phone, modern flagships) -->
+        <meta-data android:name="android.max_aspect" android:value="2.5" />
 
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|fontScale"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.CMFBudsController">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -2290,17 +2290,17 @@ fun StudioNoiseControlBar(
 
                             Box(
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(if (lvl == AncLevel.ADAPTIVE) 1.22f else 1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(chipBg)
                                     .border(1.dp, if (isSel) colorScheme.primary else colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                                     .clickable { onLevelSelected(lvl) }
-                                    .padding(vertical = 9.dp),
+                                    .padding(vertical = 9.dp, horizontal = 2.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = lvl.title,
-                                    fontSize = 10.sp,
+                                    fontSize = if (lvl == AncLevel.ADAPTIVE) 9.sp else 10.sp,
                                     fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                                     color = chipFg,
                                     maxLines = 1,
