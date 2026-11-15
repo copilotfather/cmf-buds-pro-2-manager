@@ -189,6 +189,7 @@ fun HiFiStudioBudsApp(
     var showRelayDialog by remember { mutableStateOf(false) }
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var showWhisperDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     val colorScheme = MaterialTheme.colorScheme
 
@@ -264,6 +265,10 @@ fun HiFiStudioBudsApp(
                         if (!status.isConnected) onConnectClicked()
                     }) {
                         Icon(Icons.Outlined.Refresh, contentDescription = "Обновить", tint = colorScheme.onSurfaceVariant)
+                    }
+
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = colorScheme.onSurfaceVariant)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -1111,6 +1116,139 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showDevicePicker = false }) { Text("Закрыть") } },
+            shape = RoundedCornerShape(26.dp)
+        )
+    }
+
+    if (showSettingsDialog) {
+        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            icon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = colorScheme.primary) },
+            title = {
+                Text(
+                    "Настройки и О программе",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // App Information & Version
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.cmf_case_dial),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(42.dp)
+                                )
+                                Column {
+                                    Text(
+                                        "CMF Buds Pro 2 Manager",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                    Text(
+                                        "Версия: v${viewModel.updateManager.getCurrentVersionName()} (Build 222)",
+                                        fontSize = 12.sp,
+                                        color = colorScheme.primary
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Премиальный независимый аудио-центр для CMF Buds Pro 2 от Nothing. Прямое аппаратное SPP/BES управление, Sony LDAC 990 кбит/с и дизайн Liquid Gray Glass.",
+                                fontSize = 11.5.sp,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Credits & Developer Info
+                    Text("Разработка и Авторство", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { uriHandler.openUri("https://github.com/copilotfather") },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Автор проекта: Dmitry (copilotfather)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("github.com/copilotfather", fontSize = 11.sp, color = colorScheme.primary)
+                            }
+                            Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.primary)
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { uriHandler.openUri("https://github.com/copilotfather/cmf-buds-pro-2-manager") },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Исходный код репозитория", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("MIT License • Открытый проект", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
+                            }
+                            Icon(Icons.Outlined.Code, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    HorizontalDivider(thickness = 0.8.dp)
+
+                    // Quick Actions
+                    Text("Обновления и Система", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+
+                    FilledTonalButton(
+                        onClick = {
+                            viewModel.checkForUpdatesManual()
+                            showSettingsDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Проверить обновления сейчас", fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDialog = false }) {
+                    Text("Закрыть")
+                }
+            },
             shape = RoundedCornerShape(26.dp)
         )
     }
