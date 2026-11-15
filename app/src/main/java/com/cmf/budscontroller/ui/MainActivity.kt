@@ -212,89 +212,116 @@ fun HiFiStudioBudsApp(
 
     val colorScheme = MaterialTheme.colorScheme
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "CMF Buds Pro 2",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                letterSpacing = (-0.4).sp,
-                                color = colorScheme.onSurface
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(7.dp)
-                                        .clip(CircleShape)
-                                        .background(if (status.isConnected) Color(0xFF00E676) else Color(0xFF8E95A5))
-                                )
-                                Text(
-                                    text = if (status.isConnected) AppStrings.statusConnectedLdac else AppStrings.statusReady,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (status.isConnected) Color(0xFF00E676) else colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                },
-                actions = {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(colorScheme.surfaceVariant)
-                            .border(1.dp, colorScheme.outline, RoundedCornerShape(16.dp))
-                            .clickable {
-                                if (status.isConnected) showDevicePicker = true
-                                else onConnectClicked()
-                            }
-                            .padding(horizontal = 12.dp, vertical = 7.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.Outlined.BluetoothSearching,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = if (status.isConnected) colorScheme.primary else colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = if (status.isConnected) "Устройства" else "Найти",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    IconButton(onClick = {
-                        viewModel.refreshStatus()
-                        if (!status.isConnected) onConnectClicked()
-                    }) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Обновить", tint = colorScheme.onSurfaceVariant)
-                    }
-
-                    IconButton(onClick = { showSettingsDialog = true }) {
-                        Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = colorScheme.onSurfaceVariant)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorScheme.background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF221511), // Subtle warm ambient ember backlight in top corner
+                        Color(0xFF0C0E14), // Deep Charcoal-Black
+                        Color(0xFF07080B)  // Pure OLED Pitch Black
+                    ),
+                    center = Offset(900f, 100f),
+                    radius = 1800f
                 )
             )
-        },
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "CMF",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 19.sp,
+                                        letterSpacing = (-0.2).sp,
+                                        color = Color(0xFFFF5722)
+                                    )
+                                    Text(
+                                        text = "Buds Pro 2",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 19.sp,
+                                        letterSpacing = (-0.4).sp,
+                                        color = Color.White
+                                    )
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(if (status.isConnected) Color(0xFF00E676) else Color(0xFF8E95A5))
+                                    )
+                                    Text(
+                                        text = if (status.isConnected) AppStrings.statusConnectedLdac else AppStrings.statusReady,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (status.isConnected) Color(0xFF00E676) else colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    actions = {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF1B202D))
+                                .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    if (status.isConnected) showDevicePicker = true
+                                    else onConnectClicked()
+                                }
+                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.Outlined.BluetoothSearching,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp),
+                                    tint = if (status.isConnected) Color(0xFFFF5722) else colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = if (status.isConnected) "Устройства" else "Найти",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        IconButton(onClick = {
+                            viewModel.refreshStatus()
+                            if (!status.isConnected) onConnectClicked()
+                        }) {
+                            Icon(Icons.Outlined.Refresh, contentDescription = "Обновить", tint = colorScheme.onSurfaceVariant)
+                        }
+
+                        IconButton(onClick = { showSettingsDialog = true }) {
+                            Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = colorScheme.onSurfaceVariant)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            },
         bottomBar = {
             Surface(
                 modifier = Modifier
@@ -859,6 +886,7 @@ fun HiFiStudioBudsApp(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
 
     // --- DIALOGS ---
     if (showCodecDialog) {
@@ -1603,10 +1631,12 @@ fun StudioMasterEqualizerCard(
                         Offset(x, y)
                     }
 
-                    // Smooth Bezier Curve Path
+                    // Smooth Bezier Curve Path with Ambient Soundwave Fill
                     val curvePath = Path()
+                    val fillPath = Path()
                     if (points.isNotEmpty()) {
                         curvePath.moveTo(points.first().x, points.first().y)
+                        fillPath.moveTo(points.first().x, points.first().y)
                         for (i in 0 until points.size - 1) {
                             val p0 = points[i]
                             val p1 = points[i + 1]
@@ -1615,8 +1645,27 @@ fun StudioMasterEqualizerCard(
                             val controlX2 = (p0.x + p1.x) / 2f
                             val controlY2 = p1.y
                             curvePath.cubicTo(controlX1, controlY1, controlX2, controlY2, p1.x, p1.y)
+                            fillPath.cubicTo(controlX1, controlY1, controlX2, controlY2, p1.x, p1.y)
                         }
 
+                        // Close fill path down to baseline
+                        fillPath.lineTo(points.last().x, h)
+                        fillPath.lineTo(points.first().x, h)
+                        fillPath.close()
+
+                        // 1. Soft glowing gradient under the curve
+                        drawPath(
+                            path = fillPath,
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color(0x45FF5722),
+                                    Color(0x10FF5722),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+
+                        // 2. High-precision neon curve
                         drawPath(
                             path = curvePath,
                             brush = Brush.horizontalGradient(
@@ -1629,8 +1678,9 @@ fun StudioMasterEqualizerCard(
                             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                         )
 
-                        // Glowing Points
+                        // 3. Glowing Studio Band Nodes
                         points.forEach { pt ->
+                            drawCircle(color = Color(0x60FF5722), radius = 7.dp.toPx(), center = pt)
                             drawCircle(color = Color(0xFFFF5722), radius = 4.dp.toPx(), center = pt)
                             drawCircle(color = Color.White, radius = 2.dp.toPx(), center = pt)
                         }
@@ -2045,8 +2095,8 @@ fun StudioProductStage(
             .background(
                 Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF351710), // Vivid CMF Orange core glow
-                        Color(0xFF19131C),
+                        Color(0xFF381812), // Vivid CMF Orange core glow
+                        Color(0xFF1B141E),
                         Color(0xFF0F1218)
                     ),
                     radius = 900f
@@ -2070,39 +2120,89 @@ fun StudioProductStage(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+                    .height(165.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.cmf_earbud_left),
-                    contentDescription = "Left Earbud",
+                // Soft ambient radiant backlight aura behind devices
+                Box(
                     modifier = Modifier
-                        .fillMaxHeight(0.82f)
-                        .weight(1f),
-                    contentScale = ContentScale.Fit
+                        .size(190.dp, 120.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0x55FF5722),
+                                    Color(0x18FF5722),
+                                    Color.Transparent
+                                )
+                            )
+                        )
                 )
 
-                Image(
-                    painter = painterResource(id = R.drawable.cmf_case_dial),
-                    contentDescription = "CMF Case with Smart Dial",
+                // Reflective specular glass pedestal under the devices
+                Box(
                     modifier = Modifier
-                        .fillMaxHeight(0.95f)
-                        .weight(1.3f),
-                    contentScale = ContentScale.Fit
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(0.85f)
+                        .height(16.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0x35FFFFFF),
+                                    Color(0x15FF5722),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0x60FFFFFF),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
                 )
 
-                Image(
-                    painter = painterResource(id = R.drawable.cmf_earbud_right),
-                    contentDescription = "Right Earbud",
-                    modifier = Modifier
-                        .fillMaxHeight(0.82f)
-                        .weight(1f),
-                    contentScale = ContentScale.Fit
-                )
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.cmf_earbud_left),
+                        contentDescription = "Left Earbud",
+                        modifier = Modifier
+                            .fillMaxHeight(0.84f)
+                            .weight(1f),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    Image(
+                        painter = painterResource(id = R.drawable.cmf_case_dial),
+                        contentDescription = "CMF Case with Smart Dial",
+                        modifier = Modifier
+                            .fillMaxHeight(0.96f)
+                            .weight(1.3f),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    Image(
+                        painter = painterResource(id = R.drawable.cmf_earbud_right),
+                        contentDescription = "Right Earbud",
+                        modifier = Modifier
+                            .fillMaxHeight(0.84f)
+                            .weight(1f),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -2141,22 +2241,47 @@ fun StudioProductStage(
 @Composable
 fun MiniBatteryTag(name: String, percent: Int, isCharging: Boolean) {
     val text = if (percent in 0..100) "$percent%" else "—"
+    val levelColor = when {
+        isCharging -> Color(0xFF00E676)
+        percent > 50 -> Color(0xFF00E676)
+        percent > 20 -> Color(0xFFFFB300)
+        percent >= 0 -> Color(0xFFFF334B)
+        else -> Color(0xFF8E95A5)
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (isCharging) {
-            Icon(Icons.Outlined.Bolt, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF00E676))
+            Icon(
+                imageVector = Icons.Outlined.Bolt,
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+                tint = Color(0xFF00E676)
+            )
         } else {
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(7.dp)
                     .clip(CircleShape)
-                    .background(if (percent in 0..100) Color(0xFF00E676) else Color(0xFF8E95A5))
+                    .background(levelColor)
+                    .border(0.5.dp, Color(0x60FFFFFF), CircleShape)
             )
         }
-        Text(name, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB0B7C6))
-        Text(text, fontSize = 13.5.sp, fontWeight = FontWeight.Black, color = if (isCharging) Color(0xFF00E676) else Color.White)
+        Text(
+            text = name,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFB0B7C6),
+            letterSpacing = 0.5.sp
+        )
+        Text(
+            text = text,
+            fontSize = 13.5.sp,
+            fontWeight = FontWeight.Black,
+            color = if (isCharging) Color(0xFF00E676) else Color.White
+        )
     }
 }
 
@@ -2464,16 +2589,23 @@ fun BentoCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(colorScheme.surface)
-                        .border(1.dp, colorScheme.outlineVariant, CircleShape),
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    accentColor.copy(alpha = 0.22f),
+                                    Color(0xFF1B202D)
+                                )
+                            )
+                        )
+                        .border(1.dp, accentColor.copy(alpha = 0.40f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(19.dp),
                         tint = accentColor
                     )
                 }

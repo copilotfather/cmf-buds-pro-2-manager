@@ -3,12 +3,20 @@ package com.cmf.budscontroller.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.HealthAndSafety
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.cmf.budscontroller.i18n.AppStrings
 import androidx.compose.ui.text.font.FontFamily
@@ -24,92 +32,225 @@ fun HearingHealthCard(
     onResetSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(CmfSurface)
-            .border(1.dp, CmfBorder, RoundedCornerShape(24.dp))
-            .padding(20.dp)
+    val dosePercent = hearingStatus.dailySafeDosePercent
+    val isOverdose = dosePercent > 100
+    val doseColor = when {
+        isOverdose -> Color(0xFFFF334B)
+        dosePercent > 75 -> Color(0xFFFFB300)
+        dosePercent > 40 -> Color(0xFF00E5FF)
+        else -> Color(0xFF00E676)
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.verticalGradient(
+                listOf(
+                    Color(0x80FFFFFF),
+                    Color(0x35FFFFFF),
+                    Color(0x15FFFFFF),
+                    Color(0x30FFFFFF)
+                )
+            )
+        )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = AppStrings.hearingProtectionTitle,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                color = CmfTextSecondary,
-                fontFamily = FontFamily.Default
-            )
-            Text(
-                text = "${hearingStatus.dailySafeDosePercent}% ${AppStrings.doseLabel}",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                color = if (hearingStatus.dailySafeDosePercent > 100) Color(0xFFFF1744) else Color(0xFF00E676),
-                fontFamily = FontFamily.Default
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        val doseFraction = (hearingStatus.dailySafeDosePercent / 100f).coerceIn(0f, 1f)
-        LinearProgressIndicator(
-            progress = { doseFraction },
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = if (hearingStatus.dailySafeDosePercent > 100) Color(0xFFFF1744) else Color(0xFF00E676),
-            trackColor = CmfSurfaceSubtle
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(18.dp)
         ) {
-            Text(
-                text = "Сессия: ${hearingStatus.sessionMinutes} мин (порог: ${hearingStatus.restThresholdMinutes}м)",
-                fontSize = 12.sp,
-                color = CmfTextPrimary
-            )
-            Text(
-                text = "Громкость: ${hearingStatus.currentVolumePercent}%",
-                fontSize = 12.sp,
-                color = CmfTextSecondary,
-                fontFamily = FontFamily.Default
-            )
-        }
-
-        if (hearingStatus.isRestRecommended) {
-            Spacer(modifier = Modifier.height(12.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CmfOrangeSubtle)
-                    .border(1.dp, CmfOrange, RoundedCornerShape(12.dp))
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Рекомендуется 10-минутный отдых для слуха",
-                    fontSize = 12.sp,
-                    color = CmfTextPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(onClick = onResetSession) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF1B202D))
+                            .border(1.dp, Color(0x30FFFFFF), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.HealthAndSafety,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = doseColor
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = AppStrings.hearingProtectionTitle,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.3.sp,
+                            color = CmfTextSecondary
+                        )
+                        Text(
+                            text = "Акустическая доза ВОЗ/ITU",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = CmfTextPrimary
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(doseColor.copy(alpha = 0.16f))
+                        .border(1.dp, doseColor.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
                     Text(
-                        text = "СБРОС",
-                        color = CmfOrange,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Default
+                        text = "$dosePercent% ${AppStrings.doseLabel}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = doseColor
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Dual Glow Progress Track
+            val doseFraction = (dosePercent / 100f).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(9.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(Color(0xFF0C0E14))
+                    .border(1.dp, Color(0x20FFFFFF), RoundedCornerShape(5.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = doseFraction.coerceAtLeast(0.02f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xFF00E676),
+                                    if (isOverdose) Color(0xFFFF334B) else doseColor
+                                )
+                            )
+                        )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Metrics Pills Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Session Chip
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF1B202D))
+                        .border(1.dp, Color(0x25FFFFFF), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp),
+                            tint = Color(0xFF64D2FF)
+                        )
+                        Column {
+                            Text("СЕССИЯ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
+                            Text("${hearingStatus.sessionMinutes} мин / ${hearingStatus.restThresholdMinutes}м", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CmfTextPrimary)
+                        }
+                    }
+                }
+
+                // Volume Chip
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF1B202D))
+                        .border(1.dp, Color(0x25FFFFFF), RoundedCornerShape(14.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.VolumeUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(15.dp),
+                            tint = Color(0xFFFF9F0A)
+                        )
+                        Column {
+                            Text("ГРОМКОСТЬ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
+                            Text("${hearingStatus.currentVolumePercent}%", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CmfTextPrimary)
+                        }
+                    }
+                }
+            }
+
+            if (hearingStatus.isRestRecommended) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0x2BFF5722))
+                        .border(1.dp, Color(0x80FF5722), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFFF5722),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Рекомендуется 10-минутный отдых для слуха",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = CmfTextPrimary
+                        )
+                    }
+
+                    FilledTonalButton(
+                        onClick = onResetSession,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFFFF5722),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "СБРОС", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
