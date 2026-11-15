@@ -287,54 +287,107 @@ fun HiFiStudioBudsApp(
                         RoundedCornerShape(28.dp)
                     ),
                 shape = RoundedCornerShape(28.dp),
-                color = Color(0x33282C38),
+                color = Color(0x281A1D26),
                 tonalElevation = 8.dp
             ) {
-                Row(
+                val tabs = StudioTab.values()
+                val selectedIndex = tabs.indexOf(currentTab)
+
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 4.dp, vertical = 5.dp)
                 ) {
-                    StudioTab.values().forEach { tab ->
-                        val isSelected = currentTab == tab
-                        val animatedBg by animateColorAsState(
-                            targetValue = if (isSelected) Color(0x40FFFFFF) else Color.Transparent,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-                        )
-                        val animatedBorder by animateColorAsState(
-                            targetValue = if (isSelected) Color(0x55FFFFFF) else Color.Transparent,
-                            animationSpec = tween(200)
-                        )
-                        val animatedFg by animateColorAsState(
-                            targetValue = if (isSelected) Color.White else Color(0xFF9898A6),
-                            animationSpec = tween(200)
-                        )
+                    val totalWidth = maxWidth
+                    val tabWidth = totalWidth / tabs.size.toFloat()
 
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(animatedBg)
-                                .border(1.dp, animatedBorder, RoundedCornerShape(20.dp))
-                                .clickable { currentTab = tab }
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                                modifier = Modifier.size(19.dp),
-                                tint = animatedFg
-                            )
-                            if (isSelected) {
-                                Text(
-                                    text = tab.label,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = animatedFg
+                    val targetOffset = tabWidth * selectedIndex
+                    val animatedOffset by animateDpAsState(
+                        targetValue = targetOffset,
+                        animationSpec = spring(
+                            dampingRatio = 0.78f,
+                            stiffness = 380f
+                        ),
+                        label = "bottom_bar_glass_offset"
+                    )
+
+                    // Animated sliding glass indicator for bottom dock
+                    Box(
+                        modifier = Modifier
+                            .offset(x = animatedOffset)
+                            .width(tabWidth)
+                            .height(42.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color(0x55454C5E),
+                                        Color(0x33252A36),
+                                        Color(0x401C2029)
+                                    )
                                 )
+                            )
+                            .border(
+                                1.dp,
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color(0x99FFFFFF),
+                                        Color(0x33FFFFFF),
+                                        Color(0x55FF5722)
+                                    )
+                                ),
+                                RoundedCornerShape(20.dp)
+                            )
+                    )
+
+                    // Tab buttons overlay
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        tabs.forEach { tab ->
+                            val isSelected = currentTab == tab
+                            val iconColor by animateColorAsState(
+                                targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF8E95A5),
+                                animationSpec = tween(220),
+                                label = "tab_icon_color"
+                            )
+                            val textColor by animateColorAsState(
+                                targetValue = if (isSelected) Color.White else Color(0xFF8E95A5),
+                                animationSpec = tween(220),
+                                label = "tab_text_color"
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { currentTab = tab }
+                                    .padding(horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.label,
+                                    modifier = Modifier.size(19.dp),
+                                    tint = iconColor
+                                )
+                                if (isSelected) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = tab.label,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textColor,
+                                        maxLines = 1
+                                    )
+                                }
                             }
                         }
                     }
@@ -1687,36 +1740,116 @@ fun StudioNoiseControlBar(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Row(
+            // Animated sliding glass indicator bar
+            val selectedIndex = when (currentMode) {
+                AncMode.OFF -> 0
+                AncMode.TRANSPARENCY -> 1
+                AncMode.NOISE_CANCELLATION -> 2
+            }
+
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(colorScheme.background)
-                    .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .background(Color(0xFF0F1116))
+                    .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(20.dp))
+                    .padding(4.dp)
             ) {
-                NoiseSliderOption(
-                    title = "Выкл",
-                    icon = Icons.AutoMirrored.Outlined.VolumeOff,
-                    isSelected = currentMode == AncMode.OFF,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onModeSelected(AncMode.OFF) }
+                val totalWidth = maxWidth
+                val optionWidth = totalWidth / 3f
+
+                val targetOffset = optionWidth * selectedIndex
+                val animatedOffset by animateDpAsState(
+                    targetValue = targetOffset,
+                    animationSpec = spring(
+                        dampingRatio = 0.78f,
+                        stiffness = 380f
+                    ),
+                    label = "glass_slider_offset"
                 )
-                NoiseSliderOption(
-                    title = "Прозрачность",
-                    icon = Icons.Outlined.Hearing,
-                    isSelected = currentMode == AncMode.TRANSPARENCY,
-                    modifier = Modifier.weight(1.3f),
-                    onClick = { onModeSelected(AncMode.TRANSPARENCY) }
+
+                // The sliding glass thumb (стекляшка с рефракцией и неоновым свечением)
+                Box(
+                    modifier = Modifier
+                        .offset(x = animatedOffset)
+                        .width(optionWidth)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0x55454C5E),
+                                    Color(0x33252A36),
+                                    Color(0x401C2029)
+                                )
+                            )
+                        )
+                        .border(
+                            1.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0x99FFFFFF),
+                                    Color(0x33FFFFFF),
+                                    Color(0x55FF5722)
+                                )
+                            ),
+                            RoundedCornerShape(16.dp)
+                        )
                 )
-                NoiseSliderOption(
-                    title = "Шумодав",
-                    icon = Icons.Outlined.Shield,
-                    isSelected = currentMode == AncMode.NOISE_CANCELLATION,
-                    modifier = Modifier.weight(1.2f),
-                    onClick = { onModeSelected(AncMode.NOISE_CANCELLATION) }
-                )
+
+                // 3 Options placed on top of the sliding glass track
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val modes = listOf(
+                        Triple(AncMode.OFF, "Выкл", Icons.AutoMirrored.Outlined.VolumeOff),
+                        Triple(AncMode.TRANSPARENCY, "Прозрачность", Icons.Outlined.Hearing),
+                        Triple(AncMode.NOISE_CANCELLATION, "Шумодав", Icons.Outlined.Shield)
+                    )
+
+                    modes.forEach { (mode, title, icon) ->
+                        val isSelected = currentMode == mode
+                        val textColor by animateColorAsState(
+                            targetValue = if (isSelected) Color.White else Color(0xFF8E95A5),
+                            animationSpec = tween(220),
+                            label = "noise_text_color"
+                        )
+                        val iconColor by animateColorAsState(
+                            targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF6C7385),
+                            animationSpec = tween(220),
+                            label = "noise_icon_color"
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { onModeSelected(mode) },
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = iconColor
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = title,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = textColor
+                            )
+                        }
+                    }
+                }
             }
 
             AnimatedVisibility(visible = currentMode == AncMode.NOISE_CANCELLATION) {
