@@ -52,9 +52,9 @@ class GitHubUpdateManager(private val context: Context) {
         _updateState.value = _updateState.value.copy(isChecking = true)
         val currentVer = getCurrentVersionName()
 
-        // 1. Try raw CDN version.json (Fastest, zero rate-limit, worldwide CDN)
+        // 1. Try raw CDN version.json (Fastest, zero rate-limit, worldwide CDN, instant freshness)
         try {
-            val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json"
+            val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json?t=${System.currentTimeMillis()}"
             val conn = (URL(rawUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 4000

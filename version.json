@@ -1,6 +1,6 @@
 {
-  "versionName": "2.2.2.3",
-  "versionCode": 2223,
+  "versionName": "2.2.2.2",
+  "versionCode": 2222,
   "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.2.2/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "Новые фиксы: обновление интерфейса для Poco X7, улучшенное выравнивание текста и быстрый авто-апдейтер."
+  "releaseNotes": "Release v2.2.2.2: Fixed navigation tab labels (Обзор, Звук, Статы, Опции, Мост), resolved volume analytics formatting on Poco X7, and polished OTA update dialog."
 }
