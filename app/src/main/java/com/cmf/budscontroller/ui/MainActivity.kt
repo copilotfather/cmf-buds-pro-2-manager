@@ -855,11 +855,11 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showCodecDialog = false },
             icon = { Icon(Icons.Outlined.HighQuality, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Выбор Bluetooth аудиокодека", style = MaterialTheme.typography.titleLarge) },
+            title = { Text("Аппаратный аудиокодек наушников", style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Выберите кодек для передачи звука на CMF Buds Pro 2. Изменение отправляет аппаратно-программный пакет на наушники:",
+                        text = "В чип CMF Buds Pro 2 аппаратно зашиты кодеки LDAC, AAC и SBC. При выборе кодек активируется непосредственно в прошивке наушников и синхронизируется с телефоном:",
                         fontSize = 12.sp,
                         color = colorScheme.onSurfaceVariant
                     )

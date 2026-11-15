@@ -62,6 +62,7 @@ object CmfProtocol {
     const val CMD_SET_LISTEN_MODE = 0xF01D
     const val CMD_READ_FIRMWARE = 0xC042
     const val CMD_SET_LATENCY = 0xF040
+    const val CMD_SET_HD_AUDIO = 0xF05A // Nothing X Hi-Res LDAC toggle
     // Find My Buds / chirp (Nothing X style)
     const val CMD_FIND_MY_BUDS = 0xF050
     const val FIND_BUDS_STOP = 0x00
@@ -138,6 +139,11 @@ object CmfProtocol {
     fun createSetGameModePacket(enabled: Boolean): ByteArray {
         val flag: Byte = if (enabled) 0x01 else 0x02
         return buildPacket(CMD_SET_LATENCY, byteArrayOf(flag, 0x00))
+    }
+
+    fun createSetHdAudioPacket(enabled: Boolean): ByteArray {
+        val flag: Byte = if (enabled) 0x01 else 0x00
+        return buildPacket(CMD_SET_HD_AUDIO, byteArrayOf(flag, 0x00))
     }
 
     fun createFindMyBudsPacket(left: Boolean, right: Boolean): ByteArray {
