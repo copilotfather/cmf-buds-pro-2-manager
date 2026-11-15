@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.cmf.budscontroller.i18n.AppStrings
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,7 @@ fun HearingHealthCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ЗАЩИТА СЛУХА (ВОЗ)",
+                text = AppStrings.hearingProtectionTitle,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
@@ -45,7 +46,7 @@ fun HearingHealthCard(
                 fontFamily = FontFamily.Default
             )
             Text(
-                text = "${hearingStatus.dailySafeDosePercent}% ДОЗЫ",
+                text = "${hearingStatus.dailySafeDosePercent}% ${AppStrings.doseLabel}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 color = if (hearingStatus.dailySafeDosePercent > 100) Color(0xFFFF1744) else Color(0xFF00E676),

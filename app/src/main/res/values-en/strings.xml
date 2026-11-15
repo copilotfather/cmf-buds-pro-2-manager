@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CMF Pro Control</string>
+    <string name="tile_anc_label">CMF Noise Control</string>
+    <string name="tile_game_label">CMF Game Mode</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connecting">Connecting...</string>
+</resources>

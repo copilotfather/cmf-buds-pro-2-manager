@@ -1,6 +1,6 @@
 {
-  "versionName": "2.2.3.0",
-  "versionCode": 2230,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.3.0/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "Release v2.2.3.0: Мгновенное авто-обнаружение обновлений (исправлен редирект GitHub releases/latest с поддержкой User-Agent), надежный прямой OTA-инсталлятор."
+  "versionName": "2.2.3.1",
+  "versionCode": 2231,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.3.1/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "Release v2.2.3.1: Автоматическая локализация (English / Русский) в зависимости от системного языка устройства, обновление раздела Contributors (Dmitry & Antigravity AI)."
 }

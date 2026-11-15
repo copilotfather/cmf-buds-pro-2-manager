@@ -1,5 +1,6 @@
 package com.cmf.budscontroller.ui
 
+import com.cmf.budscontroller.i18n.AppStrings
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
@@ -146,12 +147,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class StudioTab(val label: String, val icon: ImageVector) {
-    DEVICE("Обзор", Icons.Outlined.Headphones),
-    STUDIO("Звук", Icons.Outlined.GraphicEq),
-    INSIGHTS("Статы", Icons.Outlined.BarChart),
-    FEATURES("Опции", Icons.Outlined.Tune),
-    BRIDGE("Мост", Icons.Outlined.Devices)
+enum class StudioTab(val icon: ImageVector) {
+    DEVICE(Icons.Outlined.Headphones),
+    STUDIO(Icons.Outlined.GraphicEq),
+    INSIGHTS(Icons.Outlined.BarChart),
+    FEATURES(Icons.Outlined.Tune),
+    BRIDGE(Icons.Outlined.Devices);
+
+    val label: String
+        get() = when (this) {
+            DEVICE -> AppStrings.tabOverview
+            STUDIO -> AppStrings.tabSound
+            INSIGHTS -> AppStrings.tabStats
+            FEATURES -> AppStrings.tabFeatures
+            BRIDGE -> AppStrings.tabBridge
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -229,7 +239,7 @@ fun HiFiStudioBudsApp(
                                         .background(if (status.isConnected) Color(0xFF00E676) else Color(0xFF8E95A5))
                                 )
                                 Text(
-                                    text = if (status.isConnected) "Подключено • Hi-Res LDAC" else "Готов к подключению",
+                                    text = if (status.isConnected) AppStrings.statusConnectedLdac else AppStrings.statusReady,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (status.isConnected) Color(0xFF00E676) else colorScheme.onSurfaceVariant
@@ -1322,6 +1332,26 @@ fun HiFiStudioBudsApp(
                     }
 
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Соавтор разработки: Antigravity AI", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text("Google DeepMind Agentic Assistant", fontSize = 11.sp, color = Color(0xFF00E5FF))
+                            }
+                            Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF00E5FF))
+                        }
+                    }
+
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { uriHandler.openUri("https://github.com/copilotfather/cmf-buds-pro-2-manager") },
@@ -1732,7 +1762,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     val colorScheme = MaterialTheme.colorScheme
 
     Text(
-        text = "АНАЛИТИКА И СТАТИСТИКА ИСПОЛЬЗОВАНИЯ",
+        text = AppStrings.headerDeepAnalytics,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.4.sp,
@@ -1763,8 +1793,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f, fill = false)) {
-                    Text("РАСПРЕДЕЛЕНИЕ ГРОМКОСТИ", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp, color = colorScheme.onSurfaceVariant)
-                    Text("Уровни громкости", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                    Text(AppStrings.volDistributionTitle, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp, color = colorScheme.onSurfaceVariant)
+                    Text(AppStrings.volLevelsTitle, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 Box(
@@ -1773,7 +1803,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         .background(colorScheme.surface)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("Всего: ${insights.volumeStats.totalMinutes} мин", fontSize = 11.sp, color = colorScheme.primary, fontWeight = FontWeight.SemiBold, softWrap = false)
+                    Text("${AppStrings.volTotal} ${insights.volumeStats.totalMinutes} ${AppStrings.minUnit}", fontSize = 11.sp, color = colorScheme.primary, fontWeight = FontWeight.SemiBold, softWrap = false)
                 }
             }
 
@@ -1819,21 +1849,21 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 VolumeStatPill(
-                    title = "Тихая",
+                    title = AppStrings.volQuiet,
                     range = "0-30%",
                     minutes = insights.volumeStats.lowVolumeMinutes,
                     color = Color(0xFF00E676),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
-                    title = "Средняя",
+                    title = AppStrings.volMid,
                     range = "31-70%",
                     minutes = insights.volumeStats.midVolumeMinutes,
                     color = Color(0xFFFF9100),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
-                    title = "Громкая",
+                    title = AppStrings.volLoud,
                     range = "71-100%",
                     minutes = insights.volumeStats.highVolumeMinutes,
                     color = Color(0xFFFF1744),
@@ -1937,13 +1967,13 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
         // Case Opens Tile
         BentoCard(
             modifier = Modifier.weight(1f),
-            title = "ОТКРЫТИЙ КЕЙСА",
-            subtitle = if (insights.caseOpensToday > 0) "${insights.caseOpensToday} раз сегодня" else "0 сегодня",
+            title = AppStrings.caseOpensTitle,
+            subtitle = if (insights.caseOpensToday > 0) "${insights.caseOpensToday} ${AppStrings.todayLabel}" else "0 ${AppStrings.todayLabel}",
             icon = Icons.Outlined.SensorDoor,
             accentColor = Color(0xFF00E5FF)
         ) {
             Text(
-                text = "Всего за всё время: ${insights.totalCaseOpens}",
+                text = "${AppStrings.totalLabel} ${insights.totalCaseOpens}",
                 fontSize = 11.sp,
                 color = colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
@@ -1953,13 +1983,13 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
         // Average Full Battery Hours Tile
         BentoCard(
             modifier = Modifier.weight(1f),
-            title = "АВТОНОМНОСТЬ",
-            subtitle = if (insights.averageFullBatteryHours > 0f) "~${insights.averageFullBatteryHours} ч. работы" else "Калибровка...",
+            title = AppStrings.batteryLifeTitle,
+            subtitle = if (insights.averageFullBatteryHours > 0f) "~${insights.averageFullBatteryHours} h" else "Calibrating...",
             icon = Icons.Outlined.BatteryChargingFull,
             accentColor = Color(0xFF00E676)
         ) {
             Text(
-                text = "Здоровье батареи: ${insights.batteryHealthEstimate}%",
+                text = "${AppStrings.batteryHealthLabel} ${insights.batteryHealthEstimate}%",
                 fontSize = 11.sp,
                 color = colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)

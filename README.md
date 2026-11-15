@@ -69,7 +69,14 @@ cd cmf-buds-pro-2-manager
 
 ---
 
+## 👥 Contributors
+
+- **Dmitry ([@copilotfather](https://github.com/copilotfather))** — Creator & Lead Maintainer
+- **Antigravity (Google DeepMind)** — Autonomous Architecture, SPP/BES Protocol Engineering, DSP & Cyber UI Co-Developer
+
+---
+
 ## <img src="docs/icons/file-text.svg" width="20" height="20" /> License
 
 This project is open-source under the [MIT License](LICENSE).  
-Developed by [copilotfather](https://github.com/copilotfather).
+Developed by [copilotfather](https://github.com/copilotfather) & Antigravity.
