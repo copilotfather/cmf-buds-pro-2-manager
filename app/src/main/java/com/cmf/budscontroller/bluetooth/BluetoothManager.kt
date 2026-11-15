@@ -206,7 +206,13 @@ class CmfBluetoothManager private constructor() {
         if (device != null) {
             val devName = try { device.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
             val sysBat = getSystemBatteryLevel(device)
-            val batLvl = if (sysBat > 0) sysBat else 85
+            val currentBat = _deviceStatus.value.battery
+            val batLvl = when {
+                sysBat > 0 -> sysBat
+                currentBat.leftPercent > 0 -> currentBat.leftPercent
+                currentBat.rightPercent > 0 -> currentBat.rightPercent
+                else -> -1
+            }
             _deviceStatus.value = _deviceStatus.value.copy(
                 isConnected = true,
                 deviceName = devName,
@@ -214,7 +220,7 @@ class CmfBluetoothManager private constructor() {
                 battery = BatteryInfo(
                     leftPercent = batLvl,
                     rightPercent = batLvl,
-                    casePercent = -1,
+                    casePercent = currentBat.casePercent,
                     isLeftConnected = true,
                     isRightConnected = true
                 )
@@ -244,6 +250,12 @@ class CmfBluetoothManager private constructor() {
                     }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     Log.d(TAG, "GATT disconnected from ${device.address}")
+                    try {
+                        gatt?.close()
+                    } catch (_: Exception) {}
+                    if (bluetoothGatt == gatt) {
+                        bluetoothGatt = null
+                    }
                 }
             }
 

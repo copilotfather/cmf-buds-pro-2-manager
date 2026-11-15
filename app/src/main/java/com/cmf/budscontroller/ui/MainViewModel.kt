@@ -300,7 +300,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleWhisperHours(enabled: Boolean) {
-        voiceWhisperManager.toggleSpeakHours(enabled)
+        voiceWhisperManager.toggleAnnounceHourlyTime(enabled)
     }
 
     fun testWhisperVoice() {

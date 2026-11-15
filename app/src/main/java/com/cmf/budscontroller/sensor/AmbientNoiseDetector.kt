@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.log10
+import kotlin.math.sqrt
 
 @Immutable
 data class AmbientNoiseState(
@@ -70,8 +71,8 @@ class AmbientNoiseDetector {
                             for (i in 0 until read) {
                                 sum += buffer[i] * buffer[i]
                             }
-                            val amplitude = sum / read
-                            val db = if (amplitude > 0) (20 * log10(amplitude / 5.0)).toInt().coerceIn(20, 110) else 25
+                            val rms = sqrt(sum / read)
+                            val db = if (rms > 0) (20 * log10(rms / 5.0)).toInt().coerceIn(20, 110) else 25
 
                             val (mode, level, envName) = when {
                                 db < 45 -> Triple(AncMode.OFF, AncLevel.LOW, "Тихая комната (<45 дБ)")

@@ -72,6 +72,8 @@ class BudsUsageAnalyticsManager(private val context: Context) {
     }
 
     fun recordCaseEvent(isOpened: Boolean) {
+        if (!isOpened) return
+
         val todayKey = getTodayDateKey()
         val currentOpensToday = prefs.getInt("opens_$todayKey", 0) + 1
         val totalOpens = prefs.getInt("total_opens", 35) + 1

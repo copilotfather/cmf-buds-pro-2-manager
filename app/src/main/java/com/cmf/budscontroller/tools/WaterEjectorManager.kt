@@ -46,9 +46,13 @@ class WaterEjectorManager(private val context: Context? = null) {
             val sampleRate = 48000
             val chunkSize = 2400 // 50ms chunk for continuous fluid generation
 
+            val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            val originalVolume = try {
+                audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
+            } catch (_: Exception) { null }
+
             // Ensure media volume is at 100% for maximum kinetic acoustic displacement
             try {
-                val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
                 audioManager?.let {
                     val maxVol = it.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                     it.setStreamVolume(AudioManager.STREAM_MUSIC, maxVol, 0)
@@ -158,6 +162,11 @@ class WaterEjectorManager(private val context: Context? = null) {
                 try {
                     track?.stop()
                     track?.release()
+                } catch (_: Exception) {}
+                try {
+                    if (originalVolume != null) {
+                        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, 0)
+                    }
                 } catch (_: Exception) {}
                 _state.value = _state.value.copy(
                     isRunning = false,

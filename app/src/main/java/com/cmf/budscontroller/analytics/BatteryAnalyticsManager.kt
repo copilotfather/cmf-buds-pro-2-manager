@@ -36,11 +36,13 @@ object BatteryAnalyticsManager {
 
         val currentMin = validBuds.minOrNull() ?: return
         val now = System.currentTimeMillis()
-        historySamples.add(now to currentMin)
+        synchronized(historySamples) {
+            historySamples.add(now to currentMin)
 
-        // Keep last 60 minutes of history
-        val cutoff = now - 60 * 60 * 1000
-        historySamples.removeAll { it.first < cutoff }
+            // Keep last 60 minutes of history
+            val cutoff = now - 60 * 60 * 1000
+            historySamples.removeAll { it.first < cutoff }
+        }
     }
 
     fun calculatePrediction(status: DeviceStatus): BatteryPrediction {
@@ -153,14 +155,16 @@ object BatteryAnalyticsManager {
     }
 
     private fun calculateEmpiricalDrainRate(): Float? {
-        if (historySamples.size < 2) return null
-        val first = historySamples.first()
-        val last = historySamples.last()
-        val timeDiffHours = (last.first - first.first) / (1000f * 60f * 60f)
-        val percentDiff = (first.second - last.second).toFloat()
+        synchronized(historySamples) {
+            if (historySamples.size < 2) return null
+            val first = historySamples.first()
+            val last = historySamples.last()
+            val timeDiffHours = (last.first - first.first) / (1000f * 60f * 60f)
+            val percentDiff = (first.second - last.second).toFloat()
 
-        if (timeDiffHours < 0.15f || percentDiff <= 0f) return null // Need at least ~10 mins
-        return percentDiff / timeDiffHours
+            if (timeDiffHours < 0.15f || percentDiff <= 0f) return null // Need at least ~10 mins
+            return percentDiff / timeDiffHours
+        }
     }
 
     private fun formatMinutes(totalMinutes: Int): String {

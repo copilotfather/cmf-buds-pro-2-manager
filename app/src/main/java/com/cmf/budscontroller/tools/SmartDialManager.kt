@@ -1,6 +1,7 @@
 package com.cmf.budscontroller.tools
 
 import android.content.Context
+import android.content.Intent
 import android.media.AudioManager
 import com.cmf.budscontroller.bluetooth.CmfBluetoothManager
 import com.cmf.budscontroller.media.CmfMediaTracker
@@ -79,7 +80,14 @@ class SmartDialManager(private val context: Context) {
                     audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
                 }
             }
-            DialClickAction.ASSISTANT -> {}
+            DialClickAction.ASSISTANT -> {
+                try {
+                    val intent = Intent(Intent.ACTION_VOICE_COMMAND).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
+            }
         }
     }
 

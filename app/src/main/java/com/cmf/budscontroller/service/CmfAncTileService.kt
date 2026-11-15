@@ -1,5 +1,6 @@
 package com.cmf.budscontroller.service
 
+import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.cmf.budscontroller.bluetooth.CmfBluetoothManager
@@ -41,13 +42,17 @@ class CmfAncTileService : TileService() {
 
         if (!status.isConnected) {
             tile.state = Tile.STATE_UNAVAILABLE
-            tile.subtitle = "Не подключено"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                tile.subtitle = "Не подключено"
+            }
         } else {
             tile.state = when (status.ancMode) {
                 AncMode.OFF -> Tile.STATE_INACTIVE
                 AncMode.TRANSPARENCY, AncMode.NOISE_CANCELLATION -> Tile.STATE_ACTIVE
             }
-            tile.subtitle = status.ancMode.title
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                tile.subtitle = status.ancMode.title
+            }
         }
         tile.updateTile()
     }

@@ -174,6 +174,7 @@ fun HiFiStudioBudsApp(
     val sleepState by viewModel.sleepState.collectAsState()
     val whisperSettings by viewModel.whisperSettings.collectAsState()
     val insights by viewModel.usageInsights.collectAsState()
+    val hearingStatus by viewModel.hearingStatus.collectAsState()
     val codecState by viewModel.codecState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
 
@@ -588,6 +589,14 @@ fun HiFiStudioBudsApp(
                 StudioTab.INSIGHTS -> {
                     // Deep User Analytics Dashboard
                     BudsDeepAnalyticsDashboard(insights = insights)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // WHO Hearing Protection Card
+                    com.cmf.budscontroller.ui.components.HearingHealthCard(
+                        hearingStatus = hearingStatus,
+                        onResetSession = { viewModel.resetHearingSession() }
+                    )
                 }
 
                 StudioTab.FEATURES -> {
@@ -736,7 +745,7 @@ fun HiFiStudioBudsApp(
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
                         title = "ТРАНСЛЯЦИЯ ЗВУКА С ПК (LOW LATENCY)",
-                        subtitle = if (relayState.isRunning) "Сервер запущен (Порт 59100) • Задержка ~${relayState.latencyEstimateMs} мс" else "Слушайте звук с компьютера на наушниках через Wi-Fi/USB",
+                        subtitle = if (relayState.isRunning) "Сервер запущен (Порт ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}) • Задержка ~${relayState.latencyEstimateMs} мс" else "Слушайте звук с компьютера на наушниках через Wi-Fi/USB",
                         icon = Icons.Outlined.Computer,
                         accentColor = colorScheme.primary
                     ) {
@@ -797,7 +806,7 @@ fun HiFiStudioBudsApp(
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("Включите тумблер выше", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text("Телефон запустит локальный TCP сервер на порту 59100 и подготовит аудио-декодер к приёму PCM-потока 48 кГц.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                    Text("Телефон запустит локальный TCP сервер на порту ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT} и подготовит аудио-декодер к приёму PCM-потока 48 кГц.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
                                 }
                             }
 

@@ -48,6 +48,10 @@ class VoiceWhisperManager(private val context: Context) : TextToSpeech.OnInitLis
         _settings.value = _settings.value.copy(announceOnConnect = enabled)
     }
 
+    fun toggleAnnounceHourlyTime(enabled: Boolean) {
+        _settings.value = _settings.value.copy(announceHourlyTime = enabled)
+    }
+
     fun toggleSpeakHours(enabled: Boolean) {
         _settings.value = _settings.value.copy(speakRemainingHours = enabled)
     }
