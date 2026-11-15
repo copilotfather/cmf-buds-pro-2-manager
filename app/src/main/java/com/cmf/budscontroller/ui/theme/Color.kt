@@ -3,57 +3,57 @@ package com.cmf.budscontroller.ui.theme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// Apple-inspired Cupertino Accent Palettes (Space Black, Silver, Deep Navy, Alpine Green, Pacific Blue, Sunset Orange)
+// Ultra-Vivid Brand & Accent Palettes (Signature CMF Electric Orange, Cyan, Neon Mint, Pure Silver)
 enum class VibeColorTheme(
     val title: String,
     val accent: Color,
     val accentMuted: Color,
     val accentSubtle: Color
 ) {
-    CMF_ORANGE("Sunset Orange", Color(0xFFFF9500), Color(0xFFFF7A00), Color(0x24FF9500)),
-    CMF_BLUE("Pacific Blue", Color(0xFF007AFF), Color(0xFF0056B3), Color(0x24007AFF)),
-    CMF_MINT("Alpine Green", Color(0xFF34C759), Color(0xFF28A745), Color(0x2434C759)),
-    CMF_MONO("Silver & White", Color(0xFFFFFFFF), Color(0xFF8E8E93), Color(0x20FFFFFF))
+    CMF_ORANGE("CMF Ultra Orange", Color(0xFFFF5722), Color(0xFFFF3D00), Color(0x35FF5722)),
+    CMF_BLUE("Electric Cyan", Color(0xFF00E5FF), Color(0xFF00B0FF), Color(0x3500E5FF)),
+    CMF_MINT("Neon Green", Color(0xFF00E676), Color(0xFF00C853), Color(0x3500E676)),
+    CMF_MONO("Pure Platinum", Color(0xFFFFFFFF), Color(0xFFAAAAAA), Color(0x30FFFFFF))
 }
 
-// Backgrounds & Glass Surfaces - Apple iOS / macOS Dark Cupertino Frosted Glass
-val CmfBlack = Color(0xFF000000)          // Pure iOS Deep OLED Black
-val CmfSurface = Color(0xCC1C1C1E)        // Apple Secondary System Background (frosted)
-val CmfSurfaceSubtle = Color(0x1FFFFFFF)  // Apple System Fill (thin translucent blur)
-val CmfSurfaceHigh = Color(0xE02C2C2E)    // Apple Tertiary System Background
-val CmfBorder = Color(0x24FFFFFF)         // Delicate Apple glass hairline border (14% white)
-val CmfBorderSubtle = Color(0x12FFFFFF)   // Ultra-subtle divider (7% white)
+// Backgrounds & Glass Surfaces - Deep OLED Pitch Black with crisp high-contrast cards
+val CmfBlack = Color(0xFF08090C)          // Deep OLED Charcoal-Black
+val CmfSurface = Color(0xFF141720)        // Clear elevated surface with high visibility
+val CmfSurfaceSubtle = Color(0xFF1E2330)  // Rich contrast fill for chips/bars
+val CmfSurfaceHigh = Color(0xFF252B3B)    // Tertiary distinct highlight container
+val CmfBorder = Color(0x40FFFFFF)         // Bright specular crisp border (25% white)
+val CmfBorderSubtle = Color(0x24FFFFFF)   // Clear visible divider (14% white)
 
-// Apple Typography (SF Pro style)
-val CmfTextPrimary = Color(0xFFFFFFFF)    // Apple Label Primary
-val CmfTextSecondary = Color(0xFF8E8E93)  // Apple Label Secondary (systemGray)
-val CmfTextDisabled = Color(0xFF48484A)   // Apple Label Quaternary
+// High-Contrast Crisp Typography
+val CmfTextPrimary = Color(0xFFFFFFFF)    // Crisp White
+val CmfTextSecondary = Color(0xFFB0B7C6)  // Bright high-readability Secondary
+val CmfTextDisabled = Color(0xFF6B7280)   // Readable Quaternary
 
-// Status & Accents
-val CmfGreen = Color(0xFF34C759)          // Apple System Green
-val CmfOrange = Color(0xFFFF9500)         // Apple System Orange
-val CmfOrangeSubtle = Color(0x24FF9500)
-val CmfRed = Color(0xFFFF3B30)            // Apple System Red
+// Status & Accents (Vivid & punchy)
+val CmfGreen = Color(0xFF00E676)          // Bright Punchy Neon Green
+val CmfOrange = Color(0xFFFF5722)         // Iconic CMF Bright Orange
+val CmfOrangeSubtle = Color(0x35FF5722)
+val CmfRed = Color(0xFFFF334B)            // Vivid Carmine Red
 
-// Apple Frosted Glass Card Brush
+// Frosted Glass Card Brush with vivid contrast
 val CmfGlassCardBrush = Brush.verticalGradient(
     listOf(
-        Color(0xCC1F1F24), // iOS Frosted Glass Top Sheen
-        Color(0xB3141418)  // iOS Frosted Glass Bottom
+        Color(0xFF191D28), // Crisp high-contrast top
+        Color(0xFF10131A)  // Deep bottom
     )
 )
 
 val CmfGlassBorderBrush = Brush.verticalGradient(
     listOf(
-        Color(0x40FFFFFF), // Hairline specular edge
-        Color(0x18FFFFFF),
-        Color(0x0CFFFFFF)
+        Color(0x75FFFFFF), // Ultra-bright top edge specular
+        Color(0x30FFFFFF),
+        Color(0x18FFFFFF)
     )
 )
 
 val CmfGlassPillBrush = Brush.verticalGradient(
     listOf(
-        Color(0x28FFFFFF),
-        Color(0x12FFFFFF)
+        Color(0xFF282E3E),
+        Color(0xFF1C202C)
     )
 )

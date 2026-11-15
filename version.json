@@ -1,6 +1,6 @@
 {
-  "versionName": "2.2.2.5",
-  "versionCode": 2225,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.2.5/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "Release v2.2.2.5: Комплексное исправление стабильности (краш плиток на Android 8-9, потокобезопасность батареи, учет открытий кейса, Smart Dial ассистент, восстановление громкости после продувки динамиков, точный расчет RMS шума и карточка ВОЗ)."
+  "versionName": "2.2.2.6",
+  "versionCode": 2226,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.2.6/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "Release v2.2.2.6: Яркая и насыщенная цветовая гамма (Ultra-Vivid CMF Orange, Electric Cyan, Neon Green, Platinum), повышенная контрастность карточек и четкая читаемость на AMOLED дисплеях."
 }

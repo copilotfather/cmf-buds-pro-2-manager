@@ -774,14 +774,14 @@ fun HiFiStudioBudsApp(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
                         border = CardDefaults.outlinedCardBorder().copy(
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    Color(0x65FFFFFF),
-                                    Color(0x20FFFFFF),
-                                    Color(0x0CFFFFFF),
-                                    Color(0x28FFFFFF)
+                                    Color(0x80FFFFFF),
+                                    Color(0x35FFFFFF),
+                                    Color(0x15FFFFFF),
+                                    Color(0x30FFFFFF)
                                 )
                             )
                         )
@@ -1744,14 +1744,14 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
                 listOf(
-                    Color(0x65FFFFFF),
-                    Color(0x20FFFFFF),
-                    Color(0x0CFFFFFF),
-                    Color(0x28FFFFFF)
+                    Color(0x80FFFFFF),
+                    Color(0x35FFFFFF),
+                    Color(0x15FFFFFF),
+                    Color(0x30FFFFFF)
                 )
             )
         )
@@ -1834,14 +1834,14 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
                 listOf(
-                    Color(0x65FFFFFF),
-                    Color(0x20FFFFFF),
-                    Color(0x0CFFFFFF),
-                    Color(0x28FFFFFF)
+                    Color(0x80FFFFFF),
+                    Color(0x35FFFFFF),
+                    Color(0x15FFFFFF),
+                    Color(0x30FFFFFF)
                 )
             )
         )
@@ -2113,14 +2113,14 @@ fun StudioNoiseControlBar(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
                 listOf(
-                    Color(0x65FFFFFF),
-                    Color(0x20FFFFFF),
-                    Color(0x0CFFFFFF),
-                    Color(0x28FFFFFF)
+                    Color(0x80FFFFFF),
+                    Color(0x35FFFFFF),
+                    Color(0x15FFFFFF),
+                    Color(0x30FFFFFF)
                 )
             )
         )
@@ -2381,14 +2381,14 @@ fun BentoCard(
                 } else Modifier
             ),
         shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0x301E212A)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
                 listOf(
-                    Color(0x65FFFFFF), // High specular top rim
-                    Color(0x20FFFFFF),
-                    Color(0x0CFFFFFF),
-                    Color(0x28FFFFFF)
+                    Color(0x80FFFFFF), // High specular top rim
+                    Color(0x35FFFFFF),
+                    Color(0x15FFFFFF),
+                    Color(0x30FFFFFF)
                 )
             )
         )
