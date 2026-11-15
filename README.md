@@ -17,14 +17,6 @@
 
 ---
 
-## <img src="docs/icons/image.svg" width="20" height="20" /> Interface Gallery
-
-| Overview | Analytics | Studio EQ | Hardware Tools |
-| :---: | :---: | :---: | :---: |
-| <img src="docs/screenshots/overview_preview.png" width="220" /> | <img src="docs/screenshots/analytics_preview.png" width="220" /> | <img src="docs/screenshots/sound_preview.png" width="220" /> | <img src="docs/screenshots/tools_preview.png" width="220" /> |
-
----
-
 ## English
 
 **CMF Buds Pro 2 Manager** is a dedicated Android app designed specifically for the **CMF Buds Pro 2** by Nothing. Built from scratch with Kotlin and Jetpack Compose, it connects directly to the earbuds' Bluetooth RFCOMM/SPP service interface to deliver hardware-level control and detailed listening telemetry.
