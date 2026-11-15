@@ -1,6 +1,6 @@
 {
-  "versionName": "2.2.2.9",
-  "versionCode": 2229,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.2.9/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "Release v2.2.2.9: Ультра-стильный премиальный дизайн витрины наушников и кейса (Cyber Stage Glow, неоновые индикаторы заряда L/Кейс/R, глубокий OLED контраст и фирменный стиль Nothing CMF)."
+  "versionName": "2.2.3.0",
+  "versionCode": 2230,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.3.0/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "Release v2.2.3.0: Мгновенное авто-обнаружение обновлений (исправлен редирект GitHub releases/latest с поддержкой User-Agent), надежный прямой OTA-инсталлятор."
 }

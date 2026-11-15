@@ -56,22 +56,28 @@ class GitHubUpdateManager(private val context: Context) {
         _updateState.value = _updateState.value.copy(isChecking = true)
         val currentVer = getCurrentVersionName()
 
-        // 1. Try HTTP 302 Redirect of releases/latest (Zero cache, zero API rate limits, instantaneous)
+        // 1. Try releases/latest (Zero cache, zero API rate limits, instantaneous)
         try {
             val redirectUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
             val conn = (URL(redirectUrl).openConnection() as HttpURLConnection).apply {
-                instanceFollowRedirects = false
+                instanceFollowRedirects = true
                 requestMethod = "GET"
-                connectTimeout = 4000
-                readTimeout = 4000
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
+                connectTimeout = 5000
+                readTimeout = 5000
                 useCaches = false
             }
+            conn.connect()
+
+            val finalUrl = conn.url.toString()
             val location = conn.getHeaderField("Location") ?: ""
-            if (location.isNotBlank() && location.contains("/tag/")) {
-                val tag = location.substringAfterLast("/tag/").removePrefix("v").trim()
+            val target = if (finalUrl.contains("/tag/")) finalUrl else location
+
+            if (target.isNotBlank() && target.contains("/tag/")) {
+                val tag = target.substringAfterLast("/tag/").removePrefix("v").trim()
                 val hasNew = isNewerVersion(tag, currentVer)
                 val dl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
-                android.util.Log.i("GitHubUpdate", "302 Redirect Check: latest=$tag, current=$currentVer, hasNew=$hasNew")
+                android.util.Log.i("GitHubUpdate", "Latest Check: target=$target, tag=$tag, current=$currentVer, hasNew=$hasNew")
 
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
@@ -84,7 +90,7 @@ class GitHubUpdateManager(private val context: Context) {
                 return@withContext res
             }
         } catch (e: Exception) {
-            android.util.Log.w("GitHubUpdate", "Redirect Check failed: ${e.message}")
+            android.util.Log.w("GitHubUpdate", "Latest Check failed: ${e.message}")
         }
 
         // 2. Try raw CDN version.json (Fast worldwide CDN)
@@ -92,6 +98,9 @@ class GitHubUpdateManager(private val context: Context) {
             val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json?t=${System.currentTimeMillis()}"
             val conn = (URL(rawUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
                 connectTimeout = 4000
                 readTimeout = 4000
                 useCaches = false

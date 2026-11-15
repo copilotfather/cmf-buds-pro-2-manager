@@ -194,7 +194,7 @@ fun HiFiStudioBudsApp(
     var showUpdatePopupDialog by remember { mutableStateOf(false) }
 
     // Auto-popup when update is detected
-    LaunchedEffect(updateState.hasUpdate) {
+    LaunchedEffect(updateState.hasUpdate, updateState.latestVersion) {
         if (updateState.hasUpdate) {
             showUpdatePopupDialog = true
         }
