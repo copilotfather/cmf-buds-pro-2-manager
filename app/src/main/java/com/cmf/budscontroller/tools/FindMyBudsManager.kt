@@ -10,6 +10,7 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,8 @@ data class DisconnectLocation(
 )
 
 class FindMyBudsManager(private val context: Context) {
+
+    private val TAG = "FindMyBudsManager"
 
     private val _isChirping = MutableStateFlow(false)
     val isChirping: StateFlow<Boolean> = _isChirping.asStateFlow()
@@ -50,7 +53,12 @@ class FindMyBudsManager(private val context: Context) {
     }
 
     /**
-     * Plays high-frequency acoustic pulsating tones EXCLUSIVELY through the connected earbuds.
+     * Plays acoustic pulsating tones with PROGRESSIVE VOLUME RAMP-UP.
+     * To protect user hearing in case earbuds are accidentally in ears:
+     * - Pulse 1: Gentle ~25% volume
+     * - Pulse 2: Moderate ~50% volume
+     * - Pulse 3: High ~75% volume
+     * - Pulse 4+: Full search volume ~90%
      * NEVER routes to the phone's built-in speaker.
      */
     fun startAcousticChirp(left: Boolean = true, right: Boolean = true) {
@@ -67,16 +75,18 @@ class FindMyBudsManager(private val context: Context) {
 
         chirpJob = scope.launch {
             val sampleRate = 44100
-            val durationSeconds = 0.45
+            val durationSeconds = 0.40
             val numSamples = (durationSeconds * sampleRate).toInt()
             val sample = ShortArray(numSamples)
 
-            // High-pitched acoustic chirp swept from 3.0 kHz to 5.2 kHz (piercing for locating earbuds)
+            // High-pitched acoustic chirp swept from 2.8 kHz to 4.5 kHz with smooth envelope
             for (i in 0 until numSamples) {
                 val t = i.toDouble() / sampleRate
-                val freq = 3000.0 + (2200.0 * (t / durationSeconds))
+                val freq = 2800.0 + (1700.0 * (t / durationSeconds))
                 val angle = 2.0 * Math.PI * freq * t
-                sample[i] = (sin(angle) * Short.MAX_VALUE * 0.95).toInt().toShort()
+                // Smooth Hann envelope at start/end to prevent harsh clicks
+                val envelope = 0.5 * (1.0 - kotlin.math.cos(2.0 * Math.PI * (i.toDouble() / numSamples)))
+                sample[i] = (sin(angle) * Short.MAX_VALUE * 0.75 * envelope).toInt().toShort()
             }
 
             // Stereo interleaved buffer with strict channel silencing
@@ -88,10 +98,17 @@ class FindMyBudsManager(private val context: Context) {
 
             var track: AudioTrack? = null
             try {
-                // Save original media volume and set Bluetooth stream to max for audibility
+                // Save original media volume
                 savedVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
                 val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVol, 0)
+
+                // Start at gentle volume (25%) so user isn't blasted
+                val rampVolumes = listOf(
+                    (maxVol * 0.25f).toInt().coerceAtLeast(1),
+                    (maxVol * 0.50f).toInt().coerceAtLeast(1),
+                    (maxVol * 0.75f).toInt().coerceAtLeast(1),
+                    (maxVol * 0.90f).toInt().coerceAtLeast(1)
+                )
 
                 track = AudioTrack.Builder()
                     .setAudioAttributes(
@@ -111,7 +128,6 @@ class FindMyBudsManager(private val context: Context) {
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
 
-                // Explicitly bind output to the Bluetooth device
                 if (btDevice != null) {
                     track.preferredDevice = btDevice
                 }
@@ -119,8 +135,20 @@ class FindMyBudsManager(private val context: Context) {
                 track.setVolume(1.0f)
                 track.play()
 
+                var chirpCount = 0
+
                 while (isActive) {
-                    // Safety check: if routing falls back to the phone's internal speaker, ABORT immediately!
+                    // Progressively ramp volume over first 4 chirps
+                    val targetVol = if (chirpCount < rampVolumes.size) {
+                        rampVolumes[chirpCount]
+                    } else {
+                        rampVolumes.last()
+                    }
+                    try {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
+                    } catch (_: Exception) {}
+
+                    // Safety check: if routing falls back to internal speaker, abort immediately!
                     val routed = track.routedDevice
                     if (routed != null && (
                         routed.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER ||
@@ -130,16 +158,18 @@ class FindMyBudsManager(private val context: Context) {
                     }
 
                     track.write(stereoSample, 0, stereoSample.size)
-                    delay(300)
+                    chirpCount++
+                    delay(350)
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w(TAG, "Chirp error", e)
             } finally {
                 try {
                     track?.stop()
                     track?.release()
                 } catch (_: Exception) {}
 
-                // Restore previous media volume
+                // Guaranteed restoration of previous media volume
                 savedVolume?.let { prevVol ->
                     try {
                         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, prevVol, 0)

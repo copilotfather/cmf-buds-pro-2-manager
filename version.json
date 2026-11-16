@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.1",
-  "versionCode": 2310,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.1/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.1:\n• Максимальная оптимизация Bluetooth соединения (Dual-Engine SPP + BLE GATT)\n• 8-уровневый быстрый перебор RFCOMM каналов с таймаутом 1.8с (без зависаний)\n• Фоновый Watchdog автоподключения при извлечении наушников из кейса\n• Автоматический реконнект при включении Bluetooth в шторке Android\n• Поддержка отправки команд через BLE GATT при блокировке SPP другими приложениями\n• Сохранение заряда кейса в памяти (заряд больше не сбрасывается в прочерк)"
+  "versionName": "2.3.2",
+  "versionCode": 2320,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.2/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.2:\n• Защита слуха (Hearing Safety): обязательные предупреждающие диалоги перед включением громкого поиска или очистки от воды\n• Плавное нарастание громкости (Volume Ramp-up): звук поиска начинается с тихого уровня (25%) и плавно нарастает за 4 секунды\n• Полная поддержка английского языка (Full English Localization) + мгновенный переключатель EN/RU в шапке и настройках\n• Информативный баннер подсказок при отсутствии подключения с кнопкой быстрого коннекта\n• Полноценный Dual-Engine SPP + BLE GATT и автореконнект Watchdog"
 }

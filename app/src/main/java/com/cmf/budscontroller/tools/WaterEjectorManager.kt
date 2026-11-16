@@ -52,12 +52,11 @@ class WaterEjectorManager(private val context: Context? = null) {
                 audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
             } catch (_: Exception) { null }
 
-            // Ensure media volume is at 100% for maximum kinetic acoustic displacement
+            // Safety: Start at moderate volume (35%) and smoothly ramp up
+            val maxVol = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 15
+            val startVol = (maxVol * 0.35f).toInt().coerceAtLeast(1)
             try {
-                audioManager?.let {
-                    val maxVol = it.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                    it.setStreamVolume(AudioManager.STREAM_MUSIC, maxVol, 0)
-                }
+                audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, startVol, 0)
             } catch (_: Exception) {}
 
             var track: AudioTrack? = null

@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppStrings.init(this)
 
         val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = btManager.adapter
@@ -206,6 +207,8 @@ fun HiFiStudioBudsApp(
     var showWhisperDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showUpdatePopupDialog by remember { mutableStateOf(false) }
+    var showFindMyBudsSafetyDialog by remember { mutableStateOf(false) }
+    var showWaterEjectSafetyDialog by remember { mutableStateOf(false) }
 
     // Auto-popup when update is detected
     LaunchedEffect(updateState.hasUpdate, updateState.latestVersion) {
@@ -281,9 +284,39 @@ fun HiFiStudioBudsApp(
                                 )
                                 Text(
                                     text = if (status.isConnected) {
-                                        if (status.connectionType.isNotBlank()) status.connectionType else "Подключено"
-                                    } else "Найти",
+                                        if (status.connectionType.isNotBlank()) status.connectionType else AppStrings.statusConnected
+                                    } else AppStrings.actionFind,
                                     fontSize = 12.sp,
+                                    color = Color(0xFFE5E5EA)
+                                )
+                            }
+                        }
+
+                        // Instant Language Switcher (EN / RU)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF1C1F28))
+                                .clickable {
+                                    val next = if (AppStrings.isRussian) "en" else "ru"
+                                    AppStrings.setLanguage(context, next)
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Language,
+                                    contentDescription = AppStrings.actionLanguage,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = if (AppStrings.isRussian) "RU" else "EN",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE5E5EA)
                                 )
                             }
@@ -293,11 +326,11 @@ fun HiFiStudioBudsApp(
                             viewModel.refreshStatus()
                             if (!status.isConnected) onConnectClicked()
                         }) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Обновить", tint = colorScheme.onSurfaceVariant)
+                            Icon(Icons.Outlined.Refresh, contentDescription = AppStrings.actionRefresh, tint = colorScheme.onSurfaceVariant)
                         }
 
                         IconButton(onClick = { showSettingsDialog = true }) {
-                            Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = colorScheme.onSurfaceVariant)
+                            Icon(Icons.Outlined.Settings, contentDescription = AppStrings.actionSettings, tint = colorScheme.onSurfaceVariant)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -407,6 +440,51 @@ fun HiFiStudioBudsApp(
         ) {
             when (currentTab) {
                 StudioTab.DEVICE -> {
+                    if (!status.isConnected) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF181C26))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Outlined.BluetoothSearching,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFF5722),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        AppStrings.bannerNotConnectedTitle,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = Color.White
+                                    )
+                                }
+                                Text(
+                                    AppStrings.bannerNotConnectedSubtitle,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF8E8E93),
+                                    lineHeight = 16.sp
+                                )
+                                Button(
+                                    onClick = onConnectClicked,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                                ) {
+                                    Text(AppStrings.btnConnectNow, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
                     // Studio Stage: All 3 devices + Battery
                     StudioProductStage(
                         battery = status.battery,
@@ -429,8 +507,8 @@ fun HiFiStudioBudsApp(
                     ) {
                         BentoCard(
                             modifier = Modifier.weight(1f),
-                            title = "УЛЬТРА БАС",
-                            subtitle = if (status.ultraBassLevel > 0) "Уровень ${status.ultraBassLevel}" else "Выключено",
+                            title = AppStrings.headerUltraBass,
+                            subtitle = if (status.ultraBassLevel > 0) "${AppStrings.ultraBassLevel} ${status.ultraBassLevel}" else AppStrings.ancOff,
                             icon = Icons.Outlined.Equalizer,
                             accentColor = colorScheme.primary,
                             onClick = {
@@ -459,7 +537,7 @@ fun HiFiStudioBudsApp(
 
                         BentoCard(
                             modifier = Modifier.weight(1f),
-                            title = "SMART DIAL",
+                            title = AppStrings.headerSmartDial,
                             subtitle = dialConfig.rotateAction.title,
                             icon = Icons.Outlined.Tune,
                             accentColor = Color(0xFFFF9F0A),
@@ -483,8 +561,8 @@ fun HiFiStudioBudsApp(
                     ) {
                         BentoCard(
                             modifier = Modifier.weight(1f),
-                            title = "ИГРОВОЙ РЕЖИМ",
-                            subtitle = if (status.isGameModeEnabled) "Включен (Низкий пинг)" else "Выключен",
+                            title = AppStrings.headerGameMode,
+                            subtitle = if (status.isGameModeEnabled) AppStrings.gameModeActive else AppStrings.gameModeInactive,
                             icon = Icons.Outlined.SportsEsports,
                             accentColor = if (status.isGameModeEnabled) Color(0xFF30D158) else colorScheme.onSurfaceVariant,
                             onClick = { viewModel.setGameMode(!status.isGameModeEnabled) }
@@ -492,13 +570,13 @@ fun HiFiStudioBudsApp(
 
                         BentoCard(
                             modifier = Modifier.weight(1f),
-                            title = "ПОИСК НАУШНИКОВ",
-                            subtitle = if (isChirping) "Звучит сигнал..." else "Подать сигнал",
+                            title = AppStrings.headerSonar,
+                            subtitle = if (isChirping) AppStrings.sonarBeeping else AppStrings.sonarPlaySound,
                             icon = Icons.Outlined.LocationOn,
                             accentColor = if (isChirping) Color(0xFFFF453A) else colorScheme.primary,
                             onClick = {
                                 if (isChirping) viewModel.stopChirp()
-                                else viewModel.startChirp(left = true, right = true)
+                                else showFindMyBudsSafetyDialog = true
                             }
                         )
                     }
@@ -623,25 +701,25 @@ fun HiFiStudioBudsApp(
                     // Water Eject
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ОЧИСТКА ОТ ВОДЫ И ПЫЛИ (SONIC WATER EJECT)",
-                        subtitle = if (waterState.isRunning) "${waterState.currentPhase} • [${waterState.progressSeconds}/${waterState.totalSeconds}с]" else "3-этапный акустический срыв натяжения (130-170 Гц + AM-импульсы + 9.8 кГц)",
+                        title = AppStrings.waterEjectTitle,
+                        subtitle = if (waterState.isRunning) "${waterState.currentPhase} • [${waterState.progressSeconds}/${waterState.totalSeconds}s]" else AppStrings.waterEjectSubtitle,
                         icon = Icons.Outlined.WaterDrop,
                         accentColor = Color(0xFF0A84FF),
                         onClick = {
                             if (waterState.isRunning) viewModel.stopWaterEject()
-                            else viewModel.startWaterEject()
+                            else showWaterEjectSafetyDialog = true
                         }
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
                         FilledTonalButton(
                             onClick = {
                                 if (waterState.isRunning) viewModel.stopWaterEject()
-                                else viewModel.startWaterEject()
+                                else showWaterEjectSafetyDialog = true
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(if (waterState.isRunning) "Остановить очистку" else "Запустить резонансную очистку (18 сек)", fontSize = 12.sp)
+                            Text(if (waterState.isRunning) (if (AppStrings.isRussian) "Остановить очистку" else "Stop Ejection") else (if (AppStrings.isRussian) "Запустить резонансную очистку (18 сек)" else "Start Resonance Ejection (18s)"), fontSize = 12.sp)
                         }
                     }
 
@@ -1219,7 +1297,7 @@ fun HiFiStudioBudsApp(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showDevicePicker = false }) { Text("Закрыть") } },
+            confirmButton = { TextButton(onClick = { showDevicePicker = false }) { Text(AppStrings.btnClose) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1232,7 +1310,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.Settings, contentDescription = null, tint = colorScheme.primary) },
             title = {
                 Text(
-                    "Настройки и О программе",
+                    if (AppStrings.isRussian) "Настройки и О программе" else "Settings & About",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -1244,6 +1322,37 @@ fun HiFiStudioBudsApp(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // Language Switcher (Instant EN / RU)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(AppStrings.actionLanguage, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(if (AppStrings.isRussian) "Русский" else "English", fontSize = 12.sp, color = colorScheme.primary)
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = !AppStrings.isRussian,
+                                    onClick = { AppStrings.setLanguage(context, "en") },
+                                    label = { Text("EN") }
+                                )
+                                FilterChip(
+                                    selected = AppStrings.isRussian,
+                                    onClick = { AppStrings.setLanguage(context, "ru") },
+                                    label = { Text("RU") }
+                                )
+                            }
+                        }
+                    }
                     // App Information & Version
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -1490,6 +1599,88 @@ fun HiFiStudioBudsApp(
                     TextButton(onClick = { showUpdatePopupDialog = false }) {
                         Text("Позже")
                     }
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    if (showFindMyBudsSafetyDialog) {
+        AlertDialog(
+            onDismissRequest = { showFindMyBudsSafetyDialog = false },
+            icon = { Icon(Icons.Outlined.Warning, contentDescription = null, tint = Color(0xFFFF453A), modifier = Modifier.size(36.dp)) },
+            title = {
+                Text(
+                    AppStrings.safetyWarningTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFF453A)
+                )
+            },
+            text = {
+                Text(
+                    AppStrings.findBudsSafetyWarning,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showFindMyBudsSafetyDialog = false
+                        viewModel.startChirp(left = true, right = true)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF453A)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(AppStrings.btnStartSearch, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFindMyBudsSafetyDialog = false }) {
+                    Text(AppStrings.btnCancel)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    if (showWaterEjectSafetyDialog) {
+        AlertDialog(
+            onDismissRequest = { showWaterEjectSafetyDialog = false },
+            icon = { Icon(Icons.Outlined.WaterDrop, contentDescription = null, tint = Color(0xFF0A84FF), modifier = Modifier.size(36.dp)) },
+            title = {
+                Text(
+                    AppStrings.safetyWarningTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0A84FF)
+                )
+            },
+            text = {
+                Text(
+                    AppStrings.waterEjectSafetyWarning,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWaterEjectSafetyDialog = false
+                        viewModel.startWaterEject()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A84FF)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(AppStrings.btnStartWaterEject, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWaterEjectSafetyDialog = false }) {
+                    Text(AppStrings.btnCancel)
                 }
             },
             shape = RoundedCornerShape(20.dp)
@@ -2281,7 +2472,7 @@ fun StudioProductStage(
             ) {
                 MiniBatteryTag(name = "L", percent = battery.leftPercent, isCharging = battery.isLeftCharging)
                 Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
-                MiniBatteryTag(name = "КЕЙС", percent = battery.casePercent, isCharging = battery.isCaseCharging)
+                MiniBatteryTag(name = AppStrings.batteryCase, percent = battery.casePercent, isCharging = battery.isCaseCharging)
                 Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
                 MiniBatteryTag(name = "R", percent = battery.rightPercent, isCharging = battery.isRightCharging)
             }
@@ -2292,8 +2483,8 @@ fun StudioProductStage(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Наушники: ~$earbudTimeFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
-                    Text("С кейсом: ~$totalWithCaseFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
+                    Text("${AppStrings.earbudBatteryPrefix} ~$earbudTimeFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
+                    Text("${AppStrings.caseBatteryPrefix} ~$totalWithCaseFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -2373,7 +2564,7 @@ fun StudioNoiseControlBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "ШУМОПОДАВЛЕНИЕ",
+                    text = AppStrings.headerNoiseControl,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.3.sp,
@@ -2381,9 +2572,9 @@ fun StudioNoiseControlBar(
                 )
                 Text(
                     text = when (currentMode) {
-                        AncMode.OFF -> "Пассивное"
-                        AncMode.TRANSPARENCY -> "Прозрачность"
-                        AncMode.NOISE_CANCELLATION -> "Активно (${currentLevel.title})"
+                        AncMode.OFF -> AppStrings.ancOff
+                        AncMode.TRANSPARENCY -> AppStrings.ancTransparency
+                        AncMode.NOISE_CANCELLATION -> "${AppStrings.ancCancellation} (${currentLevel.title})"
                     },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -2450,9 +2641,9 @@ fun StudioNoiseControlBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val modes = listOf(
-                        Triple(AncMode.OFF, "Выкл", Icons.AutoMirrored.Outlined.VolumeOff),
-                        Triple(AncMode.TRANSPARENCY, "Прозрачность", Icons.Outlined.Hearing),
-                        Triple(AncMode.NOISE_CANCELLATION, "Шумодав", Icons.Outlined.Shield)
+                        Triple(AncMode.OFF, AppStrings.ancOff, Icons.AutoMirrored.Outlined.VolumeOff),
+                        Triple(AncMode.TRANSPARENCY, AppStrings.ancTransparency, Icons.Outlined.Hearing),
+                        Triple(AncMode.NOISE_CANCELLATION, AppStrings.ancCancellation, Icons.Outlined.Shield)
                     )
 
                     modes.forEach { (mode, title, icon) ->
