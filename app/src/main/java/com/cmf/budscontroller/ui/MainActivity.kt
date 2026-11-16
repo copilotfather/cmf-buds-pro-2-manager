@@ -30,6 +30,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.BluetoothSearching
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -271,7 +274,7 @@ fun HiFiStudioBudsApp(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.Outlined.BluetoothSearching,
+                                    imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.AutoMirrored.Outlined.BluetoothSearching,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
                                     tint = if (status.isConnected) Color(0xFFFF5722) else Color(0xFF636366)
@@ -706,7 +709,7 @@ fun HiFiStudioBudsApp(
                                         onClick = { viewModel.openUpdateInBrowser() },
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text("Браузер", fontSize = 11.sp)
                                     }
@@ -769,7 +772,7 @@ fun HiFiStudioBudsApp(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Outlined.HelpOutline, contentDescription = null, tint = Color(0xFF64D2FF), modifier = Modifier.size(20.dp))
+                                Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null, tint = Color(0xFF64D2FF), modifier = Modifier.size(20.dp))
                                 Text("ПОШАГОВАЯ ИНСТРУКЦИЯ ПОДКЛЮЧЕНИЯ", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64D2FF))
                             }
                             Spacer(modifier = Modifier.height(14.dp))
@@ -906,7 +909,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showCodecDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -953,7 +956,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showDialDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -999,7 +1002,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showSpatialDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1030,7 +1033,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showAudioTweaksDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1071,7 +1074,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showSleepTimerDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1111,7 +1114,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showWhisperDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1157,7 +1160,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showRelayDialog = false }) { Text("Готово") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1213,7 +1216,7 @@ fun HiFiStudioBudsApp(
                 }
             },
             confirmButton = { TextButton(onClick = { showDevicePicker = false }) { Text("Закрыть") } },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1260,7 +1263,7 @@ fun HiFiStudioBudsApp(
                                         fontSize = 15.sp
                                     )
                                     Text(
-                                        "Версия: v${viewModel.updateManager.getCurrentVersionName()} (Build 222)",
+                                        "Версия: v${viewModel.updateManager.getCurrentVersionName()}",
                                         fontSize = 12.sp,
                                         color = colorScheme.primary
                                     )
@@ -1268,7 +1271,7 @@ fun HiFiStudioBudsApp(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Премиальный независимый аудио-центр для CMF Buds Pro 2 от Nothing. Прямое аппаратное SPP/BES управление, Sony LDAC 990 кбит/с и дизайн Liquid Gray Glass.",
+                                text = "Автономный центр управления для CMF Buds Pro 2 от Nothing. Прямое аппаратное BES/SPP управление, Sony LDAC Hi-Res и скандинавский минимализм.",
                                 fontSize = 11.5.sp,
                                 color = colorScheme.onSurfaceVariant
                             )
@@ -1296,7 +1299,7 @@ fun HiFiStudioBudsApp(
                                 Text("Автор проекта: Dmitry (copilotfather)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                 Text("github.com/copilotfather", fontSize = 11.sp, color = colorScheme.primary)
                             }
-                            Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.primary)
+                            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.primary)
                         }
                     }
 
@@ -1366,7 +1369,7 @@ fun HiFiStudioBudsApp(
                     Text("Закрыть")
                 }
             },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 
@@ -1456,7 +1459,7 @@ fun HiFiStudioBudsApp(
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
+                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Браузер", fontSize = 11.sp)
                     }
@@ -1485,7 +1488,7 @@ fun HiFiStudioBudsApp(
                     }
                 }
             },
-            shape = RoundedCornerShape(26.dp)
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
