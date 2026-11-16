@@ -93,25 +93,32 @@ class MainActivity : ComponentActivity() {
         bluetoothAdapter = btManager.adapter
 
         setContent {
-            // Minimalist Dark Palette
+            // System-style dark palette inspired by iOS grouped surfaces.
             val colorScheme = darkColorScheme(
-                primary = Color(0xFFFF5722),
+                primary = Color(0xFF0A84FF),
                 onPrimary = Color(0xFFFFFFFF),
-                primaryContainer = Color(0xFF1E222B),
-                onPrimaryContainer = Color(0xFFF2F2F7),
-                secondary = Color(0xFFE5E5EA),
-                onSecondary = Color(0xFF141416),
-                background = Color(0xFF0D0F14),          // Clean Minimalist Dark Canvas
-                onBackground = Color(0xFFF0F0F5),
-                surface = Color(0xFF161A22),             // Clean Solid Dark Surface
-                onSurface = Color(0xFFF0F0F5),
-                surfaceVariant = Color(0xFF161A22),
-                onSurfaceVariant = Color(0xFF8E8E93),    // Refined Subtitle
-                outline = Color(0x15FFFFFF),             // Subtle Border
-                outlineVariant = Color(0x0DFFFFFF)
+                primaryContainer = Color(0xFF123052),
+                onPrimaryContainer = Color(0xFFD8EBFF),
+                secondary = Color(0xFF98989D),
+                onSecondary = Color(0xFF000000),
+                background = Color(0xFF000000),
+                onBackground = Color(0xFFF5F5F7),
+                surface = Color(0xFF1C1C1E),
+                onSurface = Color(0xFFF5F5F7),
+                surfaceVariant = Color(0xFF2C2C2E),
+                onSurfaceVariant = Color(0xFF98989D),
+                outline = Color(0xFF38383A),
+                outlineVariant = Color(0xFF2C2C2E)
             )
 
-            MaterialTheme(colorScheme = colorScheme) {
+            MaterialTheme(
+                colorScheme = colorScheme,
+                shapes = Shapes(
+                    small = RoundedCornerShape(8.dp),
+                    medium = RoundedCornerShape(14.dp),
+                    large = RoundedCornerShape(20.dp)
+                )
+            ) {
                 HiFiStudioBudsApp(
                     viewModel = viewModel,
                     bluetoothAdapter = bluetoothAdapter,
@@ -227,7 +234,7 @@ fun HiFiStudioBudsApp(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0F14))
+            .background(colorScheme.background)
     ) {
         Scaffold(
             topBar = {
@@ -240,10 +247,10 @@ fun HiFiStudioBudsApp(
                             Column {
                                 Text(
                                     text = "CMF Buds Pro 2",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 20.sp,
                                     letterSpacing = (-0.3).sp,
-                                    color = Color.White
+                                    color = colorScheme.onSurface
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -253,12 +260,12 @@ fun HiFiStudioBudsApp(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .clip(CircleShape)
-                                            .background(if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366))
+                                            .background(if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant)
                                     )
                                     Text(
                                         text = if (status.isConnected) AppStrings.statusConnected else AppStrings.statusReady,
                                         fontSize = 12.sp,
-                                        color = if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366)
+                                        color = if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -268,7 +275,7 @@ fun HiFiStudioBudsApp(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF1C1F28))
+                                .background(colorScheme.surfaceVariant)
                                 .clickable {
                                     onConnectClicked()
                                     showDevicePicker = true
@@ -283,14 +290,14 @@ fun HiFiStudioBudsApp(
                                     imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.AutoMirrored.Outlined.BluetoothSearching,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
-                                    tint = if (status.isConnected) Color(0xFFFF5722) else Color(0xFF636366)
+                                    tint = if (status.isConnected) colorScheme.primary else colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     text = if (status.isConnected) {
                                         if (status.connectionType.isNotBlank()) status.connectionType else AppStrings.statusConnected
                                     } else AppStrings.actionFind,
                                     fontSize = 12.sp,
-                                    color = Color(0xFFE5E5EA)
+                                    color = colorScheme.onSurface
                                 )
                             }
                         }
@@ -307,88 +314,40 @@ fun HiFiStudioBudsApp(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
+                        containerColor = colorScheme.background
                     )
                 )
             },
         bottomBar = {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(22.dp),
-                color = Color(0xFF161A22),
-                tonalElevation = 0.dp
+                modifier = Modifier.fillMaxWidth(),
+                color = colorScheme.surface,
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
             ) {
-                val tabs = StudioTab.values()
-                val selectedIndex = tabs.indexOf(currentTab)
-
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 4.dp)
-                ) {
-                    val totalWidth = maxWidth
-                    val tabWidth = totalWidth / tabs.size.toFloat()
-
-                    val targetOffset = tabWidth * selectedIndex
-                    val animatedOffset by animateDpAsState(
-                        targetValue = targetOffset,
-                        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
-                        label = "bottom_bar_offset"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .offset(x = animatedOffset)
-                            .width(tabWidth)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFF252830))
-                    )
-
+                Column {
+                    HorizontalDivider(color = colorScheme.outlineVariant, thickness = 0.5.dp)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 6.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        tabs.forEach { tab ->
+                        StudioTab.values().forEach { tab ->
                             val isSelected = currentTab == tab
-                            val iconColor by animateColorAsState(
-                                targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF636366),
-                                animationSpec = tween(200),
-                                label = "tab_icon_color"
-                            )
-                            val textColor by animateColorAsState(
-                                targetValue = if (isSelected) Color.White else Color(0xFF636366),
-                                animationSpec = tween(200),
-                                label = "tab_text_color"
-                            )
-
+                            val tint = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
                             Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { currentTab = tab }
-                                    .padding(vertical = 4.dp),
+                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                                    .clickable { currentTab = tab }
+                                    .padding(vertical = 5.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                verticalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                Icon(
-                                    imageVector = tab.icon,
-                                    contentDescription = tab.label,
-                                    modifier = Modifier.size(18.dp),
-                                    tint = iconColor
-                                )
+                                Icon(tab.icon, contentDescription = tab.label, modifier = Modifier.size(21.dp), tint = tint)
                                 Text(
                                     text = tab.label,
-                                    fontSize = 9.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = textColor,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = tint,
                                     maxLines = 1,
                                     softWrap = false
                                 )
@@ -405,16 +364,16 @@ fun HiFiStudioBudsApp(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             when (currentTab) {
                 StudioTab.DEVICE -> {
                     if (!status.isConnected) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF181C26))
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -427,27 +386,27 @@ fun HiFiStudioBudsApp(
                                     Icon(
                                         Icons.AutoMirrored.Outlined.BluetoothSearching,
                                         contentDescription = null,
-                                        tint = Color(0xFFFF5722),
+                                        tint = colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         AppStrings.bannerNotConnectedTitle,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.SemiBold,
                                         fontSize = 15.sp,
-                                        color = Color.White
+                                        color = colorScheme.onSurface
                                     )
                                 }
                                 Text(
                                     AppStrings.bannerNotConnectedSubtitle,
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF8E8E93),
-                                    lineHeight = 16.sp
+                                    fontSize = 14.sp,
+                                    color = colorScheme.onSurfaceVariant,
+                                    lineHeight = 20.sp
                                 )
                                 Button(
                                     onClick = onConnectClicked,
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
                                 ) {
                                     Text(AppStrings.btnConnectNow, fontWeight = FontWeight.Bold)
                                 }
@@ -723,7 +682,7 @@ fun HiFiStudioBudsApp(
                         else if (updateState.checkError != null) uiText("Не удалось проверить GitHub. Нажмите, чтобы повторить", "Couldn't check GitHub. Tap to retry")
                         else uiText("У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})", "You're up to date (${viewModel.updateManager.getCurrentVersionName()})"),
                         icon = Icons.Outlined.CloudDownload,
-                        accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else if (updateState.checkError != null) Color(0xFFFF453A) else Color(0xFF30D158),
+                        accentColor = if (updateState.hasUpdate) Color(0xFF0A84FF) else if (updateState.checkError != null) Color(0xFFFF453A) else Color(0xFF30D158),
                         onClick = {
                             if (updateState.hasUpdate) {
                                 if (!updateState.isDownloading) viewModel.startUpdateDownload()
@@ -738,7 +697,7 @@ fun HiFiStudioBudsApp(
                                 LinearProgressIndicator(
                                     progress = { updateState.downloadProgress / 100f },
                                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                                    color = Color(0xFFFF5722),
+                                    color = Color(0xFF0A84FF),
                                     trackColor = colorScheme.surfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -752,7 +711,7 @@ fun HiFiStudioBudsApp(
                                         onClick = { viewModel.startUpdateDownload() },
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A84FF))
                                     ) {
                                         Text(uiText("Скачать v${updateState.latestVersion}", "Download v${updateState.latestVersion}"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
@@ -813,10 +772,8 @@ fun HiFiStudioBudsApp(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-                        border = CardDefaults.outlinedCardBorder().copy(
-                            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
-                        )
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+                        border = null
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -1423,7 +1380,7 @@ fun HiFiStudioBudsApp(
                 Icon(
                     Icons.Outlined.CloudDownload,
                     contentDescription = null,
-                    tint = Color(0xFFFF5722),
+                    tint = Color(0xFF0A84FF),
                     modifier = Modifier.size(32.dp)
                 )
             },
@@ -1451,7 +1408,7 @@ fun HiFiStudioBudsApp(
                                 uiText("Что нового:", "What's new:"),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
-                                color = Color(0xFFFF5722)
+                                color = Color(0xFF0A84FF)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -1470,7 +1427,7 @@ fun HiFiStudioBudsApp(
                                 .fillMaxWidth()
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
-                            color = Color(0xFFFF5722),
+                            color = Color(0xFF0A84FF),
                             trackColor = colorScheme.surfaceVariant
                         )
                         Row(
@@ -1486,7 +1443,7 @@ fun HiFiStudioBudsApp(
                                 text = "${updateState.downloadProgress}%",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF5722)
+                                color = Color(0xFF0A84FF)
                             )
                         }
                     }
@@ -1511,7 +1468,7 @@ fun HiFiStudioBudsApp(
                             viewModel.startUpdateDownload()
                         },
                         enabled = !updateState.isDownloading,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A84FF)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
@@ -1646,8 +1603,8 @@ fun StudioMasterEqualizerCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF))))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        border = null
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -1717,7 +1674,7 @@ fun StudioMasterEqualizerCard(
                     .fillMaxWidth()
                     .height(90.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF0D0F14))
+                    .background(Color(0xFF000000))
                     .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(16.dp))
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
@@ -1778,13 +1735,13 @@ fun StudioMasterEqualizerCard(
                         // 2. Clean precise curve
                         drawPath(
                             path = curvePath,
-                            color = Color(0xFFFF5722),
+                            color = Color(0xFF0A84FF),
                             style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
                         )
 
                         // 3. Clean Band Nodes
                         points.forEach { pt ->
-                            drawCircle(color = Color(0xFFFF5722), radius = 4.dp.toPx(), center = pt)
+                            drawCircle(color = Color(0xFF0A84FF), radius = 4.dp.toPx(), center = pt)
                             drawCircle(color = Color.White, radius = 2.dp.toPx(), center = pt)
                         }
                     }
@@ -1817,7 +1774,7 @@ fun StudioMasterEqualizerCard(
                                 .width(34.dp)
                                 .height(120.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF0D0F14))
+                                .background(Color(0xFF000000))
                                 .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -1887,7 +1844,7 @@ fun StudioMasterEqualizerCard(
                     text = "+ ${uiText("Сохранить пресет", "Save preset")}",
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFF5722),
+                    color = Color(0xFF0A84FF),
                     modifier = Modifier
                         .clickable {
                             presetNameInput = ""
@@ -1907,7 +1864,7 @@ fun StudioMasterEqualizerCard(
             ) {
                 eqState.presets.forEach { preset ->
                     val isSel = eqState.activePresetName == preset.name
-                    val chipBg by animateColorAsState(if (isSel) colorScheme.primary else Color(0xFF0D0F14), tween(180))
+                    val chipBg by animateColorAsState(if (isSel) colorScheme.primary else Color(0xFF000000), tween(180))
                     val chipFg = if (isSel) Color.White else Color(0xFF8E8E93)
 
                     Box(
@@ -2084,10 +2041,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
-        )
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        border = null
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -2133,7 +2088,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                     }
                     if (midRatio > 0f) {
                         if (lowRatio > 0f) Spacer(modifier = Modifier.width(2.dp))
-                        Box(modifier = Modifier.weight(midRatio).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFFFF9100), Color(0xFFFFAB40)))))
+                        Box(modifier = Modifier.weight(midRatio).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color(0xFF5AC8FA), Color(0xFFFFAB40)))))
                     }
                     if (highRatio > 0f) {
                         if (lowRatio > 0f || midRatio > 0f) Spacer(modifier = Modifier.width(2.dp))
@@ -2162,7 +2117,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                     title = AppStrings.volMid,
                     range = "31-70%",
                     minutes = insights.volumeStats.midVolumeMinutes,
-                    color = Color(0xFFFF9100),
+                    color = Color(0xFF5AC8FA),
                     modifier = Modifier.weight(1f)
                 )
                 VolumeStatPill(
@@ -2180,10 +2135,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
-        )
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        border = null
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(
@@ -2223,7 +2176,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         text = if (hasMins) "${day.minutes}${uiText("м", "m")}" else "-",
                             fontSize = 10.sp,
                             fontWeight = if (isPeak) FontWeight.Bold else FontWeight.SemiBold,
-                            color = if (isPeak) Color(0xFFFF5722) else colorScheme.onSurfaceVariant
+                            color = if (isPeak) Color(0xFF0A84FF) else colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Box(
@@ -2232,7 +2185,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                                 .fillMaxHeight(fraction)
                                 .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                 .background(
-                                    if (isPeak) Brush.verticalGradient(listOf(Color(0xFFFF5722), Color(0xFFFF9100)))
+                                    if (isPeak) Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF5AC8FA)))
                                     else if (hasMins) Brush.verticalGradient(listOf(Color(0xFF00E5FF), Color(0xFF0091EA)))
                                     else Brush.verticalGradient(listOf(Color(0xFF262C3D), Color(0xFF181C26)))
                                 )
@@ -2308,7 +2261,7 @@ fun VolumeStatPill(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF0D0F14))
+            .background(Color(0xFF000000))
             .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp))
             .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
@@ -2340,7 +2293,7 @@ fun StudioProductStage(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF161A22))
+            .background(Color(0xFF1C1C1E))
             .padding(vertical = 14.dp, horizontal = 14.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -2394,7 +2347,7 @@ fun StudioProductStage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF0D0F14))
+                    .background(Color(0xFF000000))
                     .padding(vertical = 8.dp, horizontal = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -2481,10 +2434,8 @@ fun StudioNoiseControlBar(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
-        )
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        border = null
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -2524,7 +2475,7 @@ fun StudioNoiseControlBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF0D0F14))
+                    .background(Color(0xFF000000))
                     .padding(3.dp)
             ) {
                 val totalWidth = maxWidth
@@ -2583,7 +2534,7 @@ fun StudioNoiseControlBar(
                             label = "noise_text_color"
                         )
                         val iconColor by animateColorAsState(
-                            targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF6C7385),
+                            targetValue = if (isSelected) Color(0xFF0A84FF) else Color(0xFF6C7385),
                             animationSpec = tween(220),
                             label = "noise_icon_color"
                         )
@@ -2727,13 +2678,14 @@ fun BentoCard(
                     Modifier.clickable { onClick() }
                 } else Modifier
             ),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22))
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2742,15 +2694,15 @@ fun BentoCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.12f)),
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(19.dp),
                         tint = accentColor
                     )
                 }
@@ -2760,28 +2712,28 @@ fun BentoCard(
                         imageVector = Icons.Outlined.ChevronRight,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF3A3A3C)
+                        tint = colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = title,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                color = Color(0xFF8E8E93)
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.1.sp,
+                color = colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = subtitle,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFFE5E5EA),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 lineHeight = 18.sp
             )

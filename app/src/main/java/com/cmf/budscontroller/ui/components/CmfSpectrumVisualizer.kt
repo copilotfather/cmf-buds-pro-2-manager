@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Equalizer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,7 +52,7 @@ fun CmfSpectrumVisualizer(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(26.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.material3.CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(
                 listOf(

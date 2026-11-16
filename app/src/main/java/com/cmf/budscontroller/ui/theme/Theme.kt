@@ -31,9 +31,9 @@ data class CmfAdaptiveDimens(
 val LocalCmfDimens = staticCompositionLocalOf { CmfAdaptiveDimens() }
 
 val VibeShapes = Shapes(
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp)
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(20.dp)
 )
 
 @Composable
@@ -79,8 +79,8 @@ fun CMFTheme(
     }
 
     val colorScheme = darkColorScheme(
-        primary = vibeTheme.accent,
-        secondary = vibeTheme.accentMuted,
+        primary = Color(0xFF0A84FF),
+        secondary = Color(0xFF98989D),
         background = CmfBlack,
         surface = CmfSurface,
         surfaceVariant = CmfSurfaceSubtle,

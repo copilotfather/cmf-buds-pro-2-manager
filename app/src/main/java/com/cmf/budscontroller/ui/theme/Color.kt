@@ -3,7 +3,7 @@ package com.cmf.budscontroller.ui.theme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// Ultra-Vivid Brand & Accent Palettes (Signature CMF Electric Orange, Cyan, Neon Mint, Pure Silver)
+// Optional device accent palettes. The app shell uses the restrained system blue by default.
 enum class VibeColorTheme(
     val title: String,
     val accent: Color,
@@ -16,44 +16,44 @@ enum class VibeColorTheme(
     CMF_MONO("Pure Platinum", Color(0xFFFFFFFF), Color(0xFFAAAAAA), Color(0x30FFFFFF))
 }
 
-// Backgrounds & Glass Surfaces - Deep OLED Pitch Black with crisp high-contrast cards
-val CmfBlack = Color(0xFF08090C)          // Deep OLED Charcoal-Black
-val CmfSurface = Color(0xFF141720)        // Clear elevated surface with high visibility
-val CmfSurfaceSubtle = Color(0xFF1E2330)  // Rich contrast fill for chips/bars
-val CmfSurfaceHigh = Color(0xFF252B3B)    // Tertiary distinct highlight container
-val CmfBorder = Color(0x40FFFFFF)         // Bright specular crisp border (25% white)
-val CmfBorderSubtle = Color(0x24FFFFFF)   // Clear visible divider (14% white)
+// iOS-style grouped dark surfaces.
+val CmfBlack = Color(0xFF000000)
+val CmfSurface = Color(0xFF1C1C1E)
+val CmfSurfaceSubtle = Color(0xFF2C2C2E)
+val CmfSurfaceHigh = Color(0xFF3A3A3C)
+val CmfBorder = Color(0xFF38383A)
+val CmfBorderSubtle = Color(0xFF2C2C2E)
 
 // High-Contrast Crisp Typography
-val CmfTextPrimary = Color(0xFFFFFFFF)    // Crisp White
-val CmfTextSecondary = Color(0xFFB0B7C6)  // Bright high-readability Secondary
-val CmfTextDisabled = Color(0xFF6B7280)   // Readable Quaternary
+val CmfTextPrimary = Color(0xFFF5F5F7)
+val CmfTextSecondary = Color(0xFF98989D)
+val CmfTextDisabled = Color(0xFF636366)
 
 // Status & Accents (Vivid & punchy)
-val CmfGreen = Color(0xFF00E676)          // Bright Punchy Neon Green
-val CmfOrange = Color(0xFFFF5722)         // Iconic CMF Bright Orange
-val CmfOrangeSubtle = Color(0x35FF5722)
-val CmfRed = Color(0xFFFF334B)            // Vivid Carmine Red
+val CmfGreen = Color(0xFF30D158)
+val CmfOrange = Color(0xFF0A84FF)
+val CmfOrangeSubtle = Color(0x330A84FF)
+val CmfRed = Color(0xFFFF453A)
 
-// Frosted Glass Card Brush with vivid contrast
+// Neutral grouped surfaces; avoid the previous high-contrast glass effect.
 val CmfGlassCardBrush = Brush.verticalGradient(
     listOf(
-        Color(0xFF191D28), // Crisp high-contrast top
-        Color(0xFF10131A)  // Deep bottom
+        Color(0xFF1C1C1E),
+        Color(0xFF1C1C1E)
     )
 )
 
 val CmfGlassBorderBrush = Brush.verticalGradient(
     listOf(
-        Color(0x75FFFFFF), // Ultra-bright top edge specular
-        Color(0x30FFFFFF),
-        Color(0x18FFFFFF)
+        Color(0xFF38383A),
+        Color(0xFF38383A),
+        Color(0xFF38383A)
     )
 )
 
 val CmfGlassPillBrush = Brush.verticalGradient(
     listOf(
-        Color(0xFF282E3E),
-        Color(0xFF1C202C)
+        Color(0xFF3A3A3C),
+        Color(0xFF2C2C2E)
     )
 )

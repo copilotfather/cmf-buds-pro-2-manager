@@ -32,6 +32,7 @@ fun HearingHealthCard(
     onResetSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val dosePercent = hearingStatus.dailySafeDosePercent
     val isOverdose = dosePercent > 100
     val doseColor = when {
@@ -44,7 +45,7 @@ fun HearingHealthCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         border = CardDefaults.outlinedCardBorder().copy(
             brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
