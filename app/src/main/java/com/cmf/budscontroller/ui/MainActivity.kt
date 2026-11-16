@@ -545,9 +545,10 @@ fun HiFiStudioBudsApp(
                                     Box(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(5.dp)
-                                            .clip(RoundedCornerShape(3.dp))
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
                                             .background(if (active) colorScheme.primary else colorScheme.outlineVariant)
+                                            .clickable { viewModel.setUltraBass(if (status.ultraBassLevel == lvl) 0 else lvl) }
                                     )
                                 }
                             }
@@ -743,10 +744,7 @@ fun HiFiStudioBudsApp(
                         subtitle = if (waterState.isRunning) "${waterState.currentPhase} • [${waterState.progressSeconds}/${waterState.totalSeconds}s]" else AppStrings.waterEjectSubtitle,
                         icon = Icons.Outlined.WaterDrop,
                         accentColor = Color(0xFF0A84FF),
-                        onClick = {
-                            if (waterState.isRunning) viewModel.stopWaterEject()
-                            else showWaterEjectSafetyDialog = true
-                        }
+                        onClick = null
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
                         FilledTonalButton(

@@ -922,16 +922,22 @@ class CmfBluetoothManager private constructor() {
 
     suspend fun setUltraBass(level: Int) {
         val clamped = level.coerceIn(0, 5)
-        if (sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))) {
-            _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = clamped)
-            _commandStatus.value = if (AppStrings.isRussian) "Бас: команда отправлена; применение не подтверждено" else "Bass: sent; application not confirmed"
+        _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = clamped)
+        val sent = sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Бас: уровень $clamped" else "Bass: level $clamped"
+        } else {
+            if (AppStrings.isRussian) "Бас: уровень $clamped (локально)" else "Bass: level $clamped (local)"
         }
     }
 
     suspend fun setGameMode(enabled: Boolean) {
-        if (sendPacket(CmfProtocol.createSetGameModePacket(enabled))) {
-            _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
-            _commandStatus.value = if (AppStrings.isRussian) "Игровой режим: команда отправлена; применение не подтверждено" else "Game mode: sent; application not confirmed"
+        _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
+        val sent = sendPacket(CmfProtocol.createSetGameModePacket(enabled))
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Игровой режим: ${if (enabled) "включен" else "выключен"}" else "Game mode: ${if (enabled) "enabled" else "disabled"}"
+        } else {
+            if (AppStrings.isRussian) "Игровой режим: ${if (enabled) "включен" else "выключен"} (локально)" else "Game mode: ${if (enabled) "enabled" else "disabled"} (local)"
         }
     }
 
