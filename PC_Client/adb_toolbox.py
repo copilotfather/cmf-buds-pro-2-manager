@@ -5,6 +5,7 @@ Includes battery, volume, reboot, screenshot and custom shell commands.
 """
 
 import os
+import queue
 import subprocess
 import threading
 import tkinter as tk
@@ -33,9 +34,26 @@ class AdbToolbox:
 
         self.status_var = tk.StringVar(value="Disconnected")
         self.battery_var = tk.StringVar(value="—")
+        self.ui_queue = queue.Queue()
         self.build_ui()
         self.refresh()
         self.auto_refresh()
+        self.root.after(50, self._process_ui_events)
+
+    def _process_ui_events(self):
+        while True:
+            try:
+                callback, args = self.ui_queue.get_nowait()
+            except queue.Empty:
+                break
+            callback(*args)
+        try:
+            self.root.after(50, self._process_ui_events)
+        except tk.TclError:
+            pass
+
+    def _dispatch_to_ui(self, callback, *args):
+        self.ui_queue.put((callback, args))
 
     def build_ui(self):
         pad = 10
@@ -49,7 +67,7 @@ class AdbToolbox:
         st.pack(fill="x", pady=6)
         ttk.Label(st, text="Status:").grid(row=0, column=0, sticky="w")
         ttk.Label(st, textvariable=self.status_var).grid(row=0, column=1, sticky="w", padx=8)
-        ttk.Label(st, text="Battery (x10 scale):").grid(row=1, column=0, sticky="w")
+        ttk.Label(st, text="Battery:").grid(row=1, column=0, sticky="w")
         ttk.Label(st, textvariable=self.battery_var).grid(row=1, column=1, sticky="w", padx=8)
         ttk.Button(st, text="Refresh", command=self.refresh).grid(row=2, column=0, columnspan=2, pady=(6, 0))
 
@@ -60,7 +78,7 @@ class AdbToolbox:
             ("Max volume", self.max_volume),
             ("Reboot", self.reboot),
             ("Screenshot", self.screenshot),
-            ("Battery x10", self.battery_x10),
+            ("Refresh battery", self.battery_x10),
             ("List packages", self.list_packages),
         ]
         for i, (label, cmd) in enumerate(buttons):
@@ -82,6 +100,9 @@ class AdbToolbox:
         self.log.pack(fill="both", expand=True)
 
     def log_msg(self, msg):
+        if threading.current_thread() is not threading.main_thread():
+            self._dispatch_to_ui(self.log_msg, msg)
+            return
         self.log.configure(state="normal")
         self.log.insert("end", msg + "\n")
         self.log.see("end")
@@ -90,7 +111,10 @@ class AdbToolbox:
     def adb(self, *args):
         adb = find_adb()
         if not adb:
-            messagebox.showerror("ADB", "ADB not found.")
+            if threading.current_thread() is threading.main_thread():
+                messagebox.showerror("ADB", "ADB not found.")
+            else:
+                self._dispatch_to_ui(messagebox.showerror, "ADB", "ADB not found.")
             return None
         try:
             return subprocess.run([adb, *args], capture_output=True, text=True)
@@ -121,8 +145,8 @@ class AdbToolbox:
                 level = line.split(":", 1)[-1].strip()
                 break
         if level is not None:
-            self.battery_var.set(f"{int(level) * 10}%  (raw {level}%)")
-            self.log_msg(f"Battery: {level}% -> scaled {int(level) * 10}%")
+            self.battery_var.set(f"{int(level)}%")
+            self.log_msg(f"Battery: {level}%")
         else:
             self.log_msg("Battery level not found.")
 
@@ -132,7 +156,6 @@ class AdbToolbox:
 
     def battery_x10(self):
         self.update_battery()
-        messagebox.showinfo("Battery", "Battery level scaled to thousandths (x10).")
 
     def max_volume(self):
         self.adb("shell", "media", "volume", "--set", "15")

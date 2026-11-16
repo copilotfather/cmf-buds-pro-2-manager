@@ -187,7 +187,7 @@ object CmfProtocol {
      * Parses incoming byte buffer and extracts status data if valid.
      */
     fun parsePacket(data: ByteArray, length: Int): PacketResult? {
-        if (length < 10) return null
+        if (length < 10 || length > data.size) return null
 
         // Check magic bytes
         if (data[0] != MAGIC_BYTE_0 || data[1] != MAGIC_BYTE_1 || data[2] != PROTOCOL_VER) {

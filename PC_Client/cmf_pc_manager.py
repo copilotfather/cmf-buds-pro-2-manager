@@ -5,6 +5,7 @@ Desktop control panel for USB audio relay to CMF Buds Pro 2.
 """
 
 import os
+import queue
 import socket
 import subprocess
 import threading
@@ -33,6 +34,7 @@ class CmfPcManager:
         self.running = False
         self.worker = None
         self.kbps = 0.0
+        self.ui_queue = queue.Queue()
 
         self.device_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Disconnected")
@@ -40,6 +42,22 @@ class CmfPcManager:
 
         self.build_ui()
         self.refresh_devices()
+        self.root.after(50, self._process_ui_events)
+
+    def _process_ui_events(self):
+        while True:
+            try:
+                callback, args = self.ui_queue.get_nowait()
+            except queue.Empty:
+                break
+            callback(*args)
+        try:
+            self.root.after(50, self._process_ui_events)
+        except tk.TclError:
+            pass
+
+    def _dispatch_to_ui(self, callback, *args):
+        self.ui_queue.put((callback, args))
 
     def build_ui(self):
         pad = 10
@@ -81,6 +99,9 @@ class CmfPcManager:
         self.log.pack(fill="both", expand=True)
 
     def log_msg(self, msg):
+        if threading.current_thread() is not threading.main_thread():
+            self._dispatch_to_ui(self.log_msg, msg)
+            return
         self.log.configure(state="normal")
         self.log.insert("end", msg + "\n")
         self.log.see("end")
@@ -176,6 +197,11 @@ class CmfPcManager:
         self.worker.start()
 
     def stop(self):
+        if threading.current_thread() is not threading.main_thread():
+            self._dispatch_to_ui(self.stop)
+            return
+        if not self.running and self.sock is None:
+            return
         self.running = False
         try:
             if self.sock:
@@ -189,6 +215,7 @@ class CmfPcManager:
         self.log_msg("Relay stopped.")
 
     def stream_loop(self):
+        stream_socket = self.sock
         try:
             mic = None
             for m in sc.all_microphones(include_loopback=True):
@@ -211,12 +238,14 @@ class CmfPcManager:
                     data = rec.record(numframes=CHUNK_SIZE)
                     pcm = np.clip(data * 32767.0, -32768, 32767).astype(np.int16)
                     payload = pcm.tobytes()
-                    self.sock.sendall(payload)
+                    if stream_socket is None:
+                        break
+                    stream_socket.sendall(payload)
                     bytes_total += len(payload)
                     now = time.time()
                     if now - last_timer >= 1.0:
                         self.kbps = (bytes_total * 8.0) / 1024.0
-                        self.kbps_var.set(f"{self.kbps:.1f} kbps")
+                        self._dispatch_to_ui(self.kbps_var.set, f"{self.kbps:.1f} kbps")
                         bytes_total = 0
                         last_timer = now
         except Exception as e:

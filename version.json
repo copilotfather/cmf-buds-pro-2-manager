@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.3",
-  "versionCode": 2330,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.3/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.3:\n• Fixed false connection bug: smartwatches (Galaxy Watch, Amazfit, Mi Band, etc.) are strictly excluded and will never be mistaken for connected earbuds\n• Strict Bluetooth detection: accurately checks physical A2DP/Headset/SPP status specifically for CMF Buds Pro 2 / Nothing Ear devices\n• Full professional English localization by default + instant EN/RU language switcher in header and settings\n• Hearing safety protection with gradual volume ramp-up for Find My Buds and Water Eject"
+  "versionName": "2.3.4",
+  "versionCode": 2340,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.4/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.4:\n• Fixed fragmented Bluetooth protocol packets being dropped during SPP/GATT reads\n• Bound the audio lab timer to the ViewModel lifecycle to prevent background coroutine leaks\n• Fixed Windows PC Manager UI updates from its audio worker thread\n• Corrected ADB Toolbox battery display to show the actual percentage\n• Release workflow now fails instead of silently publishing a debug APK"
 }

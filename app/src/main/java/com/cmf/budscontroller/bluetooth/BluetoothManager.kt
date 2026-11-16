@@ -1026,7 +1026,9 @@ class CmfBluetoothManager private constructor() {
 
     private val incomingBuffer = java.io.ByteArrayOutputStream()
 
+    @Synchronized
     private fun handleIncomingData(data: ByteArray, length: Int) {
+        if (length <= 0 || length > data.size) return
         incomingBuffer.write(data, 0, length)
         val bytes = incomingBuffer.toByteArray()
         var offset = 0
@@ -1048,14 +1050,28 @@ class CmfBluetoothManager private constructor() {
             if (magicIndex > offset) {
                 offset = magicIndex
             }
-            if (bytes.size - offset < 10) {
+            if (bytes.size - offset < 8) {
                 val remaining = bytes.size - offset
                 incomingBuffer.reset()
                 incomingBuffer.write(bytes, offset, remaining)
                 return
             }
 
-            val slice = bytes.copyOfRange(offset, bytes.size)
+            if (bytes[offset + 2] != CmfProtocol.PROTOCOL_VER) {
+                offset += 1
+                continue
+            }
+
+            val payloadLength = bytes[offset + 5].toInt() and 0xFF
+            val packetLength = 8 + payloadLength + 2
+            if (bytes.size - offset < packetLength) {
+                val remaining = bytes.size - offset
+                incomingBuffer.reset()
+                incomingBuffer.write(bytes, offset, remaining)
+                return
+            }
+
+            val slice = bytes.copyOfRange(offset, offset + packetLength)
             val packet = CmfProtocol.parsePacket(slice, slice.size)
             if (packet == null) {
                 offset += 1
@@ -1064,8 +1080,7 @@ class CmfBluetoothManager private constructor() {
 
             processPacket(packet)
 
-            val packetSize = 8 + packet.payload.size + 2
-            offset += packetSize
+            offset += packetLength
         }
 
         incomingBuffer.reset()

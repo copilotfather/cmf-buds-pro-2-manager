@@ -117,6 +117,7 @@ class AdvancedAudioLab(
     private val equalizerManager: EqualizerManager
 ) {
     private val TAG = "AdvancedAudioLab"
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _state = MutableStateFlow(AdvancedAudioLabState())
     val state: StateFlow<AdvancedAudioLabState> = _state.asStateFlow()
 
@@ -233,7 +234,7 @@ class AdvancedAudioLab(
     private var tickerJob: Job? = null
     private fun startMixerTicker() {
         tickerJob?.cancel()
-        tickerJob = GlobalScope.launch(Dispatchers.Default) {
+        tickerJob = scope.launch {
             while (isActive && _state.value.isMixerActive) {
                 delay(60_000)
                 val remaining = _state.value.mixerMinutesRemaining - 1
@@ -295,6 +296,7 @@ class AdvancedAudioLab(
     fun release() {
         mixer.stop()
         tickerJob?.cancel()
+        scope.cancel()
     }
 
     // ==================================================================
