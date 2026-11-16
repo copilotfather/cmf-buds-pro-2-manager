@@ -43,17 +43,10 @@ fun HearingHealthCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0x80FFFFFF),
-                    Color(0x35FFFFFF),
-                    Color(0x15FFFFFF),
-                    Color(0x30FFFFFF)
-                )
-            )
+            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
         Column(
@@ -158,9 +151,9 @@ fun HearingHealthCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF1B202D))
-                        .border(1.dp, Color(0x25FFFFFF), RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D0F14))
+                        .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
                     Row(
@@ -184,9 +177,9 @@ fun HearingHealthCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF1B202D))
-                        .border(1.dp, Color(0x25FFFFFF), RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF0D0F14))
+                        .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp))
                         .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
                     Row(

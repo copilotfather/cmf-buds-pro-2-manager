@@ -28,6 +28,7 @@ class CmfBluetoothManager private constructor() {
     private var socket: BluetoothSocket? = null
     private var inputStream: InputStream? = null
     private var outputStream: OutputStream? = null
+    private var currentDevice: BluetoothDevice? = null
 
     // BLE GATT Battery Client (Works simultaneously even if SPP is locked by Nothing X / Knox)
     private var bluetoothGatt: BluetoothGatt? = null
@@ -218,6 +219,14 @@ class CmfBluetoothManager private constructor() {
         } catch (_: Exception) {}
 
         return false
+    }
+
+    fun onDeviceDisconnected(device: BluetoothDevice?) {
+        val currentAddr = _deviceStatus.value.deviceAddress
+        if (device == null || currentAddr.isBlank() || device.address.equals(currentAddr, ignoreCase = true)) {
+            Log.d(TAG, "Device ${device?.address} disconnected, resetting connection status")
+            disconnect()
+        }
     }
 
     fun updateSystemBattery(device: BluetoothDevice?, level: Int) {
@@ -430,11 +439,11 @@ class CmfBluetoothManager private constructor() {
 
         val target = matchedByPref ?: byName ?: byClass ?: if (validDevices.size == 1) validDevices.first() else null
 
-        if (target != null) {
+        if (target != null && isDeviceConnected(target)) {
             val devName = try { target.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
             val sysBat = getSystemBatteryLevel(target)
             val curBat = _deviceStatus.value.battery
-            val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else 85)
+            val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else -1)
             _deviceStatus.value = _deviceStatus.value.copy(
                 isConnected = true,
                 deviceName = devName,
@@ -461,6 +470,7 @@ class CmfBluetoothManager private constructor() {
     suspend fun connect(device: BluetoothDevice, context: Context? = null): Boolean = withContext(Dispatchers.IO) {
         val devName = try { device.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
         val devAddr = device.address ?: ""
+        currentDevice = device
         Log.d(TAG, "Connecting to $devName ($devAddr)...")
 
         // Clean previous socket without resetting isConnected flag
@@ -469,33 +479,22 @@ class CmfBluetoothManager private constructor() {
             inputStream?.close()
             outputStream?.close()
         } catch (_: Exception) {}
+        socket = null
+        inputStream = null
+        outputStream = null
 
         // Cancel any active discovery which blocks or severely slows down RFCOMM connections
         try {
             BluetoothAdapter.getDefaultAdapter()?.cancelDiscovery()
         } catch (_: Exception) {}
 
-        // Immediate responsive state update - mark connected immediately so UI doesn't stutter!
-        val sysBat = getSystemBatteryLevel(device)
-        val curBat = _deviceStatus.value.battery
-        val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else 85)
-        _deviceStatus.value = _deviceStatus.value.copy(
-            isConnected = true,
-            deviceName = devName,
-            deviceAddress = devAddr,
-            battery = BatteryInfo(
-                leftPercent = batLvl,
-                rightPercent = batLvl,
-                casePercent = if (curBat.casePercent > 0) curBat.casePercent else -1,
-                isLeftConnected = true,
-                isRightConnected = true
-            )
-        )
-
         // Connect GATT Battery Service in background (works concurrently with or without SPP)
         if (context != null) {
             connectGattBattery(context, device)
         }
+
+        // Check if device is already connected via Android system audio (A2DP / Headset)
+        val isSystemConnected = isDeviceConnected(device, context)
 
         val standardSppUuid = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
         var tmpSocket: BluetoothSocket? = null
@@ -537,30 +536,45 @@ class CmfBluetoothManager private constructor() {
             }
         }
 
-        if (tmpSocket == null || !tmpSocket.isConnected) {
-            Log.w(TAG, "SPP socket not available for $devName, operating in Bluetooth LE / System mode")
-            // Retain connected state! All audio features, equalizer, LDAC, and battery work!
-            return@withContext true
+        val isSppConnected = tmpSocket != null && tmpSocket.isConnected
+
+        if (!isSppConnected && !isSystemConnected) {
+            Log.w(TAG, "Device $devName is not reachable via SPP nor active in system Bluetooth")
+            currentDevice = null
+            _deviceStatus.value = _deviceStatus.value.copy(isConnected = false)
+            return@withContext false
         }
 
-        socket = tmpSocket
-        inputStream = tmpSocket.inputStream
-        outputStream = tmpSocket.outputStream
+        val sysBat = getSystemBatteryLevel(device)
+        val curBat = _deviceStatus.value.battery
+        val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else -1)
 
         _deviceStatus.value = _deviceStatus.value.copy(
             isConnected = true,
             deviceName = devName,
-            deviceAddress = devAddr
+            deviceAddress = devAddr,
+            battery = BatteryInfo(
+                leftPercent = batLvl,
+                rightPercent = batLvl,
+                casePercent = curBat.casePercent,
+                isLeftConnected = true,
+                isRightConnected = true
+            )
         )
-        Log.d(TAG, "Connected successfully via SPP to $devName!")
 
-        startReading()
-        startStatusPolling()
+        if (isSppConnected) {
+            socket = tmpSocket
+            inputStream = tmpSocket!!.inputStream
+            outputStream = tmpSocket.outputStream
+            startReading()
+            startStatusPolling()
 
-        // Initial queries
-        sendPacket(CmfProtocol.createReadBatteryPacket())
-        sendPacket(CmfProtocol.createReadAncPacket())
-        sendPacket(CmfProtocol.createReadFirmwarePacket())
+            sendPacket(CmfProtocol.createReadBatteryPacket())
+            sendPacket(CmfProtocol.createReadAncPacket())
+            sendPacket(CmfProtocol.createReadFirmwarePacket())
+        } else {
+            Log.d(TAG, "Operating $devName in Bluetooth LE / System A2DP mode")
+        }
 
         true
     }
@@ -609,8 +623,18 @@ class CmfBluetoothManager private constructor() {
     }
 
     suspend fun refreshStatus() {
-        sendPacket(CmfProtocol.createReadBatteryPacket())
-        sendPacket(CmfProtocol.createReadAncPacket())
+        val dev = currentDevice
+        if (dev != null) {
+            val bat = getSystemBatteryLevel(dev)
+            if (bat in 1..100) {
+                updateSystemBattery(dev, bat)
+            }
+        }
+        checkProfileBattery()
+        if (socket?.isConnected == true) {
+            sendPacket(CmfProtocol.createReadBatteryPacket())
+            sendPacket(CmfProtocol.createReadAncPacket())
+        }
     }
 
     private fun startReading() {
@@ -625,12 +649,49 @@ class CmfBluetoothManager private constructor() {
                         handleIncomingData(buffer, bytesRead)
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Stream ended", e)
-                    disconnect()
+                    Log.w(TAG, "SPP stream ended", e)
+                    val dev = currentDevice
+                    val stillConnected = dev != null && isDeviceConnected(dev)
+                    try {
+                        inputStream?.close()
+                        outputStream?.close()
+                        socket?.close()
+                    } catch (_: Exception) {}
+                    socket = null
+                    inputStream = null
+                    outputStream = null
+
+                    if (stillConnected) {
+                        Log.d(TAG, "Device is still connected via A2DP/Headset. Retaining connected state.")
+                        scope.launch {
+                            delay(4000)
+                            if (_deviceStatus.value.isConnected && socket == null && currentDevice != null) {
+                                tryReconnectSpp(currentDevice!!)
+                            }
+                        }
+                    } else {
+                        disconnect()
+                    }
                     break
                 }
             }
         }
+    }
+
+    private suspend fun tryReconnectSpp(device: BluetoothDevice) = withContext(Dispatchers.IO) {
+        if (socket?.isConnected == true) return@withContext
+        try {
+            val s = device.createInsecureRfcommSocketToServiceRecord(CmfProtocol.SPP_UUID)
+            s.connect()
+            if (s.isConnected) {
+                socket = s
+                inputStream = s.inputStream
+                outputStream = s.outputStream
+                Log.d(TAG, "Silently reconnected SPP to ${device.address}")
+                startReading()
+                refreshStatus()
+            }
+        } catch (_: Exception) {}
     }
 
     private fun startStatusPolling() {
@@ -776,6 +837,7 @@ class CmfBluetoothManager private constructor() {
         socket = null
         inputStream = null
         outputStream = null
+        currentDevice = null
         _deviceStatus.value = _deviceStatus.value.copy(isConnected = false)
     }
 }

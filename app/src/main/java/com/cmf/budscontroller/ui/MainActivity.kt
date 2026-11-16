@@ -87,22 +87,22 @@ class MainActivity : ComponentActivity() {
         checkAndRequestPermissions()
 
         setContent {
-            // Pure Frosted Gray Glass Palette (Liquid Gray Glass & Specular)
+            // Minimalist Dark Palette
             val colorScheme = darkColorScheme(
                 primary = Color(0xFFFF5722),
                 onPrimary = Color(0xFFFFFFFF),
-                primaryContainer = Color(0x352E323D),
+                primaryContainer = Color(0xFF1E222B),
                 onPrimaryContainer = Color(0xFFF2F2F7),
-                secondary = Color(0xFFE2E2E8),
+                secondary = Color(0xFFE5E5EA),
                 onSecondary = Color(0xFF141416),
-                background = Color(0xFF0D0E12),          // Deep Tinted Glass Canvas
+                background = Color(0xFF0D0F14),          // Clean Minimalist Dark Canvas
                 onBackground = Color(0xFFF0F0F5),
-                surface = Color(0x28262933),             // Liquid Gray Frosted Glass
+                surface = Color(0xFF161A22),             // Clean Solid Dark Surface
                 onSurface = Color(0xFFF0F0F5),
-                surfaceVariant = Color(0x38181A20),      // Smoked Translucent Glass
-                onSurfaceVariant = Color(0xFF9898A6),    // Refined Specular Gray
-                outline = Color(0x40FFFFFF),             // 25% White Specular Hairline
-                outlineVariant = Color(0x18FFFFFF)       // 9% White Subtle Divider
+                surfaceVariant = Color(0xFF161A22),
+                onSurfaceVariant = Color(0xFF8E8E93),    // Refined Subtitle
+                outline = Color(0x15FFFFFF),             // Subtle Border
+                outlineVariant = Color(0x0DFFFFFF)
             )
 
             MaterialTheme(colorScheme = colorScheme) {
@@ -218,17 +218,7 @@ fun HiFiStudioBudsApp(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF221511), // Subtle warm ambient ember backlight in top corner
-                        Color(0xFF0C0E14), // Deep Charcoal-Black
-                        Color(0xFF07080B)  // Pure OLED Pitch Black
-                    ),
-                    center = Offset(900f, 100f),
-                    radius = 1800f
-                )
-            )
+            .background(Color(0xFF0D0F14))
     ) {
         Scaffold(
             topBar = {
@@ -239,40 +229,27 @@ fun HiFiStudioBudsApp(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = "CMF",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 19.sp,
-                                        letterSpacing = (-0.2).sp,
-                                        color = Color(0xFFFF5722)
-                                    )
-                                    Text(
-                                        text = "Buds Pro 2",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 19.sp,
-                                        letterSpacing = (-0.4).sp,
-                                        color = Color.White
-                                    )
-                                }
+                                Text(
+                                    text = "CMF Buds Pro 2",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    letterSpacing = (-0.3).sp,
+                                    color = Color.White
+                                )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(7.dp)
+                                            .size(6.dp)
                                             .clip(CircleShape)
-                                            .background(if (status.isConnected) Color(0xFF00E676) else Color(0xFF8E95A5))
+                                            .background(if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366))
                                     )
                                     Text(
                                         text = if (status.isConnected) AppStrings.statusConnectedLdac else AppStrings.statusReady,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (status.isConnected) Color(0xFF00E676) else colorScheme.onSurfaceVariant
+                                        fontSize = 12.sp,
+                                        color = if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366)
                                     )
                                 }
                             }
@@ -281,30 +258,28 @@ fun HiFiStudioBudsApp(
                     actions = {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFF1B202D))
-                                .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF1C1F28))
                                 .clickable {
                                     onConnectClicked()
                                     showDevicePicker = true
                                 }
-                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
                                     imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.Outlined.BluetoothSearching,
                                     contentDescription = null,
-                                    modifier = Modifier.size(15.dp),
-                                    tint = if (status.isConnected) Color(0xFFFF5722) else colorScheme.onSurfaceVariant
+                                    modifier = Modifier.size(14.dp),
+                                    tint = if (status.isConnected) Color(0xFFFF5722) else Color(0xFF636366)
                                 )
                                 Text(
                                     text = if (status.isConnected) "Устройства" else "Найти",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colorScheme.onSurface
+                                    color = Color(0xFFE5E5EA)
                                 )
                             }
                         }
@@ -329,21 +304,10 @@ fun HiFiStudioBudsApp(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-                    .border(
-                        1.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0x60FFFFFF),
-                                Color(0x18FFFFFF),
-                                Color(0x35FFFFFF)
-                            )
-                        ),
-                        RoundedCornerShape(28.dp)
-                    ),
-                shape = RoundedCornerShape(28.dp),
-                color = Color(0x281A1D26),
-                tonalElevation = 8.dp
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                shape = RoundedCornerShape(22.dp),
+                color = Color(0xFF161A22),
+                tonalElevation = 0.dp
             ) {
                 val tabs = StudioTab.values()
                 val selectedIndex = tabs.indexOf(currentTab)
@@ -351,7 +315,7 @@ fun HiFiStudioBudsApp(
                 BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 5.dp)
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
                 ) {
                     val totalWidth = maxWidth
                     val tabWidth = totalWidth / tabs.size.toFloat()
@@ -359,43 +323,19 @@ fun HiFiStudioBudsApp(
                     val targetOffset = tabWidth * selectedIndex
                     val animatedOffset by animateDpAsState(
                         targetValue = targetOffset,
-                        animationSpec = spring(
-                            dampingRatio = 0.78f,
-                            stiffness = 380f
-                        ),
-                        label = "bottom_bar_glass_offset"
+                        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+                        label = "bottom_bar_offset"
                     )
 
-                    // Animated sliding glass indicator for bottom dock
                     Box(
                         modifier = Modifier
                             .offset(x = animatedOffset)
                             .width(tabWidth)
-                            .height(42.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color(0x55454C5E),
-                                        Color(0x33252A36),
-                                        Color(0x401C2029)
-                                    )
-                                )
-                            )
-                            .border(
-                                1.dp,
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color(0x99FFFFFF),
-                                        Color(0x33FFFFFF),
-                                        Color(0x55FF5722)
-                                    )
-                                ),
-                                RoundedCornerShape(20.dp)
-                            )
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color(0xFF252830))
                     )
 
-                    // Tab buttons overlay
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -404,21 +344,21 @@ fun HiFiStudioBudsApp(
                         tabs.forEach { tab ->
                             val isSelected = currentTab == tab
                             val iconColor by animateColorAsState(
-                                targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF8E95A5),
-                                animationSpec = tween(220),
+                                targetValue = if (isSelected) Color(0xFFFF5722) else Color(0xFF636366),
+                                animationSpec = tween(200),
                                 label = "tab_icon_color"
                             )
                             val textColor by animateColorAsState(
-                                targetValue = if (isSelected) Color.White else Color(0xFF8E95A5),
-                                animationSpec = tween(220),
+                                targetValue = if (isSelected) Color.White else Color(0xFF636366),
+                                animationSpec = tween(200),
                                 label = "tab_text_color"
                             )
 
                             Row(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(42.dp)
-                                    .clip(RoundedCornerShape(20.dp))
+                                    .height(40.dp)
+                                    .clip(RoundedCornerShape(18.dp))
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
@@ -596,11 +536,6 @@ fun HiFiStudioBudsApp(
                             }
                         }
                     }
-
-                    // Real-Time 60 FPS FFT Spectrum Analyzer (Issue #19)
-                    com.cmf.budscontroller.ui.components.CmfSpectrumVisualizer(
-                        isPlaying = status.isConnected
-                    )
 
                     // Studio-grade Interactive Multi-band EQ with Morphing & JSON Export/Import (Issue #3 & #38)
                     StudioMasterEqualizerCard(
@@ -823,20 +758,13 @@ fun HiFiStudioBudsApp(
                     // Card 2: Interactive Step-by-Step Setup Guide
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
                         border = CardDefaults.outlinedCardBorder().copy(
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color(0x80FFFFFF),
-                                    Color(0x35FFFFFF),
-                                    Color(0x15FFFFFF),
-                                    Color(0x30FFFFFF)
-                                )
-                            )
+                            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
                         )
                     ) {
-                        Column(modifier = Modifier.padding(18.dp)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1590,11 +1518,11 @@ fun StudioMasterEqualizerCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant),
-        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.outline, colorScheme.outlineVariant)))
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
+        border = CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF))))
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1662,8 +1590,8 @@ fun StudioMasterEqualizerCard(
                     .fillMaxWidth()
                     .height(90.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(colorScheme.surface)
-                    .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                    .background(Color(0xFF0D0F14))
+                    .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(16.dp))
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -1673,7 +1601,7 @@ fun StudioMasterEqualizerCard(
 
                     // Zero dB reference grid line
                     drawLine(
-                        color = Color(0x33FFFFFF),
+                        color = Color(0x18FFFFFF),
                         start = Offset(0f, midY),
                         end = Offset(w, midY),
                         strokeWidth = 1.dp.toPx()
@@ -1687,7 +1615,7 @@ fun StudioMasterEqualizerCard(
                         Offset(x, y)
                     }
 
-                    // Smooth Bezier Curve Path with Ambient Soundwave Fill
+                    // Smooth Bezier Curve Path
                     val curvePath = Path()
                     val fillPath = Path()
                     if (points.isNotEmpty()) {
@@ -1709,34 +1637,26 @@ fun StudioMasterEqualizerCard(
                         fillPath.lineTo(points.first().x, h)
                         fillPath.close()
 
-                        // 1. Soft glowing gradient under the curve
+                        // 1. Subtle translucent fill
                         drawPath(
                             path = fillPath,
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    Color(0x45FF5722),
-                                    Color(0x10FF5722),
+                                    Color(0x20FF5722),
                                     Color.Transparent
                                 )
                             )
                         )
 
-                        // 2. High-precision neon curve
+                        // 2. Clean precise curve
                         drawPath(
                             path = curvePath,
-                            brush = Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFFFF5722),
-                                    Color(0xFFFF9F0A),
-                                    Color(0xFFFF375F)
-                                )
-                            ),
-                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                            color = Color(0xFFFF5722),
+                            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
                         )
 
-                        // 3. Glowing Studio Band Nodes
+                        // 3. Clean Band Nodes
                         points.forEach { pt ->
-                            drawCircle(color = Color(0x60FF5722), radius = 7.dp.toPx(), center = pt)
                             drawCircle(color = Color(0xFFFF5722), radius = 4.dp.toPx(), center = pt)
                             drawCircle(color = Color.White, radius = 2.dp.toPx(), center = pt)
                         }
@@ -1770,8 +1690,8 @@ fun StudioMasterEqualizerCard(
                                 .width(34.dp)
                                 .height(120.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(colorScheme.surface)
-                                .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                                .background(Color(0xFF0D0F14))
+                                .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -1860,16 +1780,16 @@ fun StudioMasterEqualizerCard(
             ) {
                 eqState.presets.forEach { preset ->
                     val isSel = eqState.activePresetName == preset.name
-                    val chipBg by animateColorAsState(if (isSel) colorScheme.primary else colorScheme.surface, tween(180))
-                    val chipFg = if (isSel) Color.White else colorScheme.onSurfaceVariant
+                    val chipBg by animateColorAsState(if (isSel) colorScheme.primary else Color(0xFF0D0F14), tween(180))
+                    val chipFg = if (isSel) Color.White else Color(0xFF8E8E93)
 
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(chipBg)
-                            .border(1.dp, if (isSel) colorScheme.primary else colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                            .border(1.dp, if (isSel) colorScheme.primary else Color(0x15FFFFFF), RoundedCornerShape(12.dp))
                             .clickable {
-                                haptic?.click()
+                                effectiveHaptic.click()
                                 onPresetSelected(preset.name)
                             }
                             .padding(vertical = 8.dp, horizontal = 12.dp),
@@ -2036,17 +1956,10 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     // 1. Volume Time Distribution (На какой громкости сколько слушаю)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0x80FFFFFF),
-                    Color(0x35FFFFFF),
-                    Color(0x15FFFFFF),
-                    Color(0x30FFFFFF)
-                )
-            )
+            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
@@ -2139,17 +2052,10 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
     // 2. Weekly Activity Histogram (Как часто я слушаю музыку и в какие дни)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0x80FFFFFF),
-                    Color(0x35FFFFFF),
-                    Color(0x15FFFFFF),
-                    Color(0x30FFFFFF)
-                )
-            )
+            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
@@ -2274,9 +2180,9 @@ fun VolumeStatPill(
     val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(colorScheme.surface)
-            .border(1.dp, colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF0D0F14))
+            .border(1.dp, Color(0x15FFFFFF), RoundedCornerShape(12.dp))
             .padding(vertical = 8.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -2302,35 +2208,13 @@ fun StudioProductStage(
     totalWithCaseFormatted: String
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val context = LocalContext.current
-    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(32.dp))
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF381812), // Vivid CMF Orange core glow
-                        Color(0xFF1B141E),
-                        Color(0xFF0F1218)
-                    ),
-                    radius = 900f
-                )
-            )
-            .border(
-                1.2.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0x80FFFFFF),
-                        Color(0x25FF5722),
-                        Color(0x10FFFFFF)
-                    )
-                ),
-                RoundedCornerShape(32.dp)
-            )
-            .padding(vertical = 22.dp, horizontal = 16.dp),
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xFF161A22))
+            .padding(vertical = 20.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -2340,54 +2224,9 @@ fun StudioProductStage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(165.dp),
+                    .height(150.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Soft ambient radiant backlight aura behind devices
-                Box(
-                    modifier = Modifier
-                        .size(190.dp, 120.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0x55FF5722),
-                                    Color(0x18FF5722),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                )
-
-                // Reflective specular glass pedestal under the devices
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(0.85f)
-                        .height(16.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0x35FFFFFF),
-                                    Color(0x15FF5722),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    Color(0x60FFFFFF),
-                                    Color.Transparent
-                                )
-                            ),
-                            CircleShape
-                        )
-                )
-
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -2397,16 +2236,16 @@ fun StudioProductStage(
                         painter = painterResource(id = R.drawable.cmf_earbud_left),
                         contentDescription = "Left Earbud",
                         modifier = Modifier
-                            .fillMaxHeight(0.84f)
+                            .fillMaxHeight(0.82f)
                             .weight(1f),
                         contentScale = ContentScale.Fit
                     )
 
                     Image(
                         painter = painterResource(id = R.drawable.cmf_case_dial),
-                        contentDescription = "CMF Case with Smart Dial",
+                        contentDescription = "CMF Case",
                         modifier = Modifier
-                            .fillMaxHeight(0.96f)
+                            .fillMaxHeight(0.94f)
                             .weight(1.3f),
                         contentScale = ContentScale.Fit
                     )
@@ -2415,40 +2254,39 @@ fun StudioProductStage(
                         painter = painterResource(id = R.drawable.cmf_earbud_right),
                         contentDescription = "Right Earbud",
                         modifier = Modifier
-                            .fillMaxHeight(0.84f)
+                            .fillMaxHeight(0.82f)
                             .weight(1f),
                         contentScale = ContentScale.Fit
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color(0xFF0C0E14))
-                    .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(22.dp))
-                    .padding(vertical = 11.dp, horizontal = 14.dp),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF0D0F14))
+                    .padding(vertical = 10.dp, horizontal = 14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 MiniBatteryTag(name = "L", percent = battery.leftPercent, isCharging = battery.isLeftCharging)
-                Box(modifier = Modifier.width(1.dp).height(18.dp).background(Color(0x35FFFFFF)))
+                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
                 MiniBatteryTag(name = "КЕЙС", percent = battery.casePercent, isCharging = battery.isCaseCharging)
-                Box(modifier = Modifier.width(1.dp).height(18.dp).background(Color(0x35FFFFFF)))
+                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
                 MiniBatteryTag(name = "R", percent = battery.rightPercent, isCharging = battery.isRightCharging)
             }
 
             if (earbudTimeFormatted.isNotBlank() && earbudTimeFormatted != "—") {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Наушники: ~$earbudTimeFormatted", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
-                    Text("С кейсом: ~$totalWithCaseFormatted", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
+                    Text("Наушники: ~$earbudTimeFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
+                    Text("С кейсом: ~$totalWithCaseFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
                 }
             }
         }
@@ -2515,20 +2353,13 @@ fun StudioNoiseControlBar(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0x80FFFFFF),
-                    Color(0x35FFFFFF),
-                    Color(0x15FFFFFF),
-                    Color(0x30FFFFFF)
-                )
-            )
+            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2565,10 +2396,9 @@ fun StudioNoiseControlBar(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFF0F1116))
-                    .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(20.dp))
-                    .padding(4.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF0D0F14))
+                    .padding(3.dp)
             ) {
                 val totalWidth = maxWidth
                 // Weights: 1f, 1.25f, 1f -> sum = 3.25f
@@ -2596,33 +2426,14 @@ fun StudioNoiseControlBar(
                     label = "glass_slider_width"
                 )
 
-                // The sliding glass thumb (стекляшка с рефракцией и неоновым свечением)
+                // The sliding indicator
                 Box(
                     modifier = Modifier
                         .offset(x = animatedOffset)
                         .width(animatedWidth)
-                        .height(44.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0x55454C5E),
-                                    Color(0x33252A36),
-                                    Color(0x401C2029)
-                                )
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color(0x99FFFFFF),
-                                    Color(0x33FFFFFF),
-                                    Color(0x55FF5722)
-                                )
-                            ),
-                            RoundedCornerShape(16.dp)
-                        )
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF252830))
                 )
 
                 // 3 Options placed on top of the sliding glass track
@@ -2653,8 +2464,8 @@ fun StudioNoiseControlBar(
                         Row(
                             modifier = Modifier
                                 .weight(if (mode == AncMode.TRANSPARENCY) 1.25f else 1f)
-                                .height(44.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .height(42.dp)
+                                .clip(RoundedCornerShape(14.dp))
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
@@ -2781,36 +2592,24 @@ fun BentoCard(
     extraContent: (@Composable () -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val context = LocalContext.current
-    val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Card(
         modifier = modifier
             .then(
                 if (onClick != null) {
-                    Modifier.clickable {
-                        haptic.click()
-                        onClick()
-                    }
+                    Modifier.clickable { onClick() }
                 } else Modifier
             ),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF131722)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0x80FFFFFF), // High specular top rim
-                    Color(0x35FFFFFF),
-                    Color(0x15FFFFFF),
-                    Color(0x30FFFFFF)
-                )
-            )
+            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2819,23 +2618,15 @@ fun BentoCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    accentColor.copy(alpha = 0.22f),
-                                    Color(0xFF1B202D)
-                                )
-                            )
-                        )
-                        .border(1.dp, accentColor.copy(alpha = 0.40f), CircleShape),
+                        .background(accentColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(19.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = accentColor
                     )
                 }
@@ -2845,19 +2636,19 @@ fun BentoCard(
                         imageVector = Icons.Outlined.ChevronRight,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        tint = Color(0xFF3A3A3C)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = title,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp,
-                color = colorScheme.onSurfaceVariant
+                letterSpacing = 1.sp,
+                color = Color(0xFF8E8E93)
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -2865,8 +2656,8 @@ fun BentoCard(
             Text(
                 text = subtitle,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFFE5E5EA),
                 maxLines = 2,
                 lineHeight = 18.sp
             )

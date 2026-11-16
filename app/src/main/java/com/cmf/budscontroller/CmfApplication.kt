@@ -44,19 +44,35 @@ class CmfApplication : Application() {
                     intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                 }
 
-                if (action == "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED" ||
-                    action == "android.bluetooth.device.action.EXTRA_BATTERY_LEVEL") {
-                    val level = intent.getIntExtra("android.bluetooth.device.extra.BATTERY_LEVEL", -1)
-                    if (level in 0..100) {
-                        CmfBluetoothManager.getInstance().updateSystemBattery(device, level)
-                    }
-                } else if (action == BluetoothDevice.ACTION_ACL_CONNECTED ||
-                    action == BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED ||
-                    action == BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED) {
-                    CmfBluetoothManager.getInstance().onDeviceAclConnected(device)
-                    CmfBluetoothManager.getInstance().checkProfileBattery()
-                    if (context != null && device != null) {
-                        CmfBluetoothManager.getInstance().connectGattBattery(context, device)
+                if (device != null && CmfBluetoothManager.getInstance().isCmfOrNothingDevice(device)) {
+                    if (action == "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED" ||
+                        action == "android.bluetooth.device.action.EXTRA_BATTERY_LEVEL") {
+                        val level = intent.getIntExtra("android.bluetooth.device.extra.BATTERY_LEVEL", -1)
+                        if (level in 0..100) {
+                            CmfBluetoothManager.getInstance().updateSystemBattery(device, level)
+                        }
+                    } else if (action == BluetoothDevice.ACTION_ACL_CONNECTED) {
+                        CmfBluetoothManager.getInstance().onDeviceAclConnected(device)
+                        CmfBluetoothManager.getInstance().checkProfileBattery()
+                        if (context != null) {
+                            CmfBluetoothManager.getInstance().connectGattBattery(context, device)
+                        }
+                    } else if (action == BluetoothDevice.ACTION_ACL_DISCONNECTED) {
+                        CmfBluetoothManager.getInstance().onDeviceDisconnected(device)
+                    } else if (action == BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED ||
+                               action == BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED) {
+                        val state = intent.getIntExtra(android.bluetooth.BluetoothProfile.EXTRA_STATE, -1)
+                        if (state == android.bluetooth.BluetoothProfile.STATE_CONNECTED) {
+                            CmfBluetoothManager.getInstance().onDeviceAclConnected(device)
+                            CmfBluetoothManager.getInstance().checkProfileBattery()
+                            if (context != null) {
+                                CmfBluetoothManager.getInstance().connectGattBattery(context, device)
+                            }
+                        } else if (state == android.bluetooth.BluetoothProfile.STATE_DISCONNECTED) {
+                            if (!CmfBluetoothManager.getInstance().isDeviceConnected(device, context)) {
+                                CmfBluetoothManager.getInstance().onDeviceDisconnected(device)
+                            }
+                        }
                     }
                 }
             }
