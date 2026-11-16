@@ -83,7 +83,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val audioRelayManager = com.cmf.budscontroller.relay.CmfAudioRelayManager(application)
     val relayState: StateFlow<com.cmf.budscontroller.relay.AudioRelayState> = audioRelayManager.state
 
-    // Bluetooth High-Res Audio Codec Manager (LDAC, LHDC, aptX HD, AAC)
+    // High-quality audio mode on buds; Android negotiates the Bluetooth codec.
     val codecManager = com.cmf.budscontroller.audio.BluetoothCodecManager(application)
     val codecState: StateFlow<com.cmf.budscontroller.audio.CodecEngineState> = codecManager.state
 

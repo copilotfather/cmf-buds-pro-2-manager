@@ -910,9 +910,8 @@ class CmfBluetoothManager private constructor() {
         _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
     }
 
-    suspend fun setHdAudio(enabled: Boolean) {
+    suspend fun setHdAudio(enabled: Boolean): Boolean =
         sendPacket(CmfProtocol.createSetHdAudioPacket(enabled))
-    }
 
     suspend fun startFindMyBuds(left: Boolean, right: Boolean) {
         sendPacket(CmfProtocol.createFindMyBudsPacket(left, right))

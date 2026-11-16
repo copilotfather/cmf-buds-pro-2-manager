@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.5",
-  "versionCode": 2350,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.5/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.5:\n• Fixed update links by reading the release tag from the Atom entry URL instead of the display title\n• Preserved fallback update channels when an Atom entry has no valid release link"
+  "versionName": "2.3.6",
+  "versionCode": 2360,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.6/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.6:\n• Fixed GitHub update checks so stale cache responses cannot hide a newer release\n• Added clear feedback when GitHub cannot be reached\n• Reworked high-quality audio control to report the earbud mode accurately and let Android negotiate LDAC"
 }

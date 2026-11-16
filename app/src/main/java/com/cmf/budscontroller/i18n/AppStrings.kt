@@ -92,6 +92,7 @@ object AppStrings {
     val ancOff get() = if (isRussian) "Выкл" else "Off"
     val ancTransparency get() = if (isRussian) "Прозрачность" else "Transparency"
     val ancCancellation get() = if (isRussian) "Шумоподавление" else "Noise Cancelling"
+    val ancDepthLabel get() = if (isRussian) "Уровень шумоподавления" else "Noise cancellation level"
     val ancLevelHigh get() = if (isRussian) "Высокое" else "High"
     val ancLevelMid get() = if (isRussian) "Среднее" else "Mid"
     val ancLevelLow get() = if (isRussian) "Слабое" else "Low"

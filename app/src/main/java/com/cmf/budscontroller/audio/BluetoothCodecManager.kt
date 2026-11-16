@@ -47,12 +47,12 @@ enum class CodecType(
 
 data class CodecEngineState(
     val activeCodec: CodecType = CodecType.LDAC,
-    val isLdacEnabledOnBuds: Boolean = true,
-    val isHardwareOffloadActive: Boolean = true,
-    val sampleRate: String = "96.0 kHz",
-    val bitsPerSample: String = "24-bit",
+    val isLdacEnabledOnBuds: Boolean = false,
+    val isHardwareOffloadActive: Boolean = false,
+    val sampleRate: String = "Android selects",
+    val bitsPerSample: String = "when connected",
     val channelMode: String = "Stereo (2.0)",
-    val bitrateMode: String = "990 kbps (Hi-Res LDAC)",
+    val bitrateMode: String = "LDAC depends on phone support",
     val availableCodecs: List<CodecType> = listOf(
         CodecType.LDAC,
         CodecType.AAC,
@@ -71,29 +71,16 @@ class BluetoothCodecManager(private val context: Context) {
     fun applyCodecToBuds(device: BluetoothDevice?, codec: CodecType, onCompleted: (Boolean) -> Unit) {
         scope.launch {
             try {
-                // 1. Посылаем прошивке наушников CMF аппаратно-байтовую команду включения LDAC чипа (CMD_SET_HD_AUDIO)
                 val enableLdacInBuds = codec.isHiRes
-                com.cmf.budscontroller.bluetooth.CmfBluetoothManager.getInstance().setHdAudio(enableLdacInBuds)
-
-                // 2. Применяем системный A2DP кодек через Android Settings
-                val codecIndex = when (codec) {
-                    CodecType.LDAC -> 4
-                    CodecType.AAC -> 1
-                    CodecType.SBC -> 0
-                }
-
-                try {
-                    Settings.Global.putInt(context.contentResolver, "bluetooth_a2dp_codec_priority", codecIndex)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Cannot write global setting directly: ${e.message}")
+                val sent = com.cmf.budscontroller.bluetooth.CmfBluetoothManager.getInstance().setHdAudio(enableLdacInBuds)
+                if (!sent) {
+                    onCompleted(false)
+                    return@launch
                 }
 
                 _state.value = _state.value.copy(
-                    activeCodec = codec,
                     isLdacEnabledOnBuds = enableLdacInBuds,
-                    sampleRate = if (codec.isHiRes) "96.0 kHz" else "44.1 kHz",
-                    bitsPerSample = if (codec.isHiRes) "24-bit" else "16-bit",
-                    bitrateMode = if (codec == CodecType.LDAC) "990 kbps (Hi-Res LDAC)" else codec.bitrateInfo
+                    bitrateMode = if (enableLdacInBuds) "Hi-res включён • кодек выбирает Android" else "Стандартное качество • кодек выбирает Android"
                 )
 
                 onCompleted(true)
@@ -106,17 +93,12 @@ class BluetoothCodecManager(private val context: Context) {
 
     fun openSystemDeveloperOptions() {
         try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+            val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
         } catch (_: Exception) {
-            try {
-                val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-            } catch (_: Exception) {}
+            Log.w(TAG, "Unable to open Bluetooth settings")
         }
     }
 }

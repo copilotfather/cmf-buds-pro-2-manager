@@ -75,10 +75,14 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
+    ) { _ ->
         val btGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
         } else true
+        if (btGranted) viewModel.connectDevice(bluetoothAdapter)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,8 +91,6 @@ class MainActivity : ComponentActivity() {
 
         val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = btManager.adapter
-
-        checkAndRequestPermissions()
 
         setContent {
             // Minimalist Dark Palette
@@ -115,7 +117,6 @@ class MainActivity : ComponentActivity() {
                     bluetoothAdapter = bluetoothAdapter,
                     onConnectClicked = {
                         checkAndRequestPermissions()
-                        viewModel.connectDevice(bluetoothAdapter)
                     }
                 )
             }
@@ -147,7 +148,6 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (!viewModel.deviceStatus.value.isConnected) {
             checkAndRequestPermissions()
-            viewModel.connectDevice(bluetoothAdapter)
         }
     }
 }
@@ -253,7 +253,7 @@ fun HiFiStudioBudsApp(
                                             .background(if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366))
                                     )
                                     Text(
-                                        text = if (status.isConnected) AppStrings.statusConnectedLdac else AppStrings.statusReady,
+                                        text = if (status.isConnected) AppStrings.statusConnected else AppStrings.statusReady,
                                         fontSize = 12.sp,
                                         color = if (status.isConnected) Color(0xFF34C759) else Color(0xFF636366)
                                     )
@@ -287,36 +287,6 @@ fun HiFiStudioBudsApp(
                                         if (status.connectionType.isNotBlank()) status.connectionType else AppStrings.statusConnected
                                     } else AppStrings.actionFind,
                                     fontSize = 12.sp,
-                                    color = Color(0xFFE5E5EA)
-                                )
-                            }
-                        }
-
-                        // Instant Language Switcher (EN / RU)
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF1C1F28))
-                                .clickable {
-                                    val next = if (AppStrings.isRussian) "en" else "ru"
-                                    AppStrings.setLanguage(context, next)
-                                }
-                                .padding(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Language,
-                                    contentDescription = AppStrings.actionLanguage,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = if (AppStrings.isRussian) "RU" else "EN",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE5E5EA)
                                 )
                             }
@@ -369,7 +339,7 @@ fun HiFiStudioBudsApp(
                         modifier = Modifier
                             .offset(x = animatedOffset)
                             .width(tabWidth)
-                            .height(40.dp)
+                            .height(48.dp)
                             .clip(RoundedCornerShape(18.dp))
                             .background(Color(0xFF252830))
                     )
@@ -392,36 +362,33 @@ fun HiFiStudioBudsApp(
                                 label = "tab_text_color"
                             )
 
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(40.dp)
+                                    .height(48.dp)
                                     .clip(RoundedCornerShape(18.dp))
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
                                     ) { currentTab = tab }
-                                    .padding(horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                    .padding(vertical = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 Icon(
                                     imageVector = tab.icon,
                                     contentDescription = tab.label,
-                                    modifier = Modifier.size(19.dp),
+                                    modifier = Modifier.size(18.dp),
                                     tint = iconColor
                                 )
-                                if (isSelected) {
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = tab.label,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = textColor,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
+                                Text(
+                                    text = tab.label,
+                                    fontSize = 9.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = textColor,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
@@ -435,8 +402,8 @@ fun HiFiStudioBudsApp(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when (currentTab) {
                 StudioTab.DEVICE -> {
@@ -586,8 +553,8 @@ fun HiFiStudioBudsApp(
                     // Hi-Res Codec Engine Card (LDAC, LHDC, aptX HD)
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "BLUETOOTH АУДИОКОДЕК ВЫСОКОГО РАЗРЕШЕНИЯ",
-                        subtitle = "${codecState.activeCodec.title} • ${codecState.sampleRate} / ${codecState.bitsPerSample}",
+                        title = "ВЫСОКОЕ КАЧЕСТВО ЗВУКА",
+                        subtitle = if (codecState.isLdacEnabledOnBuds) "Режим наушников включён • кодек выбирает Android" else "Режим наушников выключен",
                         icon = Icons.Outlined.GraphicEq,
                         accentColor = Color(0xFFFF9F0A),
                         onClick = { showCodecDialog = true }
@@ -610,8 +577,8 @@ fun HiFiStudioBudsApp(
                                     .background(colorScheme.primaryContainer)
                                     .padding(horizontal = 8.dp, vertical = 3.dp)
                             ) {
-                                Text(
-                                    text = "HI-RES WIRELESS",
+                            Text(
+                                text = if (codecState.isLdacEnabledOnBuds) "HI-RES MODE" else "STANDARD",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = colorScheme.primary
@@ -750,9 +717,10 @@ fun HiFiStudioBudsApp(
                         subtitle = if (updateState.isChecking) "Проверка обновлений на GitHub..."
                         else if (updateState.isDownloading) "Загрузка обновления: ${updateState.downloadProgress}%..."
                         else if (updateState.hasUpdate) "Доступна новая версия: v${updateState.latestVersion}! Нажмите для установки"
+                        else if (updateState.checkError != null) "Не удалось проверить GitHub. Нажмите, чтобы повторить"
                         else "У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})",
                         icon = Icons.Outlined.CloudDownload,
-                        accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else Color(0xFF30D158),
+                        accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else if (updateState.checkError != null) Color(0xFFFF453A) else Color(0xFF30D158),
                         onClick = {
                             if (updateState.hasUpdate) {
                                 if (!updateState.isDownloading) viewModel.startUpdateDownload()
@@ -921,58 +889,16 @@ fun HiFiStudioBudsApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "В чип CMF Buds Pro 2 аппаратно зашиты кодеки LDAC, AAC и SBC. При выборе кодек активируется непосредственно в прошивке наушников и синхронизируется с телефоном:",
+                        text = "Включает режим высокого качества на наушниках. Фактический Bluetooth-кодек выбирает Android и телефон; для LDAC он должен поддерживаться системой и быть включён в настройках Bluetooth.",
                         fontSize = 12.sp,
                         color = colorScheme.onSurfaceVariant
                     )
 
-                    codecState.availableCodecs.forEach { codec ->
-                        val isSelected = codecState.activeCodec == codec
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.applyCodec(codec)
-                                    showCodecDialog = false
-                                },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) colorScheme.primaryContainer else colorScheme.surfaceVariant
-                            ),
-                            border = if (isSelected) CardDefaults.outlinedCardBorder().copy(brush = Brush.verticalGradient(listOf(colorScheme.primary, colorScheme.primary))) else null
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text(codec.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                        if (codec.isHiRes) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(Color(0xFF30D158).copy(alpha = 0.2f))
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                                            ) {
-                                                Text("HI-RES", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF30D158))
-                                            }
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(codec.description, fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
-                                    Text("${codec.sampleRate} • ${codec.bitrateInfo}", fontSize = 10.sp, color = colorScheme.primary)
-                                }
-
-                                RadioButton(selected = isSelected, onClick = {
-                                    viewModel.applyCodec(codec)
-                                    showCodecDialog = false
-                                })
-                            }
-                        }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Высокое качество", fontWeight = FontWeight.SemiBold)
+                        Switch(checked = codecState.isLdacEnabledOnBuds, onCheckedChange = {
+                            viewModel.applyCodec(if (it) com.cmf.budscontroller.audio.CodecType.LDAC else com.cmf.budscontroller.audio.CodecType.SBC)
+                        })
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -984,7 +910,7 @@ fun HiFiStudioBudsApp(
                     ) {
                         Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Системные настройки кодека", fontSize = 12.sp)
+                        Text("Настройки Bluetooth телефона", fontSize = 12.sp)
                     }
                 }
             },
@@ -2412,7 +2338,7 @@ fun StudioProductStage(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(Color(0xFF161A22))
-            .padding(vertical = 20.dp, horizontal = 16.dp),
+            .padding(vertical = 14.dp, horizontal = 14.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -2422,7 +2348,7 @@ fun StudioProductStage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
+                    .height(116.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -2459,14 +2385,14 @@ fun StudioProductStage(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFF0D0F14))
-                    .padding(vertical = 10.dp, horizontal = 14.dp),
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2478,7 +2404,7 @@ fun StudioProductStage(
             }
 
             if (earbudTimeFormatted.isNotBlank() && earbudTimeFormatted != "—") {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -2557,7 +2483,7 @@ fun StudioNoiseControlBar(
             brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
         )
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2582,7 +2508,7 @@ fun StudioNoiseControlBar(
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Animated sliding glass indicator bar
             val selectedIndex = when (currentMode) {
@@ -2629,7 +2555,7 @@ fun StudioNoiseControlBar(
                     modifier = Modifier
                         .offset(x = animatedOffset)
                         .width(animatedWidth)
-                        .height(42.dp)
+                        .height(38.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(Color(0xFF252830))
                 )
@@ -2662,7 +2588,7 @@ fun StudioNoiseControlBar(
                         Row(
                             modifier = Modifier
                                 .weight(if (mode == AncMode.TRANSPARENCY) 1.25f else 1f)
-                                .height(42.dp)
+                                .height(38.dp)
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
@@ -2695,9 +2621,9 @@ fun StudioNoiseControlBar(
             }
 
             AnimatedVisibility(visible = currentMode == AncMode.NOISE_CANCELLATION) {
-                Column(modifier = Modifier.padding(top = 16.dp)) {
+                Column(modifier = Modifier.padding(top = 10.dp)) {
                     Text(
-                        text = "Глубина отсечки шума:",
+                        text = AppStrings.ancDepthLabel,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = colorScheme.onSurfaceVariant
@@ -2798,16 +2724,13 @@ fun BentoCard(
                     Modifier.clickable { onClick() }
                 } else Modifier
             ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.verticalGradient(listOf(Color(0x15FFFFFF), Color(0x08FFFFFF)))
-        )
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A22))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2839,13 +2762,13 @@ fun BentoCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = title,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
+                letterSpacing = 0.5.sp,
                 color = Color(0xFF8E8E93)
             )
 
@@ -2853,7 +2776,7 @@ fun BentoCard(
 
             Text(
                 text = subtitle,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFFE5E5EA),
                 maxLines = 2,

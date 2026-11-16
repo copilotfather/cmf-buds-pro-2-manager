@@ -31,7 +31,8 @@ data class UpdateInfo(
     val isChecking: Boolean = false,
     val isDownloading: Boolean = false,
     val downloadProgress: Int = 0,
-    val downloadError: String? = null
+    val downloadError: String? = null,
+    val checkError: String? = null
 )
 
 class GitHubUpdateManager(private val context: Context) {
@@ -61,9 +62,11 @@ class GitHubUpdateManager(private val context: Context) {
      * 4. GitHub REST API /releases list
      */
     suspend fun checkForUpdates(): UpdateInfo = withContext(Dispatchers.IO) {
-        _updateState.value = _updateState.value.copy(isChecking = true, downloadError = null)
+        if (_updateState.value.isChecking) return@withContext _updateState.value
+        _updateState.value = _updateState.value.copy(isChecking = true, downloadError = null, checkError = null)
         val currentVer = getCurrentVersionName()
         Log.i(TAG, "Starting update check. Current app version: $currentVer")
+        var fallback: UpdateInfo? = null
 
         // -------------------------------------------------------------
         // Channel 1: GitHub Releases Atom Feed (Fastest, zero rate limit)
@@ -103,8 +106,7 @@ class GitHubUpdateManager(private val context: Context) {
                             downloadUrl = dlUrl,
                             isChecking = false
                         )
-                        _updateState.value = res
-                        return@withContext res
+                        fallback = res
                     }
                 }
             }
@@ -139,8 +141,7 @@ class GitHubUpdateManager(private val context: Context) {
                     downloadUrl = dlUrl,
                     isChecking = false
                 )
-                _updateState.value = res
-                return@withContext res
+                if (isValidVersion(tag)) fallback = res
             }
         } catch (e: Exception) {
             Log.w(TAG, "[Channel 2: 302 Redirect] Error: ${e.message}")
@@ -175,8 +176,7 @@ class GitHubUpdateManager(private val context: Context) {
                     downloadUrl = dl,
                     isChecking = false
                 )
-                _updateState.value = res
-                return@withContext res
+                if (isValidVersion(ver) && dl.startsWith("https://github.com/$repoOwner/$repoName/releases/download/")) fallback = res
             }
         } catch (e: Exception) {
             Log.w(TAG, "[Channel 3: CDN] Error: ${e.message}")
@@ -186,13 +186,16 @@ class GitHubUpdateManager(private val context: Context) {
         // Channel 4: GitHub REST API (/releases array fallback)
         // -------------------------------------------------------------
         try {
-            val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
+            val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases?per_page=1&nocache=${System.currentTimeMillis()}"
             val conn = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Accept", "application/vnd.github.v3+json")
                 setRequestProperty("User-Agent", "CMFBudsPro2Manager-Updater")
+                setRequestProperty("Cache-Control", "no-cache, no-store")
+                setRequestProperty("Pragma", "no-cache")
                 connectTimeout = 5000
                 readTimeout = 5000
+                useCaches = false
             }
             if (conn.responseCode == 200) {
                 val body = conn.inputStream.bufferedReader().use { it.readText() }
@@ -208,15 +211,13 @@ class GitHubUpdateManager(private val context: Context) {
                         for (i in 0 until assets.length()) {
                             val asset = assets.getJSONObject(i)
                             val name = asset.optString("name", "")
-                            if (name.endsWith(".apk", ignoreCase = true)) {
+                            if (name == "CMF_Buds_Pro_2_Manager.apk") {
                                 apkUrl = asset.optString("browser_download_url", "")
                                 break
                             }
                         }
                     }
-                    if (apkUrl.isBlank()) {
-                        apkUrl = "https://github.com/$repoOwner/$repoName/releases/download/v$tagName/CMF_Buds_Pro_2_Manager.apk"
-                    }
+                    if (apkUrl.isBlank()) throw IllegalStateException("Latest release has no APK asset")
 
                     val hasNew = isNewerVersion(tagName, currentVer)
                     Log.i(TAG, "[Channel 4: REST API] Tag: $tagName, current: $currentVer, hasUpdate: $hasNew")
@@ -228,8 +229,10 @@ class GitHubUpdateManager(private val context: Context) {
                         downloadUrl = apkUrl,
                         isChecking = false
                     )
-                    _updateState.value = res
-                    return@withContext res
+                    if (isValidVersion(tagName)) {
+                        _updateState.value = res
+                        return@withContext res
+                    }
                 }
             } else {
                 Log.w(TAG, "[Channel 4: REST API] HTTP ${conn.responseCode}")
@@ -240,19 +243,21 @@ class GitHubUpdateManager(private val context: Context) {
             _updateState.value = _updateState.value.copy(isChecking = false)
         }
 
-        return@withContext _updateState.value
+        val noUpdate = fallback ?: UpdateInfo(latestVersion = currentVer, checkError = "Не удалось проверить GitHub. Проверьте подключение и повторите.")
+        _updateState.value = noUpdate
+        return@withContext noUpdate
     }
 
     /**
      * Compares two semantic version strings safely (e.g., "2.3.0" vs "2.2.3.3").
      */
     fun isNewerVersion(latest: String, current: String): Boolean {
-        if (latest.isBlank()) return false
+        if (!isValidVersion(latest) || !isValidVersion(current)) return false
         val cleanLatest = latest.removePrefix("v").trim()
         val cleanCurrent = current.removePrefix("v").trim()
 
-        val lParts = cleanLatest.split(".").mapNotNull { it.toIntOrNull() }
-        val cParts = cleanCurrent.split(".").mapNotNull { it.toIntOrNull() }
+        val lParts = cleanLatest.split(".").map { it.toInt() }
+        val cParts = cleanCurrent.split(".").map { it.toInt() }
 
         val maxLen = maxOf(lParts.size, cParts.size)
         for (i in 0 until maxLen) {
@@ -263,6 +268,9 @@ class GitHubUpdateManager(private val context: Context) {
         }
         return false
     }
+
+    private fun isValidVersion(version: String): Boolean =
+        version.removePrefix("v").trim().matches(Regex("\\d+\\.\\d+(?:\\.\\d+){0,2}"))
 
     fun openInBrowser(url: String = "") {
         try {
