@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.media.CmfMediaState
 import com.cmf.budscontroller.protocol.DeviceStatus
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 import kotlin.math.sin
 
@@ -79,7 +80,7 @@ fun CmfDotMatrixHud(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Светодиодный индикатор",
+                    text = if (AppStrings.isRussian) "Светодиодный индикатор" else "LED indicator",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,

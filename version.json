@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.6",
-  "versionCode": 2360,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.6/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.6:\n• Fixed GitHub update checks so stale cache responses cannot hide a newer release\n• Added clear feedback when GitHub cannot be reached\n• Reworked high-quality audio control to report the earbud mode accurately and let Android negotiate LDAC"
+  "versionName": "2.3.7",
+  "versionCode": 2370,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.7/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.7:\n• Completed English translations across the app screens, dialogs, settings, audio features and voice prompts"
 }

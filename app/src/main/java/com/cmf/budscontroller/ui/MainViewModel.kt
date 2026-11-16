@@ -341,7 +341,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (b.rightPercent > 0) b.rightPercent else null
         )
         val budPercent = validBuds.minOrNull() ?: 100
-        voiceWhisperManager.speak("Тест голоса. Заряд наушников $budPercent процентов. Все системы CMF активны.")
+        voiceWhisperManager.speak(
+            if (com.cmf.budscontroller.i18n.AppStrings.isRussian) {
+                "Тест голоса. Заряд наушников $budPercent процентов. Все системы CMF активны."
+            } else {
+                "Voice test. Earbud battery is at $budPercent percent. All CMF systems are active."
+            }
+        )
     }
 
     // Smart Dial

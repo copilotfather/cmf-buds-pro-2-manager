@@ -80,7 +80,11 @@ class BluetoothCodecManager(private val context: Context) {
 
                 _state.value = _state.value.copy(
                     isLdacEnabledOnBuds = enableLdacInBuds,
-                    bitrateMode = if (enableLdacInBuds) "Hi-res включён • кодек выбирает Android" else "Стандартное качество • кодек выбирает Android"
+                    bitrateMode = if (enableLdacInBuds) {
+                        if (AppStrings.isRussian) "Hi-res включён • кодек выбирает Android" else "Hi-res enabled • codec selected by Android"
+                    } else {
+                        if (AppStrings.isRussian) "Стандартное качество • кодек выбирает Android" else "Standard quality • codec selected by Android"
+                    }
                 )
 
                 onCompleted(true)

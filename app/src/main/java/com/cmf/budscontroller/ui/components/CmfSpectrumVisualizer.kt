@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlin.math.sin
 
 /**
@@ -90,14 +91,18 @@ fun CmfSpectrumVisualizer(
 
                     Column {
                         Text(
-                            text = "СПЕКТРОАНАЛИЗАТОР FFT 60 FPS",
+                            text = if (AppStrings.isRussian) "СПЕКТРОАНАЛИЗАТОР FFT 60 FPS" else "FFT SPECTRUM ANALYZER 60 FPS",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.2.sp,
                             color = Color(0xFF8E95A5)
                         )
                         Text(
-                            text = if (isPlaying) "Живой аудиопоток DSP" else "Ожидание сигнала",
+                            text = if (isPlaying) {
+                                if (AppStrings.isRussian) "Живой аудиопоток DSP" else "Live DSP audio stream"
+                            } else {
+                                if (AppStrings.isRussian) "Ожидание сигнала" else "Waiting for signal"
+                            },
                             fontSize = 13.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White

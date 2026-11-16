@@ -152,6 +152,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun uiText(russian: String, english: String): String =
+    if (AppStrings.isRussian) russian else english
+
 enum class StudioTab(val icon: ImageVector) {
     DEVICE(Icons.Outlined.Headphones),
     STUDIO(Icons.Outlined.GraphicEq),
@@ -553,8 +556,8 @@ fun HiFiStudioBudsApp(
                     // Hi-Res Codec Engine Card (LDAC, LHDC, aptX HD)
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ВЫСОКОЕ КАЧЕСТВО ЗВУКА",
-                        subtitle = if (codecState.isLdacEnabledOnBuds) "Режим наушников включён • кодек выбирает Android" else "Режим наушников выключен",
+                        title = uiText("ВЫСОКОЕ КАЧЕСТВО ЗВУКА", "HIGH-QUALITY AUDIO"),
+                        subtitle = if (codecState.isLdacEnabledOnBuds) uiText("Режим наушников включён • кодек выбирает Android", "Earbud mode on • codec selected by Android") else uiText("Режим наушников выключен", "Earbud mode off"),
                         icon = Icons.Outlined.GraphicEq,
                         accentColor = Color(0xFFFF9F0A),
                         onClick = { showCodecDialog = true }
@@ -603,8 +606,8 @@ fun HiFiStudioBudsApp(
                     // Spatial Audio 360 Card
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ПРОСТРАНСТВЕННОЕ АУДИО 360°",
-                        subtitle = "${spatialState.mode.title} • Вокал: ${spatialState.vocalClarity.title}",
+                        title = uiText("ПРОСТРАНСТВЕННОЕ АУДИО 360°", "360° SPATIAL AUDIO"),
+                        subtitle = "${spatialState.mode.title} • ${uiText("Вокал", "Vocal")}: ${spatialState.vocalClarity.title}",
                         icon = Icons.Outlined.SpatialAudio,
                         accentColor = Color(0xFF64D2FF),
                         onClick = { showSpatialDialog = true }
@@ -613,8 +616,8 @@ fun HiFiStudioBudsApp(
                     // Balance & Boost Card
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "БАЛАНС КАНАЛОВ И УСИЛЕНИЕ",
-                        subtitle = "Баланс: ${String.format("%.1f", audioState.channelBalance)} • Буст: +${audioState.loudnessBoostMilliBels / 100} dB",
+                        title = uiText("БАЛАНС КАНАЛОВ И УСИЛЕНИЕ", "CHANNEL BALANCE & BOOST"),
+                        subtitle = "${uiText("Баланс", "Balance")}: ${String.format("%.1f", audioState.channelBalance)} • ${uiText("Усиление", "Boost")}: +${audioState.loudnessBoostMilliBels / 100} dB",
                         icon = Icons.Outlined.SettingsSuggest,
                         accentColor = Color(0xFFBF5AF2),
                         onClick = { showAudioTweaksDialog = true }
@@ -636,7 +639,7 @@ fun HiFiStudioBudsApp(
 
                 StudioTab.FEATURES -> {
                     Text(
-                        text = "ИНТЕЛЛЕКТУАЛЬНЫЕ ФУНКЦИИ",
+                        text = uiText("ИНТЕЛЛЕКТУАЛЬНЫЕ ФУНКЦИИ", "SMART FEATURES"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.4.sp,
@@ -647,8 +650,8 @@ fun HiFiStudioBudsApp(
                     // Auto ANC
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "АДАПТИВНЫЙ АВТО-ANC",
-                        subtitle = if (noiseState.isAutoAncActive) "Активен • ${noiseState.noiseEnvironment} (${noiseState.currentDecibels} дБ)" else "Автоматическая калибровка шумоподавления по микрофону",
+                        title = uiText("АДАПТИВНЫЙ АВТО-ANC", "ADAPTIVE AUTO ANC"),
+                        subtitle = if (noiseState.isAutoAncActive) "${uiText("Активен", "Active")} • ${noiseState.noiseEnvironment} (${noiseState.currentDecibels} ${uiText("дБ", "dB")})" else uiText("Автоматическая калибровка шумоподавления по микрофону", "Automatic noise cancellation tuning via microphone"),
                         icon = Icons.Outlined.AutoMode,
                         accentColor = colorScheme.primary,
                         onClick = { viewModel.toggleAutoAnc(!noiseState.isAutoAncActive) }
@@ -693,8 +696,8 @@ fun HiFiStudioBudsApp(
                     // Sleep Timer
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ТАЙМЕР СНА И РЕЛАКС",
-                        subtitle = if (sleepState.isActive) "Осталось: ${sleepState.minutesRemaining} мин • ${sleepState.noiseType.title}" else "Фоновые звуки природы и авто-отключение",
+                        title = uiText("ТАЙМЕР СНА И РЕЛАКС", "SLEEP TIMER & RELAX"),
+                        subtitle = if (sleepState.isActive) "${uiText("Осталось", "Remaining")}: ${sleepState.minutesRemaining} ${uiText("мин", "min")} • ${sleepState.noiseType.title}" else uiText("Фоновые звуки природы и авто-отключение", "Ambient sounds with auto-stop"),
                         icon = Icons.Outlined.Bedtime,
                         accentColor = Color(0xFF5E5CE6),
                         onClick = { showSleepTimerDialog = true }
@@ -703,8 +706,8 @@ fun HiFiStudioBudsApp(
                     // Whisper
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ГОЛОСОВОЙ ШЕПОТ (WHISPER)",
-                        subtitle = "Озвучивание заряда и времени суток в ухо",
+                        title = uiText("ГОЛОСОВОЙ ШЕПОТ (WHISPER)", "VOICE PROMPTS (WHISPER)"),
+                        subtitle = uiText("Озвучивание заряда и времени суток в ухо", "Battery and time announcements in your earbuds"),
                         icon = Icons.Outlined.RecordVoiceOver,
                         accentColor = Color(0xFFFFD60A),
                         onClick = { showWhisperDialog = true }
@@ -713,12 +716,12 @@ fun HiFiStudioBudsApp(
                     // GitHub Auto-Updater
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ (GITHUB OTA)",
-                        subtitle = if (updateState.isChecking) "Проверка обновлений на GitHub..."
-                        else if (updateState.isDownloading) "Загрузка обновления: ${updateState.downloadProgress}%..."
-                        else if (updateState.hasUpdate) "Доступна новая версия: v${updateState.latestVersion}! Нажмите для установки"
-                        else if (updateState.checkError != null) "Не удалось проверить GitHub. Нажмите, чтобы повторить"
-                        else "У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})",
+                        title = uiText("ОБНОВЛЕНИЕ ПРИЛОЖЕНИЯ (GITHUB OTA)", "APP UPDATE (GITHUB OTA)"),
+                        subtitle = if (updateState.isChecking) uiText("Проверка обновлений на GitHub...", "Checking GitHub for updates...")
+                        else if (updateState.isDownloading) uiText("Загрузка обновления: ${updateState.downloadProgress}%...", "Downloading update: ${updateState.downloadProgress}%...")
+                        else if (updateState.hasUpdate) uiText("Доступна новая версия: v${updateState.latestVersion}! Нажмите для установки", "Version v${updateState.latestVersion} is available. Tap to install")
+                        else if (updateState.checkError != null) uiText("Не удалось проверить GitHub. Нажмите, чтобы повторить", "Couldn't check GitHub. Tap to retry")
+                        else uiText("У вас актуальная версия (${viewModel.updateManager.getCurrentVersionName()})", "You're up to date (${viewModel.updateManager.getCurrentVersionName()})"),
                         icon = Icons.Outlined.CloudDownload,
                         accentColor = if (updateState.hasUpdate) Color(0xFFFF5722) else if (updateState.checkError != null) Color(0xFFFF453A) else Color(0xFF30D158),
                         onClick = {
@@ -739,7 +742,7 @@ fun HiFiStudioBudsApp(
                                     trackColor = colorScheme.surfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("Загрузка APK: ${updateState.downloadProgress}%", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
+                                Text(uiText("Загрузка APK: ${updateState.downloadProgress}%", "Downloading APK: ${updateState.downloadProgress}%"), fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
                             } else {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -751,7 +754,7 @@ fun HiFiStudioBudsApp(
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
                                     ) {
-                                        Text("Скачать v${updateState.latestVersion}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text(uiText("Скачать v${updateState.latestVersion}", "Download v${updateState.latestVersion}"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
                                     OutlinedButton(
                                         onClick = { viewModel.openUpdateInBrowser() },
@@ -759,7 +762,7 @@ fun HiFiStudioBudsApp(
                                     ) {
                                         Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Браузер", fontSize = 11.sp)
+                                        Text(uiText("Браузер", "Browser"), fontSize = 11.sp)
                                     }
                                 }
                             }
@@ -769,7 +772,7 @@ fun HiFiStudioBudsApp(
 
                 StudioTab.BRIDGE -> {
                     Text(
-                        text = "БЕСПРОВОДНОЙ АУДИО МОСТ",
+                        text = uiText("БЕСПРОВОДНОЙ АУДИО МОСТ", "WIRELESS AUDIO BRIDGE"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.4.sp,
@@ -780,8 +783,8 @@ fun HiFiStudioBudsApp(
                     // Card 1: Server Switch & Status
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
-                        title = "ТРАНСЛЯЦИЯ ЗВУКА С ПК (LOW LATENCY)",
-                        subtitle = if (relayState.isRunning) "Сервер запущен (Порт ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}) • Задержка ~${relayState.latencyEstimateMs} мс" else "Слушайте звук с компьютера на наушниках через Wi-Fi/USB",
+                        title = uiText("ТРАНСЛЯЦИЯ ЗВУКА С ПК (LOW LATENCY)", "PC AUDIO STREAM (LOW LATENCY)"),
+                        subtitle = if (relayState.isRunning) "${uiText("Сервер запущен (порт", "Server running (port")} ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}) • ${uiText("Задержка", "Latency")} ~${relayState.latencyEstimateMs} ${uiText("мс", "ms")}" else uiText("Слушайте звук с компьютера на наушниках через Wi-Fi/USB", "Stream PC audio to your earbuds over Wi-Fi or USB"),
                         icon = Icons.Outlined.Computer,
                         accentColor = colorScheme.primary
                     ) {
@@ -796,7 +799,7 @@ fun HiFiStudioBudsApp(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Параметры: ${relayState.mode.title}", fontSize = 12.sp)
+                                Text(uiText("Параметры", "Settings") + ": ${relayState.mode.title}", fontSize = 12.sp)
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Switch(
@@ -821,7 +824,7 @@ fun HiFiStudioBudsApp(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = null, tint = Color(0xFF64D2FF), modifier = Modifier.size(20.dp))
-                                Text("ПОШАГОВАЯ ИНСТРУКЦИЯ ПОДКЛЮЧЕНИЯ", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64D2FF))
+                                Text(uiText("ПОШАГОВАЯ ИНСТРУКЦИЯ ПОДКЛЮЧЕНИЯ", "CONNECTION GUIDE"), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF64D2FF))
                             }
                             Spacer(modifier = Modifier.height(14.dp))
 
@@ -834,8 +837,8 @@ fun HiFiStudioBudsApp(
                                     Text("1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Включите тумблер выше", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text("Телефон запустит локальный TCP сервер на порту ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT} и подготовит аудио-декодер к приёму PCM-потока 48 кГц.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                    Text(uiText("Включите переключатель выше", "Turn on the switch above"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text(uiText("Телефон запустит локальный TCP-сервер на порту ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT} для приёма PCM-аудио 48 кГц.", "Your phone will start a local TCP server on port ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT} to receive 48 kHz PCM audio."), fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
                                 }
                             }
 
@@ -850,8 +853,8 @@ fun HiFiStudioBudsApp(
                                     Text("2", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Выберите способ передачи (USB или Wi-Fi)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text("• По USB (Ultra Low-Latency ~10-15 мс): подключите провод и запустите cmf_pc_relay_usb.bat в папке PC_Client.\n• По Wi-Fi: запустите cmf_pc_relay.bat и укажите локальный IP вашего телефона.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                    Text(uiText("Выберите способ передачи (USB или Wi-Fi)", "Choose a connection method (USB or Wi-Fi)"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text(uiText("• USB (ultra-low latency, ~10–15 ms): connect the cable and run cmf_pc_relay_usb.bat from the PC_Client folder.\n• Wi-Fi: run cmf_pc_relay.bat and enter your phone's local IP address.", "• USB (ultra-low latency, ~10–15 ms): connect the cable and run cmf_pc_relay_usb.bat from the PC_Client folder.\n• Wi-Fi: run cmf_pc_relay.bat and enter your phone's local IP address."), fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
                                 }
                             }
 
@@ -866,8 +869,8 @@ fun HiFiStudioBudsApp(
                                     Text("3", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Готово! Чистый звук ПК в наушниках", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text("Звук с Windows передаётся напрямую без сжатия в наушники CMF Buds Pro 2 с минимальной задержкой для игр и видео.", fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                    Text(uiText("Готово! Чистый звук ПК в наушниках", "Done! PC audio is playing in your earbuds"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text(uiText("Звук с Windows передаётся напрямую в CMF Buds Pro 2 с минимальной задержкой для игр и видео.", "Windows audio streams to your CMF Buds Pro 2 with low latency for games and video."), fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -885,17 +888,17 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showCodecDialog = false },
             icon = { Icon(Icons.Outlined.HighQuality, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Аппаратный аудиокодек наушников", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Режим высокого качества наушников", "Earbud high-quality audio mode"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Включает режим высокого качества на наушниках. Фактический Bluetooth-кодек выбирает Android и телефон; для LDAC он должен поддерживаться системой и быть включён в настройках Bluetooth.",
+                        text = uiText("Включает режим высокого качества на наушниках. Bluetooth-кодек выбирает Android; для LDAC нужна поддержка телефона и включённый HD Audio в настройках Bluetooth.", "Enables high-quality mode on the earbuds. Android selects the Bluetooth codec; LDAC requires phone support and HD Audio enabled in Bluetooth settings."),
                         fontSize = 12.sp,
                         color = colorScheme.onSurfaceVariant
                     )
 
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Высокое качество", fontWeight = FontWeight.SemiBold)
+                        Text(uiText("Высокое качество", "High quality"), fontWeight = FontWeight.SemiBold)
                         Switch(checked = codecState.isLdacEnabledOnBuds, onCheckedChange = {
                             viewModel.applyCodec(if (it) com.cmf.budscontroller.audio.CodecType.LDAC else com.cmf.budscontroller.audio.CodecType.SBC)
                         })
@@ -910,11 +913,11 @@ fun HiFiStudioBudsApp(
                     ) {
                         Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Настройки Bluetooth телефона", fontSize = 12.sp)
+                        Text(uiText("Настройки Bluetooth телефона", "Phone Bluetooth settings"), fontSize = 12.sp)
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showCodecDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showCodecDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -923,10 +926,10 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showDialDialog = false },
             icon = { Icon(Icons.Outlined.Tune, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Колесико Smart Dial", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Колесо Smart Dial", "Smart Dial"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("Вращение колесика:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("При вращении:", "On rotation:"), style = MaterialTheme.typography.labelLarge)
                     DialRotateAction.values().forEach { action ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -944,7 +947,7 @@ fun HiFiStudioBudsApp(
 
                     HorizontalDivider(thickness = 0.8.dp)
 
-                    Text("Нажатие на колесико:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("При нажатии:", "On press:"), style = MaterialTheme.typography.labelLarge)
                     DialClickAction.values().forEach { action ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -961,7 +964,7 @@ fun HiFiStudioBudsApp(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showDialDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showDialDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -970,10 +973,10 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showSpatialDialog = false },
             icon = { Icon(Icons.Outlined.SpatialAudio, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Пространственное аудио 360°", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Пространственное аудио 360°", "360° Spatial Audio"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Режим сцены:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("Режим сцены:", "Soundstage:"), style = MaterialTheme.typography.labelLarge)
                     SpatialMode.values().forEach { mode ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -994,7 +997,7 @@ fun HiFiStudioBudsApp(
 
                     HorizontalDivider(thickness = 0.8.dp)
 
-                    Text("Четкость вокала:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("Чёткость вокала:", "Vocal clarity:"), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         VocalClarity.values().forEach { vc ->
                             FilterChip(
@@ -1007,7 +1010,7 @@ fun HiFiStudioBudsApp(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showSpatialDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showSpatialDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1016,10 +1019,10 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showAudioTweaksDialog = false },
             icon = { Icon(Icons.Outlined.SettingsSuggest, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Баланс каналов и громкость", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Баланс каналов и громкость", "Channel balance & volume"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("Баланс левый / правый (${String.format("%.1f", audioState.channelBalance)}):", style = MaterialTheme.typography.labelMedium)
+                    Text("${uiText("Баланс левого / правого канала", "Left / right balance")} (${String.format("%.1f", audioState.channelBalance)}):", style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = audioState.channelBalance,
                         onValueChange = { viewModel.setChannelBalance(it) },
@@ -1029,7 +1032,7 @@ fun HiFiStudioBudsApp(
 
                     HorizontalDivider(thickness = 0.8.dp)
 
-                    Text("Аппаратное усиление звука (+${audioState.loudnessBoostMilliBels / 100} dB):", style = MaterialTheme.typography.labelMedium)
+                    Text("${uiText("Усиление громкости", "Loudness boost")} (+${audioState.loudnessBoostMilliBels / 100} dB):", style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = (audioState.loudnessBoostMilliBels / 100).toFloat(),
                         onValueChange = { viewModel.setLoudnessGain((it * 100).toInt()) },
@@ -1038,7 +1041,7 @@ fun HiFiStudioBudsApp(
                     )
                 }
             },
-            confirmButton = { TextButton(onClick = { showAudioTweaksDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showAudioTweaksDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1047,10 +1050,10 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showSleepTimerDialog = false },
             icon = { Icon(Icons.Outlined.Bedtime, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Таймер сна и релакс", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Таймер сна и релакс", "Sleep timer & relax"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Тип шума для засыпания:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("Фоновый звук:", "Ambient sound:"), style = MaterialTheme.typography.labelLarge)
                     RelaxNoiseType.values().forEach { nt ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1074,12 +1077,12 @@ fun HiFiStudioBudsApp(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Остановить таймер", color = Color.White)
+                            Text(uiText("Остановить таймер", "Stop timer"), color = Color.White)
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showSleepTimerDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showSleepTimerDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1088,7 +1091,7 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showWhisperDialog = false },
             icon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Голосовой шепот (Whisper)", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Голосовые подсказки", "Voice prompts"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(
@@ -1096,7 +1099,7 @@ fun HiFiStudioBudsApp(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Озвучивать заряд при надевании", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text(uiText("Озвучивать заряд при подключении", "Announce battery on connect"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         Switch(checked = whisperSettings.announceOnConnect, onCheckedChange = { viewModel.toggleWhisperConnect(it) })
                     }
 
@@ -1107,7 +1110,7 @@ fun HiFiStudioBudsApp(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Озвучивать время каждый час", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text(uiText("Озвучивать время каждый час", "Announce the time hourly"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         Switch(checked = whisperSettings.announceHourlyTime, onCheckedChange = { viewModel.toggleWhisperHours(it) })
                     }
 
@@ -1115,11 +1118,11 @@ fun HiFiStudioBudsApp(
                         onClick = { viewModel.testWhisperVoice() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Проверить голос (Тест)")
+                        Text(uiText("Проверить голос", "Test voice prompt"))
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showWhisperDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showWhisperDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1128,10 +1131,10 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showRelayDialog = false },
             icon = { Icon(Icons.Outlined.Computer, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Параметры ПК Моста", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(uiText("Настройки аудиомоста ПК", "PC audio bridge settings"), style = MaterialTheme.typography.titleLarge) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Режим передачи:", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("Режим передачи:", "Transfer mode:"), style = MaterialTheme.typography.labelLarge)
                     RelayMode.values().forEach { mode ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1152,7 +1155,7 @@ fun HiFiStudioBudsApp(
 
                     HorizontalDivider(thickness = 0.8.dp)
 
-                    Text("Буферизация (Задержка):", style = MaterialTheme.typography.labelLarge)
+                    Text(uiText("Буфер (задержка):", "Buffer (latency):"), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         BufferPreset.values().forEach { bp ->
                             FilterChip(
@@ -1165,7 +1168,7 @@ fun HiFiStudioBudsApp(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showRelayDialog = false }) { Text("Готово") } },
+            confirmButton = { TextButton(onClick = { showRelayDialog = false }) { Text(AppStrings.doneBtn) } },
             shape = RoundedCornerShape(20.dp)
         )
     }
@@ -1182,11 +1185,11 @@ fun HiFiStudioBudsApp(
         AlertDialog(
             onDismissRequest = { showDevicePicker = false },
             icon = { Icon(Icons.Outlined.Bluetooth, contentDescription = null, tint = colorScheme.primary) },
-            title = { Text("Выберите устройство", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(AppStrings.selectDeviceTitle, style = MaterialTheme.typography.titleLarge) },
             text = {
                 if (bondedDevices.isEmpty()) {
                     Text(
-                        "Нет сопряжённых Bluetooth устройств. Подключите CMF Buds Pro 2 в настройках телефона.",
+                        AppStrings.noBondedDevices,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
@@ -1302,7 +1305,7 @@ fun HiFiStudioBudsApp(
                                         fontSize = 15.sp
                                     )
                                     Text(
-                                        "Версия: v${viewModel.updateManager.getCurrentVersionName()}",
+                                        "${uiText("Версия", "Version")}: v${viewModel.updateManager.getCurrentVersionName()}",
                                         fontSize = 12.sp,
                                         color = colorScheme.primary
                                     )
@@ -1310,7 +1313,7 @@ fun HiFiStudioBudsApp(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Автономный центр управления для CMF Buds Pro 2 от Nothing. Прямое аппаратное BES/SPP управление, Sony LDAC Hi-Res и скандинавский минимализм.",
+                                text = uiText("Центр управления CMF Buds Pro 2 с прямым управлением через BES/SPP, режимом высокого качества звука и лаконичным интерфейсом.", "A CMF Buds Pro 2 control center with direct BES/SPP control, high-quality audio mode, and a clean interface."),
                                 fontSize = 11.5.sp,
                                 color = colorScheme.onSurfaceVariant
                             )
@@ -1318,7 +1321,7 @@ fun HiFiStudioBudsApp(
                     }
 
                     // Credits & Developer Info
-                    Text("Разработка и Авторство", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(uiText("Разработка и авторство", "Credits"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
 
                     Card(
                         modifier = Modifier
@@ -1335,7 +1338,7 @@ fun HiFiStudioBudsApp(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Автор проекта: Dmitry (copilotfather)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text(uiText("Автор проекта: Dmitry (copilotfather)", "Project author: Dmitry (copilotfather)"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                 Text("github.com/copilotfather", fontSize = 11.sp, color = colorScheme.primary)
                             }
                             Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.primary)
@@ -1355,7 +1358,7 @@ fun HiFiStudioBudsApp(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Соавтор разработки: Antigravity AI", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text(uiText("Соавтор разработки: Antigravity AI", "Development co-author: Antigravity AI"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                 Text("Google DeepMind Agentic Assistant", fontSize = 11.sp, color = Color(0xFF00E5FF))
                             }
                             Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF00E5FF))
@@ -1377,8 +1380,8 @@ fun HiFiStudioBudsApp(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Исходный код репозитория", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                Text("MIT License • Открытый проект", fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
+                                Text(uiText("Исходный код проекта", "Project source code"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text(uiText("Лицензия MIT • Открытый проект", "MIT License • Open source"), fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
                             }
                             Icon(Icons.Outlined.Code, contentDescription = null, modifier = Modifier.size(18.dp), tint = colorScheme.onSurfaceVariant)
                         }
@@ -1387,7 +1390,7 @@ fun HiFiStudioBudsApp(
                     HorizontalDivider(thickness = 0.8.dp)
 
                     // Quick Actions
-                    Text("Обновления и Система", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(uiText("Обновления и система", "Updates & system"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
 
                     FilledTonalButton(
                         onClick = {
@@ -1399,13 +1402,13 @@ fun HiFiStudioBudsApp(
                     ) {
                         Icon(Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Проверить обновления сейчас", fontSize = 12.sp)
+                        Text(uiText("Проверить обновления сейчас", "Check for updates now"), fontSize = 12.sp)
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showSettingsDialog = false }) {
-                    Text("Закрыть")
+                    Text(AppStrings.btnClose)
                 }
             },
             shape = RoundedCornerShape(20.dp)
@@ -1426,7 +1429,7 @@ fun HiFiStudioBudsApp(
             },
             title = {
                 Text(
-                    "Доступно обновление v${updateState.latestVersion}!",
+                    uiText("Доступно обновление v${updateState.latestVersion}!", "Update v${updateState.latestVersion} is available!"),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -1434,7 +1437,7 @@ fun HiFiStudioBudsApp(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Найдена свежая версия приложения на GitHub:",
+                        uiText("На GitHub доступна новая версия приложения:", "A new app version is available on GitHub:"),
                         fontSize = 13.sp,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -1445,14 +1448,14 @@ fun HiFiStudioBudsApp(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                "Что нового:",
+                                uiText("Что нового:", "What's new:"),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = Color(0xFFFF5722)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = updateState.releaseNotes.ifBlank { "Оптимизация под Poco X7, улучшенный Sonic Water Eject, меню настроек и скользящие стекляшки." },
+                                text = updateState.releaseNotes.ifBlank { uiText("Исправления ошибок и улучшения.", "Bug fixes and improvements.") },
                                 fontSize = 11.5.sp,
                                 color = colorScheme.onSurface
                             )
@@ -1475,7 +1478,7 @@ fun HiFiStudioBudsApp(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = if (updateState.downloadProgress < 100) "Загрузка обновления..." else "Запуск установщика...",
+                                text = if (updateState.downloadProgress < 100) uiText("Загрузка обновления...", "Downloading update...") else uiText("Запуск установщика...", "Starting installer..."),
                                 fontSize = 11.sp,
                                 color = colorScheme.onSurfaceVariant
                             )
@@ -1500,7 +1503,7 @@ fun HiFiStudioBudsApp(
                     ) {
                         Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Браузер", fontSize = 11.sp)
+                        Text(uiText("Браузер", "Browser"), fontSize = 11.sp)
                     }
 
                     Button(
@@ -1512,7 +1515,7 @@ fun HiFiStudioBudsApp(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = if (updateState.isDownloading) "Загрузка..." else "Скачать и обновить",
+                            text = if (updateState.isDownloading) uiText("Загрузка...", "Downloading...") else uiText("Скачать и обновить", "Download & update"),
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             fontSize = 12.sp
@@ -1523,7 +1526,7 @@ fun HiFiStudioBudsApp(
             dismissButton = {
                 if (!updateState.isDownloading) {
                     TextButton(onClick = { showUpdatePopupDialog = false }) {
-                        Text("Позже")
+                        Text(uiText("Позже", "Later"))
                     }
                 }
             },
@@ -1654,14 +1657,14 @@ fun StudioMasterEqualizerCard(
             ) {
                 Column {
                     Text(
-                        text = "СТУДИЙНЫЙ ЭКВАЛАЙЗЕР",
+                        text = uiText("СТУДИЙНЫЙ ЭКВАЛАЙЗЕР", "STUDIO EQUALIZER"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.3.sp,
                         color = colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = if (eqState.isEnabled) eqState.activePresetName else "Эквалайзер выключен",
+                        text = if (eqState.isEnabled) eqState.activePresetName else uiText("Эквалайзер выключен", "Equalizer is off"),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (eqState.isEnabled) colorScheme.primary else colorScheme.onSurfaceVariant
@@ -1682,7 +1685,7 @@ fun StudioMasterEqualizerCard(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.FileDownload,
-                            contentDescription = "JSON Импорт/Экспорт",
+                            contentDescription = uiText("Импорт/экспорт JSON", "Import/export JSON"),
                             tint = Color(0xFF64D2FF),
                             modifier = Modifier.size(18.dp)
                         )
@@ -1874,14 +1877,14 @@ fun StudioMasterEqualizerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "ПРЕДУСТАНОВКИ:",
+                    text = uiText("ПРЕСЕТЫ:", "PRESETS:"),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
                     color = colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "+ Сохранить пресет",
+                    text = "+ ${uiText("Сохранить пресет", "Save preset")}",
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFF5722),
@@ -1929,7 +1932,7 @@ fun StudioMasterEqualizerCard(
                             if (preset.isCustom) {
                                 Icon(
                                     imageVector = Icons.Outlined.Close,
-                                    contentDescription = "Удалить",
+                                    contentDescription = uiText("Удалить", "Delete"),
                                     modifier = Modifier
                                         .size(13.dp)
                                         .clickable {
@@ -1950,14 +1953,14 @@ fun StudioMasterEqualizerCard(
     if (showSaveDialog) {
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
-            title = { Text("Сохранить пресет", style = MaterialTheme.typography.titleMedium) },
+            title = { Text(uiText("Сохранить пресет", "Save preset"), style = MaterialTheme.typography.titleMedium) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Введите имя для текущей конфигурации 5 полос:", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                    Text(uiText("Введите имя для текущей конфигурации из 5 полос:", "Enter a name for this 5-band configuration:"), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                     OutlinedTextField(
                         value = presetNameInput,
                         onValueChange = { presetNameInput = it },
-                        placeholder = { Text("Мой пресет...") },
+                        placeholder = { Text(uiText("Мой пресет...", "My preset...")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -1973,12 +1976,12 @@ fun StudioMasterEqualizerCard(
                         }
                     }
                 ) {
-                    Text("Сохранить", color = colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text(uiText("Сохранить", "Save"), color = colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSaveDialog = false }) {
-                    Text("Отмена")
+                    Text(AppStrings.btnCancel)
                 }
             }
         )
@@ -1988,11 +1991,11 @@ fun StudioMasterEqualizerCard(
     if (showJsonDialog) {
         AlertDialog(
             onDismissRequest = { showJsonDialog = false },
-            title = { Text("JSON Экспорт / Импорт эквалайзера", style = MaterialTheme.typography.titleMedium) },
+            title = { Text(uiText("Импорт / экспорт эквалайзера JSON", "EQ JSON import / export"), style = MaterialTheme.typography.titleMedium) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Вы можете скопировать ваши пресеты в буфер обмена или вставить JSON из сообщества:",
+                        text = uiText("Скопируйте пресеты в буфер обмена или вставьте JSON из сообщества:", "Copy your presets to the clipboard or paste JSON shared by the community:"),
                         fontSize = 12.sp,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -2003,7 +2006,7 @@ fun StudioMasterEqualizerCard(
                             .fillMaxWidth()
                             .height(180.dp),
                         textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 10.sp),
-                        placeholder = { Text("Вставьте JSON здесь...") }
+                        placeholder = { Text(uiText("Вставьте JSON сюда...", "Paste JSON here...")) }
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2018,7 +2021,7 @@ fun StudioMasterEqualizerCard(
                             },
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Скопировать JSON", fontSize = 11.sp)
+                            Text(uiText("Скопировать JSON", "Copy JSON"), fontSize = 11.sp)
                         }
 
                         Button(
@@ -2032,7 +2035,7 @@ fun StudioMasterEqualizerCard(
                             },
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Вставить", fontSize = 11.sp)
+                            Text(uiText("Вставить", "Paste"), fontSize = 11.sp)
                         }
                     }
                 }
@@ -2046,12 +2049,12 @@ fun StudioMasterEqualizerCard(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = colorScheme.primary)
                 ) {
-                    Text("Применить JSON", fontWeight = FontWeight.Bold)
+                    Text(uiText("Применить JSON", "Apply JSON"), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showJsonDialog = false }) {
-                    Text("Закрыть")
+                    Text(AppStrings.btnClose)
                 }
             }
         )
@@ -2189,8 +2192,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("АКТИВНОСТЬ ПО ДНЯМ НЕДЕЛИ", fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = colorScheme.onSurfaceVariant)
-                    Text("Топ день: ${insights.mostActiveDay}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                    Text(uiText("АКТИВНОСТЬ ПО ДНЯМ НЕДЕЛИ", "WEEKLY ACTIVITY"), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = colorScheme.onSurfaceVariant)
+                    Text("${uiText("Самый активный день", "Top day")}: ${insights.mostActiveDay}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                 }
                 Text(insights.favoriteHour, fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
             }
@@ -2217,7 +2220,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         modifier = Modifier.fillMaxHeight()
                     ) {
                         Text(
-                            text = if (hasMins) "${day.minutes}м" else "-",
+                        text = if (hasMins) "${day.minutes}${uiText("м", "m")}" else "-",
                             fontSize = 10.sp,
                             fontWeight = if (isPeak) FontWeight.Bold else FontWeight.SemiBold,
                             color = if (isPeak) Color(0xFFFF5722) else colorScheme.onSurfaceVariant
@@ -2316,7 +2319,7 @@ fun VolumeStatPill(
             Text(title, fontSize = 10.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface, maxLines = 1, softWrap = false)
             Text(range, fontSize = 8.sp, color = colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
             Spacer(modifier = Modifier.height(3.dp))
-            Text("${minutes} мин", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface, softWrap = false)
+            Text("$minutes ${uiText("мин", "min")}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface, softWrap = false)
         }
     }
 }

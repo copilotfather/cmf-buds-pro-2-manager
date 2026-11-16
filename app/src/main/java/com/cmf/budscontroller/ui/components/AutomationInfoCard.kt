@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -25,7 +26,7 @@ fun AutomationSection(modifier: Modifier = Modifier) {
             .padding(20.dp)
     ) {
         Text(
-            text = "ТАСКЕР / ИНТЕНТЫ",
+            text = if (AppStrings.isRussian) "ТАСКЕР / ИНТЕНТЫ" else "TASKER / INTENTS",
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -36,7 +37,7 @@ fun AutomationSection(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Широковещательные команды для управления из других программ:",
+            text = if (AppStrings.isRussian) "Широковещательные команды для управления из других программ:" else "Broadcast commands for control from other apps:",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )

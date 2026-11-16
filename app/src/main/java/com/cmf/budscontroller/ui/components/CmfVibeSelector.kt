@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -38,7 +39,7 @@ fun CmfVibeSelector(
     ) {
         Column {
             Text(
-                text = "Цветовая тема",
+                text = if (AppStrings.isRussian) "Цветовая тема" else "Color theme",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = CmfTextPrimary,
