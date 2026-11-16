@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.*
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -162,6 +164,13 @@ class MainActivity : ComponentActivity() {
 private fun uiText(russian: String, english: String): String =
     if (AppStrings.isRussian) russian else english
 
+private class EntryStagger {
+    private var index = 0
+    fun nextDelayMillis(): Int = (index++ * 48).coerceAtMost(336)
+}
+
+private val LocalEntryStagger = staticCompositionLocalOf<EntryStagger?> { null }
+
 enum class StudioTab(val icon: ImageVector) {
     DEVICE(Icons.Outlined.Headphones),
     STUDIO(Icons.Outlined.GraphicEq),
@@ -240,6 +249,19 @@ fun HiFiStudioBudsApp(
             topBar = {
                 TopAppBar(
                     title = {
+                        val connectionPulse = if (status.isConnected) {
+                            val pulse = rememberInfiniteTransition(label = "connection_pulse")
+                            val scale by pulse.animateFloat(
+                                initialValue = 0.88f,
+                                targetValue = 1.3f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(900, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "connection_dot_scale"
+                            )
+                            scale
+                        } else 1f
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -260,13 +282,23 @@ fun HiFiStudioBudsApp(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .clip(CircleShape)
+                                            .graphicsLayer { scaleX = connectionPulse; scaleY = connectionPulse }
                                             .background(if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant)
                                     )
-                                    Text(
-                                        text = if (status.isConnected) AppStrings.statusConnected else AppStrings.statusReady,
-                                        fontSize = 12.sp,
-                                        color = if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant
-                                    )
+                                    AnimatedContent(
+                                        targetState = status.isConnected,
+                                        transitionSpec = {
+                                            (fadeIn(tween(240)) + slideInVertically(tween(280)) { it / 2 }) togetherWith
+                                                (fadeOut(tween(120)) + slideOutVertically(tween(180)) { -it / 2 })
+                                        },
+                                        label = "connection_label"
+                                    ) { connected ->
+                                        Text(
+                                            text = if (connected) AppStrings.statusConnected else AppStrings.statusReady,
+                                            fontSize = 12.sp,
+                                            color = if (connected) Color(0xFF30D158) else colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -335,6 +367,16 @@ fun HiFiStudioBudsApp(
                         StudioTab.values().forEach { tab ->
                             val isSelected = currentTab == tab
                             val tint = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.12f else 1f,
+                                animationSpec = spring(dampingRatio = 0.48f, stiffness = 520f),
+                                label = "tab_icon_bounce"
+                            )
+                            val indicatorWidth by animateDpAsState(
+                                targetValue = if (isSelected) 16.dp else 4.dp,
+                                animationSpec = spring(dampingRatio = 0.62f, stiffness = 420f),
+                                label = "tab_indicator_morph"
+                            )
                             Column(
                                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
                                     .clickable { currentTab = tab }
@@ -342,7 +384,13 @@ fun HiFiStudioBudsApp(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                Icon(tab.icon, contentDescription = tab.label, modifier = Modifier.size(21.dp), tint = tint)
+                                Box(
+                                    modifier = Modifier.size(38.dp).clip(CircleShape)
+                                        .background(if (isSelected) colorScheme.primary.copy(alpha = 0.14f) else Color.Transparent),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(tab.icon, contentDescription = tab.label, modifier = Modifier.size(21.dp).graphicsLayer { scaleX = iconScale; scaleY = iconScale }, tint = tint)
+                                }
                                 Text(
                                     text = tab.label,
                                     fontSize = 10.sp,
@@ -350,6 +398,10 @@ fun HiFiStudioBudsApp(
                                     color = tint,
                                     maxLines = 1,
                                     softWrap = false
+                                )
+                                Box(
+                                    Modifier.width(indicatorWidth).height(3.dp).clip(CircleShape)
+                                        .background(if (isSelected) colorScheme.primary else colorScheme.outlineVariant)
                                 )
                             }
                         }
@@ -367,9 +419,28 @@ fun HiFiStudioBudsApp(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            when (currentTab) {
+            AnimatedContent(
+                targetState = currentTab,
+                transitionSpec = {
+                    val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
+                    (fadeIn(tween(420, easing = FastOutSlowInEasing)) +
+                        slideInHorizontally(tween(520, easing = FastOutSlowInEasing)) { direction * it / 3 } +
+                        scaleIn(spring(dampingRatio = 0.78f, stiffness = 280f), initialScale = 0.94f)) togetherWith
+                        (fadeOut(tween(180, easing = FastOutLinearInEasing)) +
+                            slideOutHorizontally(tween(260, easing = FastOutLinearInEasing)) { -direction * it / 7 } +
+                            scaleOut(tween(220), targetScale = 0.98f))
+                },
+                label = "tab_page_transition"
+            ) { tab ->
+                CompositionLocalProvider(LocalEntryStagger provides remember(tab) { EntryStagger() }) {
+            when (tab) {
                 StudioTab.DEVICE -> {
-                    if (!status.isConnected) {
+                    AnimatedVisibility(
+                        visible = !status.isConnected,
+                        enter = fadeIn(tween(420)) + expandVertically(spring(dampingRatio = 0.76f, stiffness = 300f)) + scaleIn(spring(dampingRatio = 0.72f, stiffness = 320f), initialScale = 0.94f),
+                        exit = fadeOut(tween(180)) + shrinkVertically(tween(240)) + scaleOut(tween(220), targetScale = 0.96f),
+                        label = "disconnected_banner"
+                    ) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
@@ -832,6 +903,8 @@ fun HiFiStudioBudsApp(
                             }
                         }
                     }
+                }
+            }
                 }
             }
 
@@ -2162,10 +2235,15 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.Bottom
             ) {
-                insights.weeklyActivity.forEach { day ->
+                insights.weeklyActivity.forEachIndexed { index, day ->
                     val hasMins = day.minutes > 0
                     val fraction = if (hasMins) (day.minutes.toFloat() / maxMin).coerceIn(0.12f, 1f) else 0.04f
                     val isPeak = day.minutes == maxMin && hasMins
+                    val animatedFraction by animateFloatAsState(
+                        targetValue = fraction,
+                        animationSpec = tween(760, delayMillis = index * 65, easing = FastOutSlowInEasing),
+                        label = "weekly_bar_growth"
+                    )
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -2182,7 +2260,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         Box(
                             modifier = Modifier
                                 .width(24.dp)
-                                .fillMaxHeight(fraction)
+                                .fillMaxHeight(animatedFraction)
                                 .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                 .background(
                                     if (isPeak) Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF5AC8FA)))
@@ -2670,76 +2748,93 @@ fun BentoCard(
     extraContent: (@Composable () -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val entrySequence = LocalEntryStagger.current
+    val entryDelay = remember(entrySequence) { entrySequence?.nextDelayMillis() ?: 0 }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.955f else 1f,
+        animationSpec = spring(dampingRatio = 0.52f, stiffness = 680f),
+        label = "card_press_scale"
+    )
 
-    Card(
-        modifier = modifier
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable { onClick() }
-                } else Modifier
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    AnimatedVisibility(
+        visible = true,
+        modifier = modifier,
+        enter = fadeIn(tween(420, delayMillis = entryDelay, easing = FastOutSlowInEasing)) +
+            slideInVertically(tween(520, delayMillis = entryDelay, easing = FastOutSlowInEasing)) { it / 5 } +
+            scaleIn(spring(dampingRatio = 0.72f, stiffness = 300f), initialScale = 0.88f),
+        label = "card_cascade_entry"
     ) {
-        Column(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .animateContentSize(spring(dampingRatio = 0.78f, stiffness = 360f))
+                .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+                .then(if (onClick != null) Modifier.clickable(interactionSource = interactionSource, indication = null) { onClick() } else Modifier),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(11.dp))
-                        .background(colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(19.dp),
-                        tint = accentColor
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(19.dp),
+                            tint = accentColor
+                        )
+                    }
+
+                    if (onClick != null) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
-                if (onClick != null) {
-                    Icon(
-                        imageVector = Icons.Outlined.ChevronRight,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = colorScheme.onSurfaceVariant
-                    )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.1.sp,
+                    color = colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = subtitle,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    lineHeight = 18.sp
+                )
+
+                if (extraContent != null) {
+                    extraContent()
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.1.sp,
-                color = colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = subtitle,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                lineHeight = 18.sp
-            )
-
-            if (extraContent != null) {
-                extraContent()
             }
         }
     }
