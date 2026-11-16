@@ -280,7 +280,9 @@ fun HiFiStudioBudsApp(
                                     tint = if (status.isConnected) Color(0xFFFF5722) else Color(0xFF636366)
                                 )
                                 Text(
-                                    text = if (status.isConnected) "Устройства" else "Найти",
+                                    text = if (status.isConnected) {
+                                        if (status.connectionType.isNotBlank()) status.connectionType else "Подключено"
+                                    } else "Найти",
                                     fontSize = 12.sp,
                                     color = Color(0xFFE5E5EA)
                                 )
@@ -1192,6 +1194,8 @@ fun HiFiStudioBudsApp(
                                     .fillMaxWidth()
                                     .clickable {
                                         showDevicePicker = false
+                                        val prefs = context.getSharedPreferences("cmf_prefs", Context.MODE_PRIVATE)
+                                        prefs.edit().putString("last_device_address", dev.address).apply()
                                         viewModel.connectDevice(bluetoothAdapter, dev)
                                     },
                                 shape = RoundedCornerShape(16.dp),

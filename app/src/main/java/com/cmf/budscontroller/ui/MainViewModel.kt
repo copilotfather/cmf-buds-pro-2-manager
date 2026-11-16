@@ -168,7 +168,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (adapter == null || !adapter.isEnabled) return
         val app = getApplication<Application>()
         val prefs = app.getSharedPreferences("cmf_prefs", android.content.Context.MODE_PRIVATE)
+
+        if (customDevice != null) {
+            prefs.edit().putString("last_device_address", customDevice.address).apply()
+            bluetoothManager.setPreferredAddress(customDevice.address)
+        }
+
         val savedAddr = prefs.getString("last_device_address", null)
+        bluetoothManager.setPreferredAddress(savedAddr)
 
         // Try extracting battery from Android headset/A2DP proxy immediately
         bluetoothManager.checkProfileBattery()
@@ -180,6 +187,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 prefs.edit().putString("last_device_address", device.address).apply()
             }
         }
+    }
+
+    fun reconnect() {
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+        connectDevice(adapter)
     }
 
     fun getBondedDevices(adapter: BluetoothAdapter?): List<android.bluetooth.BluetoothDevice> {

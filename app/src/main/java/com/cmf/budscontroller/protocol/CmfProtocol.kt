@@ -41,12 +41,22 @@ data class DeviceStatus(
     val firmwareVersion: String = "Unknown",
     val isConnected: Boolean = false,
     val deviceName: String = "CMF BUDS PRO 2",
-    val deviceAddress: String = ""
+    val deviceAddress: String = "",
+    val connectionType: String = "",
+    val isSppActive: Boolean = false,
+    val isGattActive: Boolean = false
 )
 
 object CmfProtocol {
     // Official Nothing / CMF SPP Bluetooth UUID
     val SPP_UUID: UUID = UUID.fromString("aeac4a03-dff5-498f-843a-34487cf133eb")
+    val STANDARD_SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+    // BLE GATT Service & Characteristics for CMF / Nothing
+    val GATT_CMF_SERVICE_UUID: UUID = UUID.fromString("aeac4a03-dff5-498f-843a-34487cf133eb")
+    val GATT_CMF_TX_CHAR_UUID: UUID = UUID.fromString("aeac4a04-dff5-498f-843a-34487cf133eb")
+    val GATT_CMF_RX_CHAR_UUID: UUID = UUID.fromString("aeac4a05-dff5-498f-843a-34487cf133eb")
+    val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
     const val MAGIC_BYTE_0 = 0x55.toByte()
     const val MAGIC_BYTE_1 = 0x60.toByte()

@@ -12,8 +12,8 @@ android {
         applicationId = "com.cmf.budscontroller"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2300
-        versionName = "2.3.0"
+        versionCode = 2310
+        versionName = "2.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
