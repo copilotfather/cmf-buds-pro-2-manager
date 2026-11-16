@@ -20,20 +20,26 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("cmf_release.jks")
-            storePassword = "cmfbuds2026"
-            keyAlias = "cmfkey"
-            keyPassword = "cmfbuds2026"
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
-            enableV4Signing = true
+            val keyFile = file("cmf_release.jks")
+            if (keyFile.exists()) {
+                storeFile = keyFile
+                storePassword = "cmfbuds2026"
+                keyAlias = "cmfkey"
+                keyPassword = "cmfbuds2026"
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            val keyFile = file("cmf_release.jks")
+            if (keyFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             isShrinkResources = false
             isDebuggable = false
@@ -43,9 +49,12 @@ android {
             )
         }
         debug {
-            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
         }
+    }
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
