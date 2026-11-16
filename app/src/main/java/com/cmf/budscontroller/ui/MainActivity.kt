@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -212,7 +213,7 @@ fun HiFiStudioBudsApp(
     val codecState by viewModel.codecState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
 
-    var currentTab by remember { mutableStateOf(StudioTab.DEVICE) }
+    var currentTab by rememberSaveable { mutableStateOf(StudioTab.DEVICE) }
     var showDevicePicker by remember { mutableStateOf(false) }
 
     // Dialogs
@@ -415,11 +416,11 @@ fun HiFiStudioBudsApp(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AnimatedContent(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 targetState = currentTab,
                 transitionSpec = {
                     val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
@@ -433,6 +434,10 @@ fun HiFiStudioBudsApp(
                 label = "tab_page_transition"
             ) { tab ->
                 CompositionLocalProvider(LocalEntryStagger provides remember(tab) { EntryStagger() }) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
             when (tab) {
                 StudioTab.DEVICE -> {
                     AnimatedVisibility(
@@ -908,6 +913,7 @@ fun HiFiStudioBudsApp(
                 }
             }
 
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -920,7 +926,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.HighQuality, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Режим высокого качества наушников", "Earbud high-quality audio mode"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = uiText("Включает режим высокого качества на наушниках. Bluetooth-кодек выбирает Android; для LDAC нужна поддержка телефона и включённый HD Audio в настройках Bluetooth.", "Enables high-quality mode on the earbuds. Android selects the Bluetooth codec; LDAC requires phone support and HD Audio enabled in Bluetooth settings."),
                         fontSize = 12.sp,
@@ -958,7 +964,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.Tune, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Колесо Smart Dial", "Smart Dial"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(uiText("При вращении:", "On rotation:"), style = MaterialTheme.typography.labelLarge)
                     DialRotateAction.values().forEach { action ->
                         Row(
@@ -1005,7 +1011,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.SpatialAudio, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Пространственное аудио 360°", "360° Spatial Audio"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(uiText("Режим сцены:", "Soundstage:"), style = MaterialTheme.typography.labelLarge)
                     SpatialMode.values().forEach { mode ->
                         Row(
@@ -1051,7 +1057,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.SettingsSuggest, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Баланс каналов и громкость", "Channel balance & volume"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("${uiText("Баланс левого / правого канала", "Left / right balance")} (${String.format("%.1f", audioState.channelBalance)}):", style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = audioState.channelBalance,
@@ -1082,7 +1088,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.Bedtime, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Таймер сна и релакс", "Sleep timer & relax"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(uiText("Фоновый звук:", "Ambient sound:"), style = MaterialTheme.typography.labelLarge)
                     RelaxNoiseType.values().forEach { nt ->
                         Row(
@@ -1123,7 +1129,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Голосовые подсказки", "Voice prompts"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1163,7 +1169,7 @@ fun HiFiStudioBudsApp(
             icon = { Icon(Icons.Outlined.Computer, contentDescription = null, tint = colorScheme.primary) },
             title = { Text(uiText("Настройки аудиомоста ПК", "PC audio bridge settings"), style = MaterialTheme.typography.titleLarge) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(uiText("Режим передачи:", "Transfer mode:"), style = MaterialTheme.typography.labelLarge)
                     RelayMode.values().forEach { mode ->
                         Row(
@@ -1465,7 +1471,7 @@ fun HiFiStudioBudsApp(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         uiText("На GitHub доступна новая версия приложения:", "A new app version is available on GitHub:"),
                         fontSize = 13.sp,
@@ -1985,7 +1991,7 @@ fun StudioMasterEqualizerCard(
             onDismissRequest = { showSaveDialog = false },
             title = { Text(uiText("Сохранить пресет", "Save preset"), style = MaterialTheme.typography.titleMedium) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(uiText("Введите имя для текущей конфигурации из 5 полос:", "Enter a name for this 5-band configuration:"), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
                     OutlinedTextField(
                         value = presetNameInput,
@@ -2023,7 +2029,7 @@ fun StudioMasterEqualizerCard(
             onDismissRequest = { showJsonDialog = false },
             title = { Text(uiText("Импорт / экспорт эквалайзера JSON", "EQ JSON import / export"), style = MaterialTheme.typography.titleMedium) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = uiText("Скопируйте пресеты в буфер обмена или вставьте JSON из сообщества:", "Copy your presets to the clipboard or paste JSON shared by the community:"),
                         fontSize = 12.sp,
@@ -2260,7 +2266,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         Box(
                             modifier = Modifier
                                 .width(24.dp)
-                                .fillMaxHeight(animatedFraction)
+                                .height(70.dp * animatedFraction.coerceIn(0f, 1f))
                                 .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                 .background(
                                     if (isPeak) Brush.verticalGradient(listOf(Color(0xFF0A84FF), Color(0xFF5AC8FA)))

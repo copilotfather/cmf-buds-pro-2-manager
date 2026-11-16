@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.9",
-  "versionCode": 2390,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.9/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "HOTFIX v2.3.9:\n• Added animated screen transitions and staggered card entrances\n• Added spring-based press feedback, animated tab selection, connection pulse, and chart reveals\n• Fixed visual state transitions in the connection banner"
+  "versionName": "2.3.10",
+  "versionCode": 2400,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.10/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "HOTFIX v2.3.10: Fixed overlapping tab contents, independent page scrolling, scrollable dialogs and clipped chart labels."
 }
