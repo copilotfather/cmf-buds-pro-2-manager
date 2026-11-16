@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.AncLevel
 import com.cmf.budscontroller.protocol.AncMode
 import com.cmf.budscontroller.ui.theme.*
@@ -45,7 +46,7 @@ fun CmfAncSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Управление шумом",
+                text = AppStrings.headerNoiseControl,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = CmfTextPrimary,
@@ -83,11 +84,7 @@ fun CmfAncSection(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = when (mode) {
-                            AncMode.OFF -> "Выкл"
-                            AncMode.TRANSPARENCY -> "Прозрачность"
-                            AncMode.NOISE_CANCELLATION -> "Шумоподавление"
-                        },
+                        text = mode.title,
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isSelected) CmfTextPrimary else CmfTextSecondary,
@@ -101,7 +98,7 @@ fun CmfAncSection(
         AnimatedVisibility(visible = currentMode == AncMode.NOISE_CANCELLATION) {
             Column(modifier = Modifier.padding(top = 14.dp)) {
                 Text(
-                    text = "Интенсивность",
+                    text = if (AppStrings.isRussian) "Интенсивность" else "Intensity",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = CmfTextSecondary,

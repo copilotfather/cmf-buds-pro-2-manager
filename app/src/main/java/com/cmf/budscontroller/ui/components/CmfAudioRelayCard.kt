@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.relay.AudioRelayState
 import com.cmf.budscontroller.relay.BufferPreset
 import com.cmf.budscontroller.relay.RelayMode
@@ -61,7 +62,7 @@ fun CmfAudioRelayCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "USB-мост и ретрансляция звука",
+                    text = AppStrings.relayTitle,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
@@ -107,8 +108,8 @@ fun CmfAudioRelayCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CmfBridgeNode(title = "ПК (USB)", isConnected = relayState.clientConnected, accent = vibe.accent)
-                    CmfBridgeNode(title = "ТЕЛЕФОН", isConnected = relayState.isRunning, accent = vibe.accent)
+                    CmfBridgeNode(title = if (AppStrings.isRussian) "ПК (USB)" else "PC (USB)", isConnected = relayState.clientConnected, accent = vibe.accent)
+                    CmfBridgeNode(title = if (AppStrings.isRussian) "ТЕЛЕФОН" else "PHONE", isConnected = relayState.isRunning, accent = vibe.accent)
                     CmfBridgeNode(title = "CMF BUDS", isConnected = true, accent = vibe.accent)
                 }
 
@@ -232,7 +233,7 @@ fun CmfAudioRelayCard(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (relayState.isRunning) "ОСТАНОВИТЬ МОСТ" else "ВКЛЮЧИТЬ ПЕРЕАДРЕСАЦИЮ USB",
+                text = if (relayState.isRunning) (if (AppStrings.isRussian) "ОСТАНОВИТЬ МОСТ" else "STOP BRIDGE") else (if (AppStrings.isRussian) "ВКЛЮЧИТЬ ПЕРЕАДРЕСАЦИЮ USB" else "START USB RELAY"),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp,
@@ -253,7 +254,7 @@ fun CmfAudioRelayCard(
         ) {
             Column {
                 Text(
-                    text = "СТАТУС: ${relayState.statusMessage}",
+                    text = if (AppStrings.isRussian) "СТАТУС: ${relayState.statusMessage}" else "STATUS: ${relayState.statusMessage}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (relayState.clientConnected) Color(0xFF00E676) else CmfTextPrimary,
@@ -261,7 +262,7 @@ fun CmfAudioRelayCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Как подключить к ПК: подключите телефон по USB и запустите cmf_pc_relay.bat на компьютере. Звук ПК сразу пойдет в наушники!",
+                    text = if (AppStrings.isRussian) "Как подключить к ПК: подключите телефон по USB и запустите cmf_pc_relay.bat на компьютере. Звук ПК сразу пойдет в наушники!" else "How to connect: Connect phone via USB and run cmf_pc_relay.bat on your PC. PC audio will stream straight to your earbuds!",
                     fontSize = 10.sp,
                     color = CmfTextSecondary
                 )

@@ -3,6 +3,7 @@ package com.cmf.budscontroller.analytics
 import android.content.Context
 import android.content.SharedPreferences
 import android.media.AudioManager
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.BatteryInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,7 @@ data class BudsUsageInsights(
     val averageFullBatteryHours: Float = 0f,
     val batteryHealthEstimate: Int = 100,
     val favoriteHour: String = "--:--",
-    val mostActiveDay: String = "Нет данных"
+    val mostActiveDay: String = AppStrings.dayNoData
 )
 
 class BudsUsageAnalyticsManager(private val context: Context) {
@@ -128,7 +129,7 @@ class BudsUsageAnalyticsManager(private val context: Context) {
     }
 
     private fun calculateWeeklyActivity(): List<DayActivity> {
-        val days = listOf("Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб")
+        val days = if (AppStrings.isRussian) listOf("Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб") else listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
         val result = mutableListOf<DayActivity>()
 
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -161,17 +162,17 @@ class BudsUsageAnalyticsManager(private val context: Context) {
 
         val mostActiveDay = if (maxDay != null && maxDay.minutes > 0) {
             when (maxDay.dayName) {
-                "Пн" -> "Понедельник"
-                "Вт" -> "Вторник"
-                "Ср" -> "Среда"
-                "Чт" -> "Четверг"
-                "Пт" -> "Пятница"
-                "Сб" -> "Суббота"
-                "Вс" -> "Воскресенье"
+                "Пн", "Mon" -> AppStrings.dayMon
+                "Вт", "Tue" -> AppStrings.dayTue
+                "Ср", "Wed" -> AppStrings.dayWed
+                "Чт", "Thu" -> AppStrings.dayThu
+                "Пт", "Fri" -> AppStrings.dayFri
+                "Сб", "Sat" -> AppStrings.daySat
+                "Вс", "Sun" -> AppStrings.daySun
                 else -> maxDay.dayName
             }
         } else {
-            "Нет сессий"
+            AppStrings.dayNoSessions
         }
 
         // Поиск любимого часа прослушивания
@@ -188,7 +189,7 @@ class BudsUsageAnalyticsManager(private val context: Context) {
         val favoriteHourText = if (topHour >= 0) {
             String.format(Locale.getDefault(), "%02d:00 - %02d:00", topHour, (topHour + 1) % 24)
         } else {
-            "Пока не определен"
+            AppStrings.dayNotDetermined
         }
 
         // Автономность рассчитывается на основе реального расхода (база CMF Buds Pro 2: 7.5 часов на одном заряде)

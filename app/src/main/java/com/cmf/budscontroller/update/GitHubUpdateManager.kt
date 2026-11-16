@@ -8,6 +8,7 @@ import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,7 +91,7 @@ class GitHubUpdateManager(private val context: Context) {
                         val res = UpdateInfo(
                             hasUpdate = hasNew,
                             latestVersion = tag,
-                            releaseNotes = "Доступна новая версия v$tag на GitHub. Нажмите для быстрой установки.",
+                            releaseNotes = if (AppStrings.isRussian) "Доступна новая версия v$tag на GitHub. Нажмите для быстрой установки." else "New version v$tag available on GitHub. Tap to install.",
                             downloadUrl = dlUrl,
                             isChecking = false
                         )
@@ -126,7 +127,7 @@ class GitHubUpdateManager(private val context: Context) {
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
                     latestVersion = tag,
-                    releaseNotes = "Доступна новая версия v$tag на GitHub.",
+                    releaseNotes = if (AppStrings.isRussian) "Доступна новая версия v$tag на GitHub." else "New version v$tag available on GitHub.",
                     downloadUrl = dlUrl,
                     isChecking = false
                 )
@@ -154,7 +155,7 @@ class GitHubUpdateManager(private val context: Context) {
                 val text = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(text)
                 val ver = json.optString("versionName", "").removePrefix("v").trim()
-                val notes = json.optString("releaseNotes", "Доступно обновление.")
+                val notes = json.optString("releaseNotes", if (AppStrings.isRussian) "Доступно обновление." else "Update available.")
                 val dl = json.optString("downloadUrl", "https://github.com/$repoOwner/$repoName/releases/download/v$ver/CMF_Buds_Pro_2_Manager.apk")
                 val hasNew = isNewerVersion(ver, currentVer)
                 Log.i(TAG, "[Channel 3: CDN version.json] Latest: $ver, current: $currentVer, hasUpdate: $hasNew")
@@ -191,7 +192,7 @@ class GitHubUpdateManager(private val context: Context) {
                 if (array.length() > 0) {
                     val latestRelease = array.getJSONObject(0)
                     val tagName = latestRelease.optString("tag_name", "").removePrefix("v").trim()
-                    val notes = latestRelease.optString("body", "Новые функции и оптимизация.")
+                    val notes = latestRelease.optString("body", if (AppStrings.isRussian) "Новые функции и оптимизация." else "New features and optimizations.")
                     val assets = latestRelease.optJSONArray("assets")
 
                     var apkUrl = ""
@@ -279,7 +280,8 @@ class GitHubUpdateManager(private val context: Context) {
         }
 
         withContext(Dispatchers.Main) {
-            Toast.makeText(context, "Начало загрузки обновления...", Toast.LENGTH_SHORT).show()
+            val msg = if (AppStrings.isRussian) "Начало загрузки обновления..." else "Starting download..."
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
 
         _updateState.value = _updateState.value.copy(isDownloading = true, downloadProgress = 0, downloadError = null)
@@ -343,7 +345,8 @@ class GitHubUpdateManager(private val context: Context) {
             _updateState.value = _updateState.value.copy(isDownloading = false, downloadProgress = 100)
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Загрузка завершена! Запуск установщика...", Toast.LENGTH_SHORT).show()
+                val msg = if (AppStrings.isRussian) "Загрузка завершена! Запуск установщика..." else "Download complete! Starting installer..."
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 installApk(destination)
             }
         } catch (e: Exception) {
@@ -351,7 +354,8 @@ class GitHubUpdateManager(private val context: Context) {
             _updateState.value = _updateState.value.copy(isDownloading = false, downloadError = e.message)
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Загрузка не удалась (${e.message}). Открываем браузер...", Toast.LENGTH_LONG).show()
+                val msg = if (AppStrings.isRussian) "Загрузка не удалась (${e.message}). Открываем браузер..." else "Download failed (${e.message}). Opening browser..."
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                 openInBrowser(apkUrl)
             }
         }
@@ -371,7 +375,8 @@ class GitHubUpdateManager(private val context: Context) {
             // Check if app has permission to install unknown apps on Android 8.0+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
-                    Toast.makeText(context, "Разрешите установку приложений для завершения обновления", Toast.LENGTH_LONG).show()
+                    val msg = if (AppStrings.isRussian) "Разрешите установку приложений для завершения обновления" else "Please allow install unknown apps permission to finish update"
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                     val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                         data = Uri.parse("package:${context.packageName}")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK

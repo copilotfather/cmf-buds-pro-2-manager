@@ -170,6 +170,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val prefs = app.getSharedPreferences("cmf_prefs", android.content.Context.MODE_PRIVATE)
 
         if (customDevice != null) {
+            if (bluetoothManager.isExcludedWatchOrNonHeadset(customDevice) || !bluetoothManager.isCmfOrNothingDevice(customDevice)) {
+                return
+            }
             prefs.edit().putString("last_device_address", customDevice.address).apply()
             bluetoothManager.setPreferredAddress(customDevice.address)
         }

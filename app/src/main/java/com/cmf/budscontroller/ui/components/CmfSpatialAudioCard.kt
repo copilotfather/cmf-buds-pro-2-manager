@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.audio.SpatialAudioState
 import com.cmf.budscontroller.audio.SpatialMode
 import com.cmf.budscontroller.audio.VocalClarity
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -62,7 +63,7 @@ fun CmfSpatialAudioCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Пространственное аудио",
+                    text = AppStrings.headerSpatialAudio,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
@@ -72,7 +73,7 @@ fun CmfSpatialAudioCard(
             }
 
             Text(
-                text = "${spatialState.soundstageWidth}% СЦЕНА",
+                text = "${spatialState.soundstageWidth}% ${AppStrings.spatialStage}",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
                 color = vibe.accent,
@@ -215,7 +216,7 @@ fun CmfSpatialAudioCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ШИРИНА:",
+                text = AppStrings.spatialWidth,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = CmfTextSecondary,
@@ -271,7 +272,7 @@ fun CmfSpatialAudioCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "АКУСТИЧЕСКИЙ ТЕСТ ПОСАДКИ",
+                            text = AppStrings.earTipTestTitle,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 1.sp,
@@ -288,7 +289,7 @@ fun CmfSpatialAudioCard(
                             .padding(horizontal = 10.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = if (spatialState.sealResult.isTesting) "ТЕСТ..." else "ПРОВЕРИТЬ",
+                            text = if (spatialState.sealResult.isTesting) AppStrings.spatialBtnTesting else AppStrings.spatialBtnTest,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             color = if (spatialState.sealResult.isTesting) vibe.accent else CmfBlack,

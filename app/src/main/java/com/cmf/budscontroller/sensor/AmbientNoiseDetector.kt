@@ -6,6 +6,7 @@ import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.util.Log
 import androidx.compose.runtime.Immutable
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.AncLevel
 import com.cmf.budscontroller.protocol.AncMode
 import kotlinx.coroutines.*
@@ -21,7 +22,7 @@ data class AmbientNoiseState(
     val recommendedMode: AncMode = AncMode.OFF,
     val recommendedLevel: AncLevel = AncLevel.HIGH,
     val isAutoAncActive: Boolean = false,
-    val noiseEnvironment: String = "Тихое помещение"
+    val noiseEnvironment: String = AppStrings.noiseQuietPlace
 )
 
 class AmbientNoiseDetector {
@@ -75,9 +76,9 @@ class AmbientNoiseDetector {
                             val db = if (rms > 0) (20 * log10(rms / 5.0)).toInt().coerceIn(20, 110) else 25
 
                             val (mode, level, envName) = when {
-                                db < 45 -> Triple(AncMode.OFF, AncLevel.LOW, "Тихая комната (<45 дБ)")
-                                db in 45..68 -> Triple(AncMode.TRANSPARENCY, AncLevel.MID, "Умеренный шум (45–68 дБ)")
-                                else -> Triple(AncMode.NOISE_CANCELLATION, AncLevel.HIGH, "Шумный транспорт (>68 дБ)")
+                                db < 45 -> Triple(AncMode.OFF, AncLevel.LOW, AppStrings.noiseQuietRoom)
+                                db in 45..68 -> Triple(AncMode.TRANSPARENCY, AncLevel.MID, AppStrings.noiseModerate)
+                                else -> Triple(AncMode.NOISE_CANCELLATION, AncLevel.HIGH, AppStrings.noiseLoud)
                             }
 
                             val prevMode = _state.value.recommendedMode

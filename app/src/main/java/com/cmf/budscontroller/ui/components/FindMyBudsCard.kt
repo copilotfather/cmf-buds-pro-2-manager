@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.tools.DisconnectLocation
 import com.cmf.budscontroller.ui.theme.*
 
@@ -41,7 +42,7 @@ fun FindMyBudsCard(
             .padding(20.dp)
     ) {
         Text(
-            text = "ПОИСК И АНТИ-ПОТЕРЯ",
+            text = AppStrings.headerSonar,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -52,7 +53,7 @@ fun FindMyBudsCard(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Подача громкого акустического сигнала через динамики:",
+            text = if (AppStrings.isRussian) "Подача громкого акустического сигнала через динамики:" else "Play loud acoustic locator tone through earbud drivers:",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )
@@ -74,7 +75,7 @@ fun FindMyBudsCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "ЛЕВЫЙ (L)",
+                    text = "${AppStrings.batteryLeft} (L)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (chirpLeft) CmfTextPrimary else CmfTextSecondary,
@@ -93,7 +94,7 @@ fun FindMyBudsCard(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "ПРАВЫЙ (R)",
+                    text = "${AppStrings.batteryRight} (R)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (chirpRight) CmfTextPrimary else CmfTextSecondary,
@@ -115,7 +116,7 @@ fun FindMyBudsCard(
             )
         ) {
             Text(
-                text = if (isChirping) "ОСТАНОВИТЬ" else "ПОДАТЬ СИГНАЛ",
+                text = if (isChirping) (if (AppStrings.isRussian) "ОСТАНОВИТЬ" else "STOP") else (if (AppStrings.isRussian) "ПОДАТЬ СИГНАЛ" else "PLAY SOUND"),
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp,
                 fontFamily = FontFamily.Default
@@ -134,7 +135,7 @@ fun FindMyBudsCard(
             ) {
                 Column {
                     Text(
-                        text = "ТОЧКА ОТКЛЮЧЕНИЯ: ${lastLocation.formattedTime}",
+                        text = if (AppStrings.isRussian) "ТОЧКА ОТКЛЮЧЕНИЯ: ${lastLocation.formattedTime}" else "DISCONNECT LOCATION: ${lastLocation.formattedTime}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = CmfTextPrimary,
@@ -156,7 +157,7 @@ fun FindMyBudsCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = CircleShape
                     ) {
-                        Text("ОТКРЫТЬ НА КАРТЕ", fontFamily = FontFamily.Default, fontSize = 11.sp)
+                        Text(if (AppStrings.isRussian) "ОТКРЫТЬ НА КАРТЕ" else "OPEN IN MAPS", fontFamily = FontFamily.Default, fontSize = 11.sp)
                     }
                 }
             }

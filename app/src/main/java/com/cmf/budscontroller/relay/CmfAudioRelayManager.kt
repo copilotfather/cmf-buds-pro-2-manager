@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.media.*
 import android.util.Log
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,16 +15,37 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
 
-enum class RelayMode(val title: String, val description: String) {
-    PC_TO_EARBUDS("ПК ➔ НАУШНИКИ", "Звук с компьютера идет в CMF Buds"),
-    MIC_TO_PC("МИКРОФОН ➔ ПК", "Микрофон наушников передается в ПК"),
-    DUPLEX("ДУПЛЕКС (ОБА)", "Звук игры в уши + микрофон в Discord")
+enum class RelayMode {
+    PC_TO_EARBUDS,
+    MIC_TO_PC,
+    DUPLEX;
+
+    val title: String
+        get() = when (this) {
+            PC_TO_EARBUDS -> AppStrings.relayModePcToBuds
+            MIC_TO_PC -> AppStrings.relayModeMicToPc
+            DUPLEX -> AppStrings.relayModeDuplex
+        }
+
+    val description: String
+        get() = when (this) {
+            PC_TO_EARBUDS -> AppStrings.relayModePcToBudsDesc
+            MIC_TO_PC -> AppStrings.relayModeMicToPcDesc
+            DUPLEX -> AppStrings.relayModeDuplexDesc
+        }
 }
 
-enum class BufferPreset(val title: String, val bufferFactor: Int, val latencyMs: Int) {
-    ULTRA_LOW("ULTRA (10мс)", 1, 10),
-    BALANCED("БАЛАНС (25мс)", 2, 25),
-    STABLE("СТАБИЛЬНО (50мс)", 4, 50)
+enum class BufferPreset(val bufferFactor: Int, val latencyMs: Int) {
+    ULTRA_LOW(1, 10),
+    BALANCED(2, 25),
+    STABLE(4, 50);
+
+    val title: String
+        get() = when (this) {
+            ULTRA_LOW -> if (AppStrings.isRussian) "ULTRA (10мс)" else "ULTRA (10ms)"
+            BALANCED -> if (AppStrings.isRussian) "БАЛАНС (25мс)" else "BALANCED (25ms)"
+            STABLE -> if (AppStrings.isRussian) "СТАБИЛЬНО (50мс)" else "STABLE (50ms)"
+        }
 }
 
 data class AudioRelayState(
@@ -35,7 +57,7 @@ data class AudioRelayState(
     val bufferPreset: BufferPreset = BufferPreset.ULTRA_LOW,
     val kbpsSpeed: Float = 0f,
     val volumeGain: Float = 1.0f,
-    val statusMessage: String = "Готов к подключению USB"
+    val statusMessage: String = if (AppStrings.isRussian) "Готов к подключению USB" else "Ready for USB connection"
 )
 
 class CmfAudioRelayManager(private val context: Context) {
@@ -82,7 +104,7 @@ class CmfAudioRelayManager(private val context: Context) {
 
         _state.value = _state.value.copy(
             isRunning = true,
-            statusMessage = "Ожидание подключения ПК (порт $RELAY_PORT)..."
+            statusMessage = if (AppStrings.isRussian) "Ожидание подключения ПК (порт $RELAY_PORT)..." else "Waiting for PC connection (port $RELAY_PORT)..."
         )
 
         serverJob = scope.launch {
@@ -99,7 +121,7 @@ class CmfAudioRelayManager(private val context: Context) {
 
                     _state.value = _state.value.copy(
                         clientConnected = true,
-                        statusMessage = "USB Мост активен: ПК ➔ Телефон ➔ Наушники"
+                        statusMessage = if (AppStrings.isRussian) "USB Мост активен: ПК ➔ Телефон ➔ Наушники" else "USB Bridge Active: PC ➔ Phone ➔ Earbuds"
                     )
 
                     handleClientSession(socket)
@@ -182,7 +204,7 @@ class CmfAudioRelayManager(private val context: Context) {
 
         _state.value = _state.value.copy(
             clientConnected = false,
-            statusMessage = "ПК отключен"
+            statusMessage = if (AppStrings.isRussian) "ПК отключен" else "PC Disconnected"
         )
     }
 
@@ -266,7 +288,7 @@ class CmfAudioRelayManager(private val context: Context) {
             isRunning = false,
             clientConnected = false,
             kbpsSpeed = 0f,
-            statusMessage = "Переадресация остановлена"
+            statusMessage = if (AppStrings.isRussian) "Переадресация остановлена" else "Relay stopped"
         )
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.audio.EqualizerState
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -48,7 +49,7 @@ fun CmfEqualizerSection(
         ) {
             Column {
                 Text(
-                    text = "ПРОФЕССИОНАЛЬНЫЙ ЭКВАЛАЙЗЕР",
+                    text = AppStrings.headerEqualizer,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
@@ -57,7 +58,7 @@ fun CmfEqualizerSection(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Пресет: ${eqState.activePresetName}",
+                    text = "${AppStrings.eqPresetLabel}: ${eqState.activePresetName}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = CmfOrange,

@@ -35,12 +35,12 @@ class CmfGameModeTileService : TileService() {
         if (!status.isConnected) {
             tile.state = Tile.STATE_UNAVAILABLE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Не подключено"
+                tile.subtitle = com.cmf.budscontroller.i18n.AppStrings.statusDisconnected
             }
         } else {
             tile.state = if (status.isGameModeEnabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = if (status.isGameModeEnabled) "Включен (Низкая задержка)" else "Выключен"
+                tile.subtitle = if (status.isGameModeEnabled) com.cmf.budscontroller.i18n.AppStrings.gameModeActive else com.cmf.budscontroller.i18n.AppStrings.gameModeInactive
             }
         }
         tile.updateTile()

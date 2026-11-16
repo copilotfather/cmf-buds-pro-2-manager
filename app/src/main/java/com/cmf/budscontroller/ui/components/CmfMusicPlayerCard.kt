@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.media.CmfMediaState
 import com.cmf.budscontroller.ui.theme.*
 
@@ -83,7 +84,7 @@ fun CmfMusicPlayerCard(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Сейчас играет",
+                    text = AppStrings.mediaNowPlaying,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
@@ -333,14 +334,14 @@ fun CmfMusicPlayerCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "ПОКАЗЫВАТЬ ТРЕКИ В ПРИЛОЖЕНИИ",
+                            text = AppStrings.mediaPermissionTitle,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             color = vibe.accent,
                             fontFamily = FontFamily.Default
                         )
                         Text(
-                            text = "Нажмите, чтобы включить доступ к Spotify/Яндекс",
+                            text = AppStrings.mediaPermissionDesc,
                             fontSize = 10.sp,
                             color = CmfTextSecondary
                         )
@@ -353,7 +354,7 @@ fun CmfMusicPlayerCard(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "ВКЛЮЧИТЬ",
+                            text = AppStrings.mediaPermissionEnable,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             color = CmfBlack,

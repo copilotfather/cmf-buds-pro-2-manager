@@ -4,24 +4,41 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import com.cmf.budscontroller.bluetooth.CmfBluetoothManager
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.media.CmfMediaTracker
 import com.cmf.budscontroller.protocol.AncMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class DialRotateAction(val title: String) {
-    VOLUME("Громкость (Шаг ±1)"),
-    ANC_SHIFTER("Режимы ANC (Шумодав / Прозрачность)"),
-    ULTRA_BASS("Уровень Ultra Bass (0 .. 5)"),
-    TRACK_SKIP("Перемотка треков (Вперед / Назад)")
+enum class DialRotateAction {
+    VOLUME,
+    ANC_SHIFTER,
+    ULTRA_BASS,
+    TRACK_SKIP;
+
+    val title: String
+        get() = when (this) {
+            VOLUME -> AppStrings.dialActionVolume
+            ANC_SHIFTER -> AppStrings.dialActionAnc
+            ULTRA_BASS -> AppStrings.dialActionBass
+            TRACK_SKIP -> AppStrings.dialActionTrack
+        }
 }
 
-enum class DialClickAction(val title: String) {
-    PLAY_PAUSE("Плей / Пауза трека"),
-    TOGGLE_GAME_MODE("Игровой режим (Low Latency)"),
-    TOGGLE_MUTE("Заглушить звук"),
-    ASSISTANT("Голосовой ассистент")
+enum class DialClickAction {
+    PLAY_PAUSE,
+    TOGGLE_GAME_MODE,
+    TOGGLE_MUTE,
+    ASSISTANT;
+
+    val title: String
+        get() = when (this) {
+            PLAY_PAUSE -> AppStrings.dialActionPlayPause
+            TOGGLE_GAME_MODE -> AppStrings.dialActionGameMode
+            TOGGLE_MUTE -> AppStrings.dialActionMute
+            ASSISTANT -> AppStrings.dialActionAssistant
+        }
 }
 
 data class SmartDialConfig(

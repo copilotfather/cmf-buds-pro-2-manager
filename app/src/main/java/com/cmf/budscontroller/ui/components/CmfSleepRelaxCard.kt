@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.tools.RelaxNoiseType
 import com.cmf.budscontroller.tools.SleepTimerState
 import com.cmf.budscontroller.ui.theme.*
@@ -47,7 +48,7 @@ fun CmfSleepRelaxCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "СОН И РЕЛАКСАЦИЯ",
+                text = AppStrings.sleepTimerTitle,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
@@ -56,7 +57,7 @@ fun CmfSleepRelaxCard(
             )
             if (sleepState.isActive) {
                 Text(
-                    text = "${sleepState.minutesRemaining} МИН ДО СНА",
+                    text = "${sleepState.minutesRemaining} ${AppStrings.minUnit.uppercase()} ${if (AppStrings.isRussian) "ДО СНА" else "UNTIL SLEEP"}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     color = CmfOrange,
@@ -68,7 +69,7 @@ fun CmfSleepRelaxCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Время таймера сна:",
+            text = if (AppStrings.isRussian) "Время таймера сна:" else "Sleep timer duration:",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )
@@ -93,7 +94,7 @@ fun CmfSleepRelaxCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${mins}м",
+                        text = "${mins}${AppStrings.minUnit.first()}",
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
                         color = if (isSelected) CmfTextPrimary else CmfTextSecondary,
@@ -106,7 +107,7 @@ fun CmfSleepRelaxCard(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Фоновый шум (офлайн):",
+            text = if (AppStrings.isRussian) "Фоновый шум (офлайн):" else "Ambient noise (offline):",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )
@@ -149,7 +150,7 @@ fun CmfSleepRelaxCard(
             )
         ) {
             Text(
-                text = if (sleepState.isActive) "ОТМЕНИТЬ ТАЙМЕР" else "ЗАПУСТИТЬ ТАЙМЕР СНА",
+                text = if (sleepState.isActive) (if (AppStrings.isRussian) "ОТМЕНИТЬ ТАЙМЕР" else "CANCEL TIMER") else (if (AppStrings.isRussian) "ЗАПУСТИТЬ ТАЙМЕР СНА" else "START SLEEP TIMER"),
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp,
                 color = if (sleepState.isActive) CmfOrange else CmfTextPrimary,

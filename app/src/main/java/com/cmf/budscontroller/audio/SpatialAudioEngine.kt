@@ -5,30 +5,54 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.*
 
-enum class SpatialMode(val title: String, val subtitle: String) {
-    OFF("ВЫКЛ", "Обычное стерео"),
-    STUDIO_3D("STUDIO 3D", "Студийная сцена"),
-    HOLOGRAPHIC_360("HOLO 360°", "Голографический зал"),
-    CINEMA_IMMERSIVE("CINEMA", "Кинотеатр и диалоги")
+enum class SpatialMode {
+    OFF,
+    STUDIO_3D,
+    HOLOGRAPHIC_360,
+    CINEMA_IMMERSIVE;
+
+    val title: String
+        get() = when (this) {
+            OFF -> if (AppStrings.isRussian) "ВЫКЛ" else "OFF"
+            STUDIO_3D -> AppStrings.spatialStudio
+            HOLOGRAPHIC_360 -> AppStrings.spatialHolo
+            CINEMA_IMMERSIVE -> AppStrings.spatialCinema
+        }
+
+    val subtitle: String
+        get() = when (this) {
+            OFF -> AppStrings.spatialDirectDesc
+            STUDIO_3D -> AppStrings.spatialStudioDesc
+            HOLOGRAPHIC_360 -> AppStrings.spatialHoloDesc
+            CINEMA_IMMERSIVE -> AppStrings.spatialCinemaDesc
+        }
 }
 
-enum class VocalClarity(val title: String) {
-    OFF("СТАНДАРТ"),
-    MILD("ЧЕТКИЙ ВОКАЛ"),
-    MAX("МАКС. ГОЛОС")
+enum class VocalClarity {
+    OFF,
+    MILD,
+    MAX;
+
+    val title: String
+        get() = when (this) {
+            OFF -> AppStrings.vocalStandard
+            MILD -> AppStrings.vocalClear
+            MAX -> AppStrings.vocalMax
+        }
 }
 
 data class EarTipSealResult(
     val isTesting: Boolean = false,
     val sealScore: Int = 0, // 0..100%
-    val rating: String = "Тест не проводился",
-    val description: String = "Вставьте оба наушника и запустите тест"
+    val rating: String = AppStrings.earTipNotTested,
+    val description: String = AppStrings.earTipNotTestedDesc
 )
 
 data class SpatialAudioState(
@@ -83,8 +107,8 @@ class SpatialAudioEngine(private val context: Context) {
             sealResult = EarTipSealResult(
                 isTesting = true,
                 sealScore = 0,
-                rating = "Идет калибровка...",
-                description = "Слушайте тестовый сигнал в наушниках"
+                rating = AppStrings.earTipTesting,
+                description = AppStrings.earTipTestingDesc
             )
         )
 
@@ -99,8 +123,8 @@ class SpatialAudioEngine(private val context: Context) {
                     sealResult = EarTipSealResult(
                         isTesting = false,
                         sealScore = score,
-                        rating = "ИДЕАЛЬНОЕ ПРИЛЕГАНИЕ (96%)",
-                        description = "Полная герметичность: бас и шумоподавление работают на 100%"
+                        rating = AppStrings.earTipIdeal,
+                        description = AppStrings.earTipIdealDesc
                     )
                 )
             } catch (e: Exception) {
@@ -109,8 +133,8 @@ class SpatialAudioEngine(private val context: Context) {
                     sealResult = EarTipSealResult(
                         isTesting = false,
                         sealScore = 85,
-                        rating = "ХОРОШАЯ ПОСАДКА (85%)",
-                        description = "Герметичность в норме, проверьте положение насадок"
+                        rating = AppStrings.earTipGood,
+                        description = AppStrings.earTipGoodDesc
                     )
                 )
             }

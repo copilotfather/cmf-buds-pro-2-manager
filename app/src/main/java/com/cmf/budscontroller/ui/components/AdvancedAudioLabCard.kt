@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.audio.AdvancedAudioLabState
 import com.cmf.budscontroller.audio.LabLatencyPreset
 import com.cmf.budscontroller.audio.LabNoiseLayer
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 /**
@@ -89,7 +90,7 @@ fun AdvancedAudioLabCard(
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = if (expanded.value) "СВЕРНУТЬ" else "ОТКРЫТЬ",
+                    text = if (expanded.value) (if (AppStrings.isRussian) "СВЕРНУТЬ" else "COLLAPSE") else (if (AppStrings.isRussian) "ОТКРЫТЬ" else "EXPAND"),
                     color = accent,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Black,
@@ -103,8 +104,8 @@ fun AdvancedAudioLabCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            LabStatPill("ДОЗА", "${labState.dailyDosePercent}%", labState.riskLevelColor(), Modifier.weight(1f))
-            LabStatPill("БАТАРЕЯ", labState.batteryTimeFormatted, accent, Modifier.weight(1f))
+            LabStatPill(if (AppStrings.isRussian) "ДОЗА" else "DOSE", "${labState.dailyDosePercent}%", labState.riskLevelColor(), Modifier.weight(1f))
+            LabStatPill(if (AppStrings.isRussian) "БАТАРЕЯ" else "BATTERY", labState.batteryTimeFormatted, accent, Modifier.weight(1f))
             LabStatPill("ANC", if (labState.ancCalibration.isCalibrated) "OK" else "—", accent, Modifier.weight(1f))
         }
 
@@ -112,7 +113,7 @@ fun AdvancedAudioLabCard(
             LabDivider()
 
             // ============ APE: 8-BAND PARAMETRIC EQ ============
-            LabSectionTitle("APE · ПАРАМЕТРИЧЕСКИЙ EQ 8 ПОЛОС", accent)
+            LabSectionTitle(if (AppStrings.isRussian) "APE · ПАРАМЕТРИЧЕСКИЙ EQ 8 ПОЛОС" else "APE · 8-BAND PARAMETRIC EQ", accent)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,9 +161,9 @@ fun AdvancedAudioLabCard(
             LabDivider()
 
             // ============ SAC: ANC CALIBRATION ============
-            LabSectionTitle("SAC · КАЛИБРОВКА ANC", accent)
+            LabSectionTitle(if (AppStrings.isRussian) "SAC · КАЛИБРОВКА ANC" else "SAC · ANC CALIBRATION", accent)
             Text(
-                text = "Утечка: %d%% · Канал: %.1fx · Точность: %d%%".format(
+                text = (if (AppStrings.isRussian) "Утечка: %d%% · Канал: %.1fx · Точность: %d%%" else "Leakage: %d%% · Canal: %.1fx · Confidence: %d%%").format(
                     (labState.ancCalibration.leakageFactor * 100).toInt(),
                     labState.ancCalibration.canalVolume,
                     (labState.ancCalibration.confidence * 100).toInt()
@@ -170,7 +171,7 @@ fun AdvancedAudioLabCard(
                 color = CmfTextSecondary, fontSize = 10.sp, fontFamily = FontFamily.Default
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("УТЕЧКА", color = CmfTextSecondary, fontSize = 9.sp, fontFamily = FontFamily.Default, modifier = Modifier.width(58.dp))
+                Text(if (AppStrings.isRussian) "УТЕЧКА" else "LEAK", color = CmfTextSecondary, fontSize = 9.sp, fontFamily = FontFamily.Default, modifier = Modifier.width(58.dp))
                 LabMiniSlider(
                     value = labState.ancCalibration.leakageFactor,
                     range = 0f..1f,
@@ -180,20 +181,20 @@ fun AdvancedAudioLabCard(
                 )
             }
             Text(
-                text = "СИЛА ANC: ${labState.ancCalibration.recommendedStrength}%",
+                text = "${if (AppStrings.isRussian) "СИЛА ANC" else "ANC STRENGTH"}: ${labState.ancCalibration.recommendedStrength}%",
                 color = accent, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Default
             )
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                LabChip("СЛАБO ↓", false, accent, onClick = { onAncFeedback("more") })
-                LabChip("ИДЕАЛЬНО", false, accent, onClick = { onAncFeedback("perfect") })
-                LabChip("СИЛЬНО ↑", false, accent, onClick = { onAncFeedback("less") })
+                LabChip(if (AppStrings.isRussian) "СЛАБO ↓" else "WEAK ↓", false, accent, onClick = { onAncFeedback("more") })
+                LabChip(if (AppStrings.isRussian) "ИДЕАЛЬНО" else "PERFECT", false, accent, onClick = { onAncFeedback("perfect") })
+                LabChip(if (AppStrings.isRussian) "СИЛЬНО ↑" else "STRONG ↑", false, accent, onClick = { onAncFeedback("less") })
             }
 
             LabDivider()
 
             // ============ IWNM: NOISE MIXER ============
-            LabSectionTitle("IWNM · МИКШЕР ШУМА", accent)
+            LabSectionTitle(if (AppStrings.isRussian) "IWNM · МИКШЕР ШУМА" else "IWNM · NOISE MIXER", accent)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -226,7 +227,7 @@ fun AdvancedAudioLabCard(
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("МАСТЕР", color = CmfTextSecondary, fontSize = 9.sp, fontFamily = FontFamily.Default, modifier = Modifier.width(58.dp))
+                Text(if (AppStrings.isRussian) "МАСТЕР" else "MASTER", color = CmfTextSecondary, fontSize = 9.sp, fontFamily = FontFamily.Default, modifier = Modifier.width(58.dp))
                 LabMiniSlider(
                     value = labState.mixerMasterVolume,
                     range = 0f..1f,
@@ -244,7 +245,7 @@ fun AdvancedAudioLabCard(
             ) {
                 listOf(15, 30, 45, 60, 120).forEach { mins ->
                     LabChip(
-                        text = "${mins}м",
+                        text = "${mins}${if (AppStrings.isRussian) "м" else "m"}",
                         selected = labState.mixerSelectedMinutes == mins,
                         accent = accent,
                         onClick = { onMixerMinutesChanged(mins) }
@@ -258,11 +259,11 @@ fun AdvancedAudioLabCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "ИГРАЕТ · ${labState.mixerMinutesRemaining}м ост.",
+                        text = "${if (AppStrings.isRussian) "ИГРАЕТ" else "PLAYING"} · ${labState.mixerMinutesRemaining}${if (AppStrings.isRussian) "м ост." else "m left"}",
                         color = CmfGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Default, modifier = Modifier.weight(1f)
                     )
-                    LabChip("СТОП", true, CmfGreen, onClick = onStopMixer)
+                    LabChip(if (AppStrings.isRussian) "СТОП" else "STOP", true, CmfGreen, onClick = onStopMixer)
                 }
             } else {
                 Box(
@@ -275,7 +276,7 @@ fun AdvancedAudioLabCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "▶  ЗАПУСТИТЬ МИКШЕР",
+                        text = if (AppStrings.isRussian) "▶  ЗАПУСТИТЬ МИКШЕР" else "▶  START MIXER",
                         color = CmfBlack, fontSize = 11.sp, fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Default
                     )
@@ -285,7 +286,7 @@ fun AdvancedAudioLabCard(
             LabDivider()
 
             // ============ SLG: SAFE LISTENING ============
-            LabSectionTitle("SLG · БЕЗОПАСНОЕ ПРОСЛУШИВАНИЕ", accent)
+            LabSectionTitle(if (AppStrings.isRussian) "SLG · БЕЗОПАСНОЕ ПРОСЛУШИВАНИЕ" else "SLG · SAFE LISTENING", accent)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -297,15 +298,15 @@ fun AdvancedAudioLabCard(
             ) {
                 Column {
                     Text(
-                        text = "ДОЗА ЗА ДЕНЬ: ${labState.dailyDosePercent}%",
+                        text = "${if (AppStrings.isRussian) "ДОЗА ЗА ДЕНЬ" else "DAILY DOSE"}: ${labState.dailyDosePercent}%",
                         color = CmfTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Default
                     )
                     Text(
                         text = when (labState.riskLevel) {
-                            com.cmf.budscontroller.audio.LabRiskLevel.OK -> "Уровень безопасен"
-                            com.cmf.budscontroller.audio.LabRiskLevel.WARNING -> "Рекомендую снизить громкость"
-                            com.cmf.budscontroller.audio.LabRiskLevel.DANGER -> "Пауза обязательна!"
+                            com.cmf.budscontroller.audio.LabRiskLevel.OK -> if (AppStrings.isRussian) "Уровень безопасен" else "Level is safe"
+                            com.cmf.budscontroller.audio.LabRiskLevel.WARNING -> if (AppStrings.isRussian) "Рекомендую снизить громкость" else "Recommended to lower volume"
+                            com.cmf.budscontroller.audio.LabRiskLevel.DANGER -> if (AppStrings.isRussian) "Пауза обязательна!" else "Take a break immediately!"
                         },
                         color = CmfTextSecondary, fontSize = 10.sp, fontFamily = FontFamily.Default
                     )
@@ -321,7 +322,7 @@ fun AdvancedAudioLabCard(
             LabDivider()
 
             // ============ ULLE: LATENCY ============
-            LabSectionTitle("ULLE · ЗАДЕРЖКА", accent)
+            LabSectionTitle(if (AppStrings.isRussian) "ULLE · ЗАДЕРЖКА" else "ULLE · LATENCY", accent)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

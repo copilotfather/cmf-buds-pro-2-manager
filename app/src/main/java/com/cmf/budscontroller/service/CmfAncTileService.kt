@@ -43,7 +43,7 @@ class CmfAncTileService : TileService() {
         if (!status.isConnected) {
             tile.state = Tile.STATE_UNAVAILABLE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = "Не подключено"
+                tile.subtitle = com.cmf.budscontroller.i18n.AppStrings.statusDisconnected
             }
         } else {
             tile.state = when (status.ancMode) {

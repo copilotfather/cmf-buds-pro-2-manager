@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.audio.AudioProcessingState
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -33,7 +34,7 @@ fun AudioTweaksCard(
             .padding(20.dp)
     ) {
         Text(
-            text = "БАЛАНС КАНАЛОВ И ЗВУК",
+            text = AppStrings.headerChannelBalance,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -48,11 +49,11 @@ fun AudioTweaksCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "Баланс (L / R):", fontSize = 12.sp, color = CmfTextPrimary)
+            Text(text = "${AppStrings.balanceLabel} (L / R)", fontSize = 12.sp, color = CmfTextPrimary)
             val balanceText = when {
-                audioState.channelBalance < -0.05f -> "Левее (${(audioState.channelBalance * -100).toInt()}%)"
-                audioState.channelBalance > 0.05f -> "Правее (${(audioState.channelBalance * 100).toInt()}%)"
-                else -> "Центр"
+                audioState.channelBalance < -0.05f -> if (AppStrings.isRussian) "Левее (${(audioState.channelBalance * -100).toInt()}%)" else "Left (${(audioState.channelBalance * -100).toInt()}%)"
+                audioState.channelBalance > 0.05f -> if (AppStrings.isRussian) "Правее (${(audioState.channelBalance * 100).toInt()}%)" else "Right (${(audioState.channelBalance * 100).toInt()}%)"
+                else -> if (AppStrings.isRussian) "Центр" else "Center"
             }
             Text(text = balanceText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = CmfOrange, fontFamily = FontFamily.Default)
         }
@@ -79,12 +80,12 @@ fun AudioTweaksCard(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Loudness Booster (Усилитель громкости)
+        // Loudness Booster
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "Усилитель громкости:", fontSize = 12.sp, color = CmfTextPrimary)
+            Text(text = if (AppStrings.isRussian) "Усилитель громкости:" else "Loudness Booster:", fontSize = 12.sp, color = CmfTextPrimary)
             Text(
                 text = "+${audioState.loudnessBoostMilliBels / 100} dB",
                 fontSize = 12.sp,
@@ -114,8 +115,8 @@ fun AudioTweaksCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(text = "Моно в один наушник", fontSize = 12.sp, color = CmfTextPrimary)
-                Text(text = "Объединяет стерео в один канал", fontSize = 10.sp, color = CmfTextSecondary)
+                Text(text = if (AppStrings.isRussian) "Моно в один наушник" else "Mono Audio", fontSize = 12.sp, color = CmfTextPrimary)
+                Text(text = if (AppStrings.isRussian) "Объединяет стерео в один канал" else "Combines stereo into a single channel", fontSize = 10.sp, color = CmfTextSecondary)
             }
             Switch(
                 checked = audioState.isMonoAudio,

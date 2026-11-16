@@ -6,6 +6,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ data class WaterEjectState(
     val isRunning: Boolean = false,
     val progressSeconds: Int = 0,
     val totalSeconds: Int = 18,
-    val currentPhase: String = "Готов к запуску"
+    val currentPhase: String = AppStrings.waterPhaseReady
 )
 
 /**
@@ -40,7 +41,7 @@ class WaterEjectorManager(private val context: Context? = null) {
         _state.value = _state.value.copy(
             isRunning = true,
             progressSeconds = 0,
-            currentPhase = "Калибровка и срыв натяжения..."
+            currentPhase = AppStrings.waterPhaseCalib
         )
 
         ejectJob = scope.launch {
@@ -114,9 +115,9 @@ class WaterEjectorManager(private val context: Context? = null) {
                     // Stage 2 (Sec 7-12): Rapid Kinetic Pulse Shockwaves (8 Hz AM bursts on 155 Hz carrier)
                     // Stage 3 (Sec 13-18): Driver Mesh Micro-Atomization Sweep (Dual 160 Hz + 9.5 kHz planar ping)
                     val phaseDesc = when (sec) {
-                        in 1..6 -> "Фаза 1: Срыв поверхностного натяжения (130-170 Гц)"
-                        in 7..12 -> "Фаза 2: Импульсные ударные гидро-волны (8 Гц импульс)"
-                        else -> "Фаза 3: Микро-очистка планарной сетки (Dual Acoustic)"
+                        in 1..6 -> AppStrings.waterPhase1
+                        in 7..12 -> AppStrings.waterPhase2
+                        else -> AppStrings.waterPhase3
                     }
 
                     _state.value = _state.value.copy(
@@ -183,7 +184,7 @@ class WaterEjectorManager(private val context: Context? = null) {
                 _state.value = _state.value.copy(
                     isRunning = false,
                     progressSeconds = 0,
-                    currentPhase = "Очистка завершена"
+                    currentPhase = AppStrings.waterComplete
                 )
                 withContext(Dispatchers.Main) {
                     onComplete()
@@ -198,7 +199,7 @@ class WaterEjectorManager(private val context: Context? = null) {
         _state.value = _state.value.copy(
             isRunning = false,
             progressSeconds = 0,
-            currentPhase = "Остановлено"
+            currentPhase = AppStrings.waterStopped
         )
     }
 }

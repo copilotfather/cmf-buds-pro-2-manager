@@ -7,17 +7,26 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import com.cmf.budscontroller.bluetooth.CmfBluetoothManager
 import com.cmf.budscontroller.protocol.AncMode
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Random
 
-enum class RelaxNoiseType(val title: String) {
-    NONE("Без звука (только таймер)"),
-    PINK_NOISE("Розовый шум (сон)"),
-    BROWN_NOISE("Глубокий шум (океан / дождь)"),
-    WHITE_NOISE("Белый шум (концентрация)")
+enum class RelaxNoiseType {
+    NONE,
+    PINK_NOISE,
+    BROWN_NOISE,
+    WHITE_NOISE;
+
+    val title: String
+        get() = when (this) {
+            NONE -> AppStrings.sleepNoiseNone
+            PINK_NOISE -> AppStrings.sleepNoisePink
+            BROWN_NOISE -> AppStrings.sleepNoiseBrown
+            WHITE_NOISE -> AppStrings.sleepNoiseWhite
+        }
 }
 
 data class SleepTimerState(

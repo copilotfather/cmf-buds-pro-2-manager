@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -37,7 +38,7 @@ fun CmfGameModeSection(
     ) {
         Column {
             Text(
-                text = "Игровой режим с низкой задержкой",
+                text = AppStrings.headerGameMode,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
@@ -46,7 +47,7 @@ fun CmfGameModeSection(
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
-                text = if (isEnabled) "Сверхнизкая задержка активна" else "Стандартный кодек",
+                text = if (isEnabled) AppStrings.gameModeActive else AppStrings.gameModeInactive,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (isEnabled) vibe.accent else CmfTextPrimary

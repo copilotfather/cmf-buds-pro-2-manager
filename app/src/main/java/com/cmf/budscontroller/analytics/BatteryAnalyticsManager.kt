@@ -1,5 +1,6 @@
 package com.cmf.budscontroller.analytics
 
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.AncMode
 import com.cmf.budscontroller.protocol.BatteryInfo
 import com.cmf.budscontroller.protocol.DeviceStatus
@@ -56,7 +57,7 @@ object BatteryAnalyticsManager {
                 totalWithCaseFormattedTime = "--",
                 caseRechargesCount = 0f,
                 dischargeRatePerHour = 0f,
-                powerConsumptionProfile = "Наушники не подключены"
+                powerConsumptionProfile = AppStrings.batteryProfileNotConnected
             )
         }
 
@@ -74,26 +75,28 @@ object BatteryAnalyticsManager {
             val casePct = if (battery.casePercent > 0) battery.casePercent else 0
             val caseRecharges = (casePct / 100f) * 3.1f
 
+            val timeToFull = if (curLevel >= 100) AppStrings.batteryFullyCharged else "~$minutesToFull ${AppStrings.minUnit} ${AppStrings.batteryToHundred}"
+
             return BatteryPrediction(
                 earbudMinutesLeft = minutesToFull,
-                earbudFormattedTime = if (curLevel >= 100) "Заряжено" else "~$minutesToFull мин до 100%",
+                earbudFormattedTime = timeToFull,
                 totalWithCaseMinutesLeft = (caseRecharges * 11f * 60f).toInt(),
                 totalWithCaseFormattedTime = formatMinutes((caseRecharges * 11f * 60f).toInt()),
                 caseRechargesCount = String.format(Locale.US, "%.1f", caseRecharges).toFloatOrNull() ?: caseRecharges,
                 dischargeRatePerHour = 0f,
-                powerConsumptionProfile = "Зарядка в кейсе (Fast Charge)"
+                powerConsumptionProfile = AppStrings.batteryProfileCharging
             )
         }
 
         if (validBuds.isEmpty()) {
             return BatteryPrediction(
                 earbudMinutesLeft = 0,
-                earbudFormattedTime = "0 мин",
+                earbudFormattedTime = "0 ${AppStrings.minUnit}",
                 totalWithCaseMinutesLeft = 0,
-                totalWithCaseFormattedTime = "0 мин",
+                totalWithCaseFormattedTime = "0 ${AppStrings.minUnit}",
                 caseRechargesCount = 0f,
                 dischargeRatePerHour = 0f,
-                powerConsumptionProfile = "Наушники разряжены"
+                powerConsumptionProfile = AppStrings.batteryProfileDischarged
             )
         }
 
@@ -137,10 +140,10 @@ object BatteryAnalyticsManager {
         val totalMinutesWithCase = earbudMinutes + (caseRecharges * baseHoursFull * 60).toInt()
 
         val profileName = when {
-            status.isGameModeEnabled -> "Игровой (Повышенный расход)"
-            status.ancMode == AncMode.NOISE_CANCELLATION -> "Шумоподавление (${status.ancLevel.title})"
-            status.ancMode == AncMode.TRANSPARENCY -> "Прозрачность"
-            else -> "Энергосберегающий (ANC Выкл)"
+            status.isGameModeEnabled -> AppStrings.batteryProfileGaming
+            status.ancMode == AncMode.NOISE_CANCELLATION -> "${AppStrings.batteryProfileAnc} (${status.ancLevel.title})"
+            status.ancMode == AncMode.TRANSPARENCY -> AppStrings.batteryProfileTransparency
+            else -> AppStrings.batteryProfilePowerSaving
         }
 
         return BatteryPrediction(
@@ -170,10 +173,12 @@ object BatteryAnalyticsManager {
     private fun formatMinutes(totalMinutes: Int): String {
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
+        val hUnit = AppStrings.hourUnit
+        val mUnit = AppStrings.minUnit
         return when {
-            hours > 0 && mins > 0 -> "${hours}ч ${mins}мин"
-            hours > 0 -> "${hours}ч"
-            else -> "${mins}мин"
+            hours > 0 && mins > 0 -> "$hours$hUnit $mins$mUnit"
+            hours > 0 -> "$hours$hUnit"
+            else -> "$mins$mUnit"
         }
     }
 }

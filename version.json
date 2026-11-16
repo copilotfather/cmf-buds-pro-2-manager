@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.2",
-  "versionCode": 2320,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.2/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.2:\n• Защита слуха (Hearing Safety): обязательные предупреждающие диалоги перед включением громкого поиска или очистки от воды\n• Плавное нарастание громкости (Volume Ramp-up): звук поиска начинается с тихого уровня (25%) и плавно нарастает за 4 секунды\n• Полная поддержка английского языка (Full English Localization) + мгновенный переключатель EN/RU в шапке и настройках\n• Информативный баннер подсказок при отсутствии подключения с кнопкой быстрого коннекта\n• Полноценный Dual-Engine SPP + BLE GATT и автореконнект Watchdog"
+  "versionName": "2.3.3",
+  "versionCode": 2330,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.3/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.3:\n• Fixed false connection bug: smartwatches (Galaxy Watch, Amazfit, Mi Band, etc.) are strictly excluded and will never be mistaken for connected earbuds\n• Strict Bluetooth detection: accurately checks physical A2DP/Headset/SPP status specifically for CMF Buds Pro 2 / Nothing Ear devices\n• Full professional English localization by default + instant EN/RU language switcher in header and settings\n• Hearing safety protection with gradual volume ramp-up for Find My Buds and Water Eject"
 }

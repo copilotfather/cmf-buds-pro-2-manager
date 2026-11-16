@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,15 +16,33 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 enum class CodecType(
-    val title: String,
-    val bitrateInfo: String,
     val sampleRate: String,
-    val isHiRes: Boolean,
-    val description: String
+    val isHiRes: Boolean
 ) {
-    LDAC("Sony LDAC (Аппаратный Hi-Res)", "до 990 kbps (Hi-Res Audio Wireless)", "24 бит / 96 кГц", true, "Активирует чип LDAC в наушниках CMF. Максимальное качество студийного звука"),
-    AAC("AAC (Энергосберегающий)", "256 - 320 kbps", "16 бит / 44.1 кГц", false, "Стандартный сбалансированный режим наушников по умолчанию"),
-    SBC("SBC (Базовый)", "до 328 kbps (Baseline)", "16 бит / 44.1 кГц", false, "Универсальный профиль совместимости")
+    LDAC("24-bit / 96 kHz", true),
+    AAC("16-bit / 44.1 kHz", false),
+    SBC("16-bit / 44.1 kHz", false);
+
+    val title: String
+        get() = when (this) {
+            LDAC -> AppStrings.codecLdacTitle
+            AAC -> AppStrings.codecAacTitle
+            SBC -> AppStrings.codecSbcTitle
+        }
+
+    val bitrateInfo: String
+        get() = when (this) {
+            LDAC -> if (AppStrings.isRussian) "до 990 kbps (Hi-Res Audio Wireless)" else "up to 990 kbps (Hi-Res Audio Wireless)"
+            AAC -> "256 - 320 kbps"
+            SBC -> if (AppStrings.isRussian) "до 328 kbps (Baseline)" else "up to 328 kbps (Baseline)"
+        }
+
+    val description: String
+        get() = when (this) {
+            LDAC -> AppStrings.codecLdacDesc
+            AAC -> AppStrings.codecAacDesc
+            SBC -> AppStrings.codecSbcDesc
+        }
 }
 
 data class CodecEngineState(
@@ -33,7 +52,7 @@ data class CodecEngineState(
     val sampleRate: String = "96.0 kHz",
     val bitsPerSample: String = "24-bit",
     val channelMode: String = "Stereo (2.0)",
-    val bitrateMode: String = "990 kbps (Чип CMF LDAC активен)",
+    val bitrateMode: String = "990 kbps (Hi-Res LDAC)",
     val availableCodecs: List<CodecType> = listOf(
         CodecType.LDAC,
         CodecType.AAC,
@@ -74,7 +93,7 @@ class BluetoothCodecManager(private val context: Context) {
                     isLdacEnabledOnBuds = enableLdacInBuds,
                     sampleRate = if (codec.isHiRes) "96.0 kHz" else "44.1 kHz",
                     bitsPerSample = if (codec.isHiRes) "24-bit" else "16-bit",
-                    bitrateMode = if (codec == CodecType.LDAC) "990 kbps (Чип CMF LDAC активен)" else codec.bitrateInfo
+                    bitrateMode = if (codec == CodecType.LDAC) "990 kbps (Hi-Res LDAC)" else codec.bitrateInfo
                 )
 
                 onCompleted(true)

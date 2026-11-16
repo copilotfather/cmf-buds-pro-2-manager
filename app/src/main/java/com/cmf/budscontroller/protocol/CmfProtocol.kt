@@ -1,21 +1,37 @@
 package com.cmf.budscontroller.protocol
 
 import androidx.compose.runtime.Immutable
+import com.cmf.budscontroller.i18n.AppStrings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
 
-enum class AncMode(val value: Byte, val title: String) {
-    OFF(0x01.toByte(), "Выключено"),
-    TRANSPARENCY(0x02.toByte(), "Прозрачность"),
-    NOISE_CANCELLATION(0x03.toByte(), "Шумоподавление")
+enum class AncMode(val value: Byte) {
+    OFF(0x01.toByte()),
+    TRANSPARENCY(0x02.toByte()),
+    NOISE_CANCELLATION(0x03.toByte());
+
+    val title: String
+        get() = when (this) {
+            OFF -> AppStrings.ancOff
+            TRANSPARENCY -> AppStrings.ancTransparency
+            NOISE_CANCELLATION -> AppStrings.ancCancellation
+        }
 }
 
-enum class AncLevel(val value: Byte, val title: String) {
-    LOW(0x01.toByte(), "Слабое"),
-    MID(0x02.toByte(), "Среднее"),
-    HIGH(0x03.toByte(), "Высокое"),
-    ADAPTIVE(0x04.toByte(), "Адаптивное")
+enum class AncLevel(val value: Byte) {
+    LOW(0x01.toByte()),
+    MID(0x02.toByte()),
+    HIGH(0x03.toByte()),
+    ADAPTIVE(0x04.toByte());
+
+    val title: String
+        get() = when (this) {
+            LOW -> AppStrings.ancLevelLow
+            MID -> AppStrings.ancLevelMid
+            HIGH -> AppStrings.ancLevelHigh
+            ADAPTIVE -> AppStrings.ancLevelAdaptive
+        }
 }
 
 @Immutable

@@ -2,6 +2,7 @@ package com.cmf.budscontroller.tools
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,18 +24,29 @@ class VoiceWhisperManager(private val context: Context) : TextToSpeech.OnInitLis
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts?.language = Locale("ru", "RU")
+            val loc = if (AppStrings.isRussian) Locale("ru", "RU") else Locale.US
+            tts?.language = loc
             isInitialized = true
         }
     }
 
     fun speakBatteryStatus(left: Int, right: Int, remainingTimeText: String) {
         if (!_settings.value.announceOnConnect || !isInitialized) return
+        val loc = if (AppStrings.isRussian) Locale("ru", "RU") else Locale.US
+        tts?.language = loc
         val minBud = minOf(left, right)
-        val text = if (_settings.value.speakRemainingHours) {
-            "Наушники подключены. Заряд $minBud процентов. Осталось слушать $remainingTimeText."
+        val text = if (AppStrings.isRussian) {
+            if (_settings.value.speakRemainingHours) {
+                "Наушники подключены. Заряд $minBud процентов. Осталось слушать $remainingTimeText."
+            } else {
+                "Наушники подключены. Заряд $minBud процентов."
+            }
         } else {
-            "Наушники подключены. Заряд $minBud процентов."
+            if (_settings.value.speakRemainingHours) {
+                "Earbuds connected. Battery at $minBud percent. Estimated listening time: $remainingTimeText."
+            } else {
+                "Earbuds connected. Battery at $minBud percent."
+            }
         }
         speak(text)
     }

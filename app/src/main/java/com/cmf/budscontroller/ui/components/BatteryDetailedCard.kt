@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.analytics.BatteryPrediction
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -38,7 +39,7 @@ fun BatteryDetailedCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ПРОГНОЗ РАБОТЫ АККУМУЛЯТОРА",
+                text = if (AppStrings.isRussian) "ПРОГНОЗ РАБОТЫ АККУМУЛЯТОРА" else "BATTERY RUNTIME PREDICTION",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = CmfTextSecondary,
@@ -56,7 +57,7 @@ fun BatteryDetailedCard(
         ) {
             Column {
                 Text(
-                    text = "Осталось слушать:",
+                    text = if (AppStrings.isRussian) "Осталось слушать:" else "Remaining listening time:",
                     fontSize = 12.sp,
                     color = CmfTextSecondary
                 )
@@ -70,7 +71,7 @@ fun BatteryDetailedCard(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "С кейсом:",
+                    text = AppStrings.caseBatteryPrefix,
                     fontSize = 12.sp,
                     color = CmfTextSecondary
                 )
@@ -104,12 +105,12 @@ fun BatteryDetailedCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Зарядок от кейса: ~${prediction.caseRechargesCount} раз",
+                text = if (AppStrings.isRussian) "Зарядок от кейса: ~${prediction.caseRechargesCount} раз" else "Case recharges: ~${prediction.caseRechargesCount} cycles",
                 fontSize = 12.sp,
                 color = CmfTextPrimary
             )
             Text(
-                text = "Расход: ~${prediction.dischargeRatePerHour}%/ч",
+                text = if (AppStrings.isRussian) "Расход: ~${prediction.dischargeRatePerHour}%/ч" else "Drain: ~${prediction.dischargeRatePerHour}%/h",
                 fontSize = 12.sp,
                 color = CmfTextSecondary
             )
@@ -118,7 +119,7 @@ fun BatteryDetailedCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Профиль: ${prediction.powerConsumptionProfile}",
+            text = if (AppStrings.isRussian) "Профиль: ${prediction.powerConsumptionProfile}" else "Profile: ${prediction.powerConsumptionProfile}",
             fontSize = 11.sp,
             color = CmfTextSecondary
         )

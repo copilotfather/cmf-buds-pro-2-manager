@@ -7,6 +7,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.util.Log
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -171,17 +172,16 @@ class CmfBluetoothManager private constructor() {
         if (!adapter.isEnabled) return null
 
         val bonded = adapter.bondedDevices ?: return null
-        val valid = bonded.filter { !isExcludedWatchOrNonHeadset(it) }
+        val valid = bonded.filter { !isExcludedWatchOrNonHeadset(it) && isCmfOrNothingDevice(it) }
 
         // 1. Connected in A2DP or Headset profiles
         val connectedProfiles = try {
             (a2dpProfile?.connectedDevices.orEmpty() + headsetProfile?.connectedDevices.orEmpty())
-                .filter { !isExcludedWatchOrNonHeadset(it) }
+                .distinctBy { it.address }
+                .filter { !isExcludedWatchOrNonHeadset(it) && isCmfOrNothingDevice(it) }
         } catch (_: Exception) { emptyList() }
 
         if (connectedProfiles.isNotEmpty()) {
-            val cmf = connectedProfiles.find { isCmfOrNothingDevice(it) }
-            if (cmf != null) return cmf
             val preferred = preferredAddress
             if (!preferred.isNullOrBlank()) {
                 val match = connectedProfiles.find { it.address.equals(preferred, ignoreCase = true) }
@@ -190,7 +190,7 @@ class CmfBluetoothManager private constructor() {
             return connectedProfiles.firstOrNull()
         }
 
-        // 2. Preferred address if bonded and connected in system
+        // 2. Preferred address if bonded and verified connected in system
         val pref = preferredAddress
         if (!pref.isNullOrBlank()) {
             val match = valid.find { it.address.equals(pref, ignoreCase = true) }
@@ -201,23 +201,36 @@ class CmfBluetoothManager private constructor() {
     }
 
     @SuppressLint("MissingPermission")
-    fun isExcludedWatchOrNonHeadset(device: BluetoothDevice): Boolean {
-        val name = (device.name ?: "").lowercase()
-        val devClass = device.bluetoothClass
+    fun isExcludedWatchOrNonHeadset(device: BluetoothDevice?): Boolean {
+        if (device == null) return true
+        val name = try { (device.name ?: "").trim().lowercase() } catch (_: Exception) { "" }
+        val devClass = try { device.bluetoothClass } catch (_: Exception) { null }
 
-        // Explicit watch / fitness tracker / band / non-audio keywords
+        // Comprehensive watch, fitness tracker, smartwatch, band, and wearable keywords
         val watchKeywords = listOf(
-            "watch", "band", "fit", "wear", "gear", "clock", "gtr", "gts",
-            "mi smart band", "miband", "galaxy watch", "pixel watch", "amazfit"
+            "watch", "band", "fit", "wear", "gear", "clock", "gtr", "gts", "bip", "t-rex", "pace",
+            "mi smart band", "miband", "galaxy watch", "pixel watch", "amazfit", "garmin", "huawei watch",
+            "honor watch", "redmi watch", "d105", "ultra", "tracker", "bracelet", "pedometer", "apple watch",
+            "fitbit", "coros", "suunto", "polar", "withings", "ticwatch", "fossil", "skagen", "casio",
+            "g-shock", "noise", "colorfit", "boat wave", "storm", "fire-boltt", "titan", "fastrack",
+            "realme watch", "oppo watch", "oneplus watch", "haylou", "zepp", "smart ring", "oura", "whoop"
         )
         if (watchKeywords.any { name.contains(it) }) {
             return true
         }
 
-        // Check device class: if it's explicitly WEARABLE (Wrist Watch) and NOT Audio/Video
+        // Check BluetoothClass: WEARABLE, HEALTH, TOY, or COMPUTER
         if (devClass != null) {
             val major = devClass.majorDeviceClass
-            if (major == BluetoothClass.Device.Major.WEARABLE) {
+            if (major == BluetoothClass.Device.Major.WEARABLE ||
+                major == BluetoothClass.Device.Major.HEALTH ||
+                major == BluetoothClass.Device.Major.TOY ||
+                major == BluetoothClass.Device.Major.COMPUTER) {
+                return true
+            }
+            val sub = devClass.deviceClass
+            // Subclasses for Wrist Watch (0x0704), Pager (0x0708), Jacket (0x0710), Helmet (0x0714), Glasses (0x0718)
+            if (sub == 0x0704 || sub == 0x0708 || sub == 0x0710 || sub == 0x0714 || sub == 0x0718) {
                 return true
             }
         }
@@ -230,12 +243,24 @@ class CmfBluetoothManager private constructor() {
         val a2dpDevices = try { a2dpProfile?.connectedDevices } catch (_: Exception) { null }
         val connectedList = (hsDevices.orEmpty() + a2dpDevices.orEmpty())
             .distinctBy { it.address }
-            .filter { !isExcludedWatchOrNonHeadset(it) }
+            .filter { !isExcludedWatchOrNonHeadset(it) && isCmfOrNothingDevice(it) }
 
-        // Prefer Nothing / CMF earbuds first
-        val prioritized = connectedList.sortedByDescending { isCmfOrNothingDevice(it) }
+        if (connectedList.isEmpty()) {
+            val cur = currentDevice
+            if (cur == null || !isDeviceConnected(cur, appContext)) {
+                if (_deviceStatus.value.isConnected && (socket == null || socket?.isConnected != true)) {
+                    _deviceStatus.value = _deviceStatus.value.copy(
+                        isConnected = false,
+                        isSppActive = false,
+                        isGattActive = false,
+                        connectionType = AppStrings.statusDisconnected
+                    )
+                }
+            }
+            return
+        }
 
-        for (dev in prioritized) {
+        for (dev in connectedList) {
             val bat = getSystemBatteryLevel(dev)
             if (bat in 0..100) {
                 updateSystemBattery(dev, bat)
@@ -243,7 +268,7 @@ class CmfBluetoothManager private constructor() {
             } else {
                 val name = try { dev.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
                 val cur = _deviceStatus.value.battery
-                val fallbackBat = if (cur.leftPercent > 0) cur.leftPercent else 85
+                val fallbackBat = if (cur.leftPercent > 0) cur.leftPercent else -1
                 _deviceStatus.value = _deviceStatus.value.copy(
                     isConnected = true,
                     deviceName = name,
@@ -274,55 +299,32 @@ class CmfBluetoothManager private constructor() {
 
     @SuppressLint("MissingPermission")
     fun isDeviceConnected(device: BluetoothDevice, context: Context? = null): Boolean {
-        // 1. Android BluetoothAdapter profile state
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-        if (adapter != null) {
-            try {
-                if (adapter.getProfileConnectionState(BluetoothProfile.A2DP) == BluetoothProfile.STATE_CONNECTED ||
-                    adapter.getProfileConnectionState(BluetoothProfile.HEADSET) == BluetoothProfile.STATE_CONNECTED) {
-                    val bonded = adapter.bondedDevices
-                    if (bonded?.any { it.address.equals(device.address, ignoreCase = true) } == true) {
-                        return true
-                    }
-                }
-            } catch (_: Exception) {}
-        }
+        // Never treat excluded watch or non-earbud as connected
+        if (isExcludedWatchOrNonHeadset(device)) return false
 
-        // 2. Android AudioManager outputs check (works on all Android versions)
-        val ctx = context ?: appContext
-        if (ctx != null) {
-            try {
-                val am = ctx.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-                if (am != null) {
-                    if (am.isBluetoothA2dpOn || am.isBluetoothScoOn) {
-                        return true
-                    }
-                    val outputs = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-                    if (outputs.any { dev ->
-                        dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-                        dev.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
-                        dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-                    }) {
-                        return true
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-
-        // 3. Check A2DP and Headset profile connection state
-        try {
-            if (headsetProfile?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED) return true
-        } catch (_: Exception) {}
-        try {
-            if (a2dpProfile?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED) return true
-        } catch (_: Exception) {}
-
-        // 4. Method isConnected via reflection
+        // 1. Hidden reflection method device.isConnected() - direct ACL state in Android OS
         try {
             val method = device.javaClass.getMethod("isConnected")
             val res = method.invoke(device) as? Boolean
             if (res == true) return true
         } catch (_: Exception) {}
+
+        // 2. A2DP profile connection state for this specific device
+        try {
+            if (a2dpProfile?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED) return true
+            if (a2dpProfile?.connectedDevices?.any { it.address.equals(device.address, ignoreCase = true) } == true) return true
+        } catch (_: Exception) {}
+
+        // 3. Headset profile connection state for this specific device
+        try {
+            if (headsetProfile?.getConnectionState(device) == BluetoothProfile.STATE_CONNECTED) return true
+            if (headsetProfile?.connectedDevices?.any { it.address.equals(device.address, ignoreCase = true) } == true) return true
+        } catch (_: Exception) {}
+
+        // 4. Active RFCOMM SPP socket check
+        if (socket?.isConnected == true && currentDevice?.address.equals(device.address, ignoreCase = true)) {
+            return true
+        }
 
         return false
     }
@@ -336,6 +338,7 @@ class CmfBluetoothManager private constructor() {
     }
 
     fun updateSystemBattery(device: BluetoothDevice?, level: Int) {
+        if (device != null && (isExcludedWatchOrNonHeadset(device) || !isCmfOrNothingDevice(device))) return
         if (level in 0..100) {
             val cur = _deviceStatus.value.battery
             val devName = try { device?.name ?: _deviceStatus.value.deviceName } catch (_: Exception) { _deviceStatus.value.deviceName }
@@ -356,29 +359,29 @@ class CmfBluetoothManager private constructor() {
 
     @SuppressLint("MissingPermission")
     fun onDeviceAclConnected(device: BluetoothDevice?) {
-        if (device != null) {
-            val devName = try { device.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
-            val sysBat = getSystemBatteryLevel(device)
-            val currentBat = _deviceStatus.value.battery
-            val batLvl = when {
-                sysBat > 0 -> sysBat
-                currentBat.leftPercent > 0 -> currentBat.leftPercent
-                currentBat.rightPercent > 0 -> currentBat.rightPercent
-                else -> -1
-            }
-            _deviceStatus.value = _deviceStatus.value.copy(
-                isConnected = true,
-                deviceName = devName,
-                deviceAddress = device.address,
-                battery = BatteryInfo(
-                    leftPercent = batLvl,
-                    rightPercent = batLvl,
-                    casePercent = if (currentBat.casePercent > 0) currentBat.casePercent else lastKnownCaseBattery,
-                    isLeftConnected = true,
-                    isRightConnected = true
-                )
-            )
+        if (device == null || isExcludedWatchOrNonHeadset(device) || !isCmfOrNothingDevice(device)) return
+        val devName = try { device.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
+        val sysBat = getSystemBatteryLevel(device)
+        val currentBat = _deviceStatus.value.battery
+        val batLvl = when {
+            sysBat > 0 -> sysBat
+            currentBat.leftPercent > 0 -> currentBat.leftPercent
+            currentBat.rightPercent > 0 -> currentBat.rightPercent
+            else -> -1
         }
+        _deviceStatus.value = _deviceStatus.value.copy(
+            isConnected = true,
+            deviceName = devName,
+            deviceAddress = device.address,
+            connectionType = if (socket?.isConnected == true) "SPP + BLE" else "A2DP Hi-Fi",
+            battery = BatteryInfo(
+                leftPercent = batLvl,
+                rightPercent = batLvl,
+                casePercent = if (currentBat.casePercent > 0) currentBat.casePercent else lastKnownCaseBattery,
+                isLeftConnected = true,
+                isRightConnected = true
+            )
+        )
     }
 
     /**
@@ -420,7 +423,13 @@ class CmfBluetoothManager private constructor() {
                         bluetoothGatt = null
                         gattWriteChar = null
                         gattNotifyChar = null
-                        _deviceStatus.value = _deviceStatus.value.copy(isGattActive = false)
+                        val sppActive = socket?.isConnected == true
+                        val audioActive = isDeviceConnected(device, appContext)
+                        _deviceStatus.value = _deviceStatus.value.copy(
+                            isGattActive = false,
+                            isConnected = sppActive || audioActive,
+                            connectionType = if (sppActive) "SPP Direct" else if (audioActive) "A2DP Hi-Fi" else AppStrings.statusDisconnected
+                        )
                     }
                 }
             }
@@ -572,27 +581,28 @@ class CmfBluetoothManager private constructor() {
         }
     }
 
-    fun isCmfOrNothingDevice(device: BluetoothDevice): Boolean {
+    @SuppressLint("MissingPermission")
+    fun isCmfOrNothingDevice(device: BluetoothDevice?): Boolean {
+        if (device == null) return false
         if (isExcludedWatchOrNonHeadset(device)) return false
+        val name = try { (device.name ?: "").trim().lowercase() } catch (_: Exception) { "" }
+        if (name.isBlank()) return false
+
+        val cmfKeywords = listOf(
+            "cmf", "nothing", "buds", "ear (", "ear(", "ear 1", "ear 2", "ear a",
+            "ear open", "ear (open)", "ear (a)", "ear (1)", "ear (2)", "neckband",
+            "b163", "b162", "b164", "b159", "b171", "b155", "b157", "b181"
+        )
+        if (cmfKeywords.any { name.contains(it) }) {
+            return true
+        }
+
         val pref = preferredAddress
         if (!pref.isNullOrBlank() && device.address.equals(pref, ignoreCase = true)) {
             return true
         }
-        val name = (device.name ?: "").lowercase()
-        return name.contains("cmf") ||
-               name.contains("buds") ||
-               name.contains("nothing") ||
-               name.contains("ear") ||
-               name.contains("neckband") ||
-               name.contains("b163") ||
-               name.contains("b162") ||
-               name.contains("b164") ||
-               name.contains("b159") ||
-               name.contains("b171") ||
-               name.contains("b181") ||
-               name.contains("headphone") ||
-               name.contains("headset") ||
-               name.contains("tws")
+
+        return false
     }
 
     @SuppressLint("MissingPermission")
@@ -603,38 +613,23 @@ class CmfBluetoothManager private constructor() {
         val bondedDevices = adapter.bondedDevices ?: return null
         if (bondedDevices.isEmpty()) return null
 
-        val validDevices = bondedDevices.filter { !isExcludedWatchOrNonHeadset(it) }
+        val validDevices = bondedDevices.filter { !isExcludedWatchOrNonHeadset(it) && isCmfOrNothingDevice(it) }
+        if (validDevices.isEmpty()) return null
 
         // 0. Active connected A2DP / Headset device (Top Priority)
         val connectedInProfile = try {
             (a2dpProfile?.connectedDevices.orEmpty() + headsetProfile?.connectedDevices.orEmpty())
-                .filter { !isExcludedWatchOrNonHeadset(it) }
+                .distinctBy { it.address }
+                .filter { !isExcludedWatchOrNonHeadset(it) && isCmfOrNothingDevice(it) }
         } catch (_: Exception) { emptyList() }
 
-        val activeCmf = connectedInProfile.find { isCmfOrNothingDevice(it) }
         val activePref = if (!preferredAddress.isNullOrBlank()) {
             connectedInProfile.find { it.address.equals(preferredAddress, ignoreCase = true) }
         } else null
-        val activeConnected = activePref ?: activeCmf ?: connectedInProfile.firstOrNull()
+        val activeCmf = connectedInProfile.firstOrNull()
+        val activeConnected = activePref ?: activeCmf
 
         if (activeConnected != null) {
-            val devName = try { activeConnected.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
-            val sysBat = getSystemBatteryLevel(activeConnected)
-            val curBat = _deviceStatus.value.battery
-            val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else 85)
-            _deviceStatus.value = _deviceStatus.value.copy(
-                isConnected = true,
-                deviceName = devName,
-                deviceAddress = activeConnected.address,
-                connectionType = if (socket?.isConnected == true) "SPP + BLE" else "A2DP Hi-Fi",
-                battery = BatteryInfo(
-                    leftPercent = batLvl,
-                    rightPercent = batLvl,
-                    casePercent = if (curBat.casePercent > 0) curBat.casePercent else lastKnownCaseBattery,
-                    isLeftConnected = true,
-                    isRightConnected = true
-                )
-            )
             return activeConnected
         }
 
@@ -643,38 +638,10 @@ class CmfBluetoothManager private constructor() {
             validDevices.find { it.address.equals(preferredAddress, ignoreCase = true) }
         } else null
 
-        // 2. Exact/Strong search for CMF / Nothing / Earbuds
-        val byName = validDevices.find { device -> isCmfOrNothingDevice(device) }
+        // 2. Strong search for CMF / Nothing / Earbuds
+        val byName = validDevices.firstOrNull()
 
-        // 3. Fallback: Find connected or bonded Audio/Headset device that is NOT a watch
-        val byClass = validDevices.find { device ->
-            val devClass = device.bluetoothClass
-            devClass != null && devClass.majorDeviceClass == android.bluetooth.BluetoothClass.Device.Major.AUDIO_VIDEO
-        }
-
-        val target = matchedByPref ?: byName ?: byClass ?: if (validDevices.size == 1) validDevices.first() else null
-
-        if (target != null && isDeviceConnected(target, appContext)) {
-            val devName = try { target.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
-            val sysBat = getSystemBatteryLevel(target)
-            val curBat = _deviceStatus.value.battery
-            val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else -1)
-            _deviceStatus.value = _deviceStatus.value.copy(
-                isConnected = true,
-                deviceName = devName,
-                deviceAddress = target.address,
-                connectionType = if (socket?.isConnected == true) "SPP + BLE" else "A2DP Hi-Fi",
-                battery = BatteryInfo(
-                    leftPercent = batLvl,
-                    rightPercent = batLvl,
-                    casePercent = if (curBat.casePercent > 0) curBat.casePercent else lastKnownCaseBattery,
-                    isLeftConnected = true,
-                    isRightConnected = true
-                )
-            )
-        }
-
-        return target
+        return matchedByPref ?: byName
     }
 
     @SuppressLint("MissingPermission")
@@ -816,15 +783,16 @@ class CmfBluetoothManager private constructor() {
         }
 
         val isSppConnected = tmpSocket != null && tmpSocket.isConnected
+        val isGattConnected = _deviceStatus.value.isGattActive
 
-        if (!isSppConnected && !isSystemConnected && bluetoothGatt == null) {
+        if (!isSppConnected && !isSystemConnected && !isGattConnected) {
             Log.w(TAG, "Device $devName is unreachable via SPP, GATT or system audio")
             currentDevice = null
             _deviceStatus.value = _deviceStatus.value.copy(
                 isConnected = false,
                 isSppActive = false,
                 isGattActive = false,
-                connectionType = "Отключено"
+                connectionType = AppStrings.statusDisconnected
             )
             return@withContext false
         }
@@ -834,9 +802,9 @@ class CmfBluetoothManager private constructor() {
         val batLvl = if (sysBat in 1..100) sysBat else (if (curBat.leftPercent in 1..100) curBat.leftPercent else -1)
 
         val connType = when {
-            isSppConnected && bluetoothGatt != null -> "SPP + BLE"
+            isSppConnected && isGattConnected -> "SPP + BLE"
             isSppConnected -> "SPP Direct"
-            bluetoothGatt != null -> "BLE GATT"
+            isGattConnected -> "BLE GATT"
             else -> "A2DP Hi-Fi"
         }
 
@@ -846,7 +814,7 @@ class CmfBluetoothManager private constructor() {
             deviceAddress = devAddr,
             connectionType = connType,
             isSppActive = isSppConnected,
-            isGattActive = bluetoothGatt != null,
+            isGattActive = isGattConnected,
             battery = BatteryInfo(
                 leftPercent = batLvl,
                 rightPercent = batLvl,
@@ -1190,7 +1158,7 @@ class CmfBluetoothManager private constructor() {
             isConnected = false,
             isSppActive = false,
             isGattActive = false,
-            connectionType = "Отключено"
+            connectionType = AppStrings.statusDisconnected
         )
     }
 }

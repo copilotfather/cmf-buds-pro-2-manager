@@ -97,10 +97,10 @@ class EqualizerManager(private val context: Context) {
             val clamped = levelDb.coerceIn(-10, 10)
             updated[bandIndex] = clamped
             _state.value = _state.value.copy(
-                activePresetName = "Пользовательский",
+                activePresetName = com.cmf.budscontroller.i18n.AppStrings.eqPresetCustom,
                 bandLevels = updated
             )
-            prefs.edit().putString("eq_active_preset", "Пользовательский").apply()
+            prefs.edit().putString("eq_active_preset", com.cmf.budscontroller.i18n.AppStrings.eqPresetCustom).apply()
 
             equalizer?.let { eq ->
                 try {

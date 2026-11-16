@@ -88,12 +88,8 @@ class CmfApplication : Application() {
                 }
 
                 if (device == null) return
-
-                val currentSaved = prefs.getString("last_device_address", null)
-                val isRelevant = (currentSaved != null && device.address.equals(currentSaved, ignoreCase = true)) ||
-                                 btManager.isCmfOrNothingDevice(device)
-
-                if (!isRelevant) return
+                if (btManager.isExcludedWatchOrNonHeadset(device)) return
+                if (!btManager.isCmfOrNothingDevice(device)) return
 
                 when (action) {
                     "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED",

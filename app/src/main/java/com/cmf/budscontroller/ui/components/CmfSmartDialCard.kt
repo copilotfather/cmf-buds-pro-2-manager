@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.tools.DialClickAction
 import com.cmf.budscontroller.tools.DialRotateAction
 import com.cmf.budscontroller.tools.SmartDialConfig
@@ -46,7 +47,7 @@ fun CmfSmartDialCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Колесо Smart Dial",
+                text = AppStrings.headerSmartDial,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
@@ -137,7 +138,7 @@ fun CmfSmartDialCard(
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-            text = "ДЕЙСТВИЕ ПРИ ВРАЩЕНИИ КОЛЕСИКА:",
+            text = AppStrings.smartDialRotateHeader,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.sensor.AmbientNoiseState
 import com.cmf.budscontroller.ui.theme.*
 
@@ -39,7 +40,7 @@ fun AutoAncCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "ДИНАМИЧЕСКИЙ АВТО-ANC",
+                    text = AppStrings.autoAncTitle,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp,
@@ -48,7 +49,7 @@ fun AutoAncCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Анализ шума через микрофон смартфона",
+                    text = AppStrings.autoAncInactive,
                     fontSize = 11.sp,
                     color = CmfTextPrimary
                 )
@@ -80,7 +81,7 @@ fun AutoAncCard(
             ) {
                 Column {
                     Text(
-                        text = "ОКРУЖАЮЩИЙ ШУМ",
+                        text = if (AppStrings.isRussian) "ОКРУЖАЮЩИЙ ШУМ" else "AMBIENT NOISE",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = CmfTextSecondary,
@@ -97,7 +98,7 @@ fun AutoAncCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "АКТИВНАЯ СЦЕНА",
+                        text = if (AppStrings.isRussian) "АКТИВНАЯ СЦЕНА" else "ACTIVE PROFILE",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = CmfTextSecondary,

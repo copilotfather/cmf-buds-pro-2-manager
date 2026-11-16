@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.util.Log
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,28 +15,53 @@ import kotlin.math.*
 
 /**
  * ADVANCED AUDIO LAB
- * Kotlin-порт технологий из CMF_Buds_Pro_2_Audio_Tech:
- *  - APE: 8-полосный параметрический EQ с пресетами и маппингом на 5-полосный девайс-EQ
- *  - SAC: умная калибровка ANC (утечка, объём канала, автотюн по фидбеку)
- *  - IWNM: иммерсивный микшер шума (7 слоёв, fade, sleep-таймер)
- *  - SLG: безопасное прослушивание (доза, риск, лимит громкости)
- *  - IBP: прогноз батареи (часы/минуты)
- *  - ULLE: пресеты задержки (gaming/audio/movie)
- *  - ASA: режимы пространственного звука
+ * Full DSP engine for CMF Buds Pro 2:
+ *  - APE: 8-band parametric EQ mapped to 5-band device EQ
+ *  - SAC: Smart ANC calibration (leakage, canal volume, feedback auto-tune)
+ *  - IWNM: Immersive noise mixer (7 layers, fade, sleep timer)
+ *  - SLG: Safe listening guardian (dose, risk, volume limit)
+ *  - IBP: Battery prediction (hours/minutes)
+ *  - ULLE: Latency presets (gaming/audio/movie)
+ *  - ASA: Spatial audio modes
  */
-enum class LabNoiseLayer(val title: String) {
-    RAIN("Дождь"), WIND("Ветер"), FIRE("Огонь"),
-    OCEAN("Океан"), BIRDS("Птицы"), CITY("Город"), FOREST("Лес")
+enum class LabNoiseLayer {
+    RAIN, WIND, FIRE, OCEAN, BIRDS, CITY, FOREST;
+    val title: String
+        get() = when (this) {
+            RAIN -> AppStrings.soundRain
+            WIND -> AppStrings.soundWind
+            FIRE -> AppStrings.soundFire
+            OCEAN -> AppStrings.soundOcean
+            BIRDS -> AppStrings.soundBirds
+            CITY -> AppStrings.soundCity
+            FOREST -> AppStrings.soundForest
+        }
 }
 
-enum class LabLatencyPreset(val title: String, val subtitle: String) {
-    ULTRA("ULTRA 10MS", "Минимальная задержка для игр"),
-    BALANCED("BALANCED 25MS", "Баланс звука и задержки"),
-    QUALITY("QUALITY 50MS", "Максимальная стабильность")
+enum class LabLatencyPreset {
+    ULTRA, BALANCED, QUALITY;
+    val title: String
+        get() = when (this) {
+            ULTRA -> AppStrings.labLatencyUltra
+            BALANCED -> AppStrings.labLatencyBalanced
+            QUALITY -> AppStrings.labLatencyQuality
+        }
+    val subtitle: String
+        get() = when (this) {
+            ULTRA -> AppStrings.labLatencyUltraDesc
+            BALANCED -> AppStrings.labLatencyBalancedDesc
+            QUALITY -> AppStrings.labLatencyQualityDesc
+        }
 }
 
-enum class LabRiskLevel(val title: String) {
-    OK("НОРМА"), WARNING("ВНИМАНИЕ"), DANGER("ОПАСНО")
+enum class LabRiskLevel {
+    OK, WARNING, DANGER;
+    val title: String
+        get() = when (this) {
+            OK -> AppStrings.labRiskOk
+            WARNING -> AppStrings.labRiskWarning
+            DANGER -> AppStrings.labRiskDanger
+        }
 }
 
 data class LabAncCalibration(
@@ -101,7 +127,7 @@ class AdvancedAudioLab(
         bands[index] = bands[index].copy(gainDb = gainDb.coerceIn(-12f, 12f))
         // Схлопываем 8 полос в 5 девайсных (60/230/910/3600/14000 Гц) по лог-среднему соседних
         val five = foldEightToFive(bands.map { it.gainDb })
-        _state.value = _state.value.copy(parametricBands = bands, activeLabPreset = "КАСТОМ")
+        _state.value = _state.value.copy(parametricBands = bands, activeLabPreset = AppStrings.labPresetCustom)
         applyToDevice(five)
     }
 

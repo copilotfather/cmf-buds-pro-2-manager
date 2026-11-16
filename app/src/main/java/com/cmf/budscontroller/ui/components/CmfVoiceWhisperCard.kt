@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.tools.WhisperSettings
 import com.cmf.budscontroller.ui.theme.*
 
@@ -38,7 +39,7 @@ fun CmfVoiceWhisperCard(
             .padding(20.dp)
     ) {
         Text(
-            text = "ГОЛОСОВОЙ ШЕПОТ И АССИСТЕНТ",
+            text = AppStrings.voiceWhisperTitle,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -54,8 +55,8 @@ fun CmfVoiceWhisperCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Озвучивать заряд при подключении", fontSize = 12.sp, color = CmfTextPrimary)
-                Text(text = "Голосовое приветствие с текущим % батареи", fontSize = 10.sp, color = CmfTextSecondary)
+                Text(text = if (AppStrings.isRussian) "Озвучивать заряд при подключении" else "Announce battery on connect", fontSize = 12.sp, color = CmfTextPrimary)
+                Text(text = if (AppStrings.isRussian) "Голосовое приветствие с текущим % батареи" else "Voice prompt with current battery %", fontSize = 10.sp, color = CmfTextSecondary)
             }
             Switch(
                 checked = settings.announceOnConnect,
@@ -78,8 +79,8 @@ fun CmfVoiceWhisperCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Озвучивать прогноз оставшихся часов", fontSize = 12.sp, color = CmfTextPrimary)
-                Text(text = "Например: «Осталось слушать 5 часов 40 минут»", fontSize = 10.sp, color = CmfTextSecondary)
+                Text(text = if (AppStrings.isRussian) "Озвучивать прогноз оставшихся часов" else "Announce remaining listening hours", fontSize = 12.sp, color = CmfTextPrimary)
+                Text(text = if (AppStrings.isRussian) "Например: «Осталось слушать 5 часов 40 минут»" else "e.g., 'Remaining time: 5 hours 40 minutes'", fontSize = 10.sp, color = CmfTextSecondary)
             }
             Switch(
                 checked = settings.speakRemainingHours,
@@ -103,7 +104,7 @@ fun CmfVoiceWhisperCard(
             colors = ButtonDefaults.buttonColors(containerColor = CmfSurfaceSubtle)
         ) {
             Text(
-                text = "ПРОТЕСТИРОВАТЬ ГОЛОС",
+                text = if (AppStrings.isRussian) "ПРОТЕСТИРОВАТЬ ГОЛОС" else "TEST VOICE PROMPT",
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 color = CmfOrange,

@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
 @Composable
@@ -39,14 +40,14 @@ fun CmfUltraBassSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Усиление баса",
+                text = AppStrings.headerUltraBass,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = CmfTextPrimary,
                 fontFamily = FontFamily.Default
             )
             Text(
-                text = if (currentLevel == 0) "Выкл" else "Уровень $currentLevel",
+                text = if (currentLevel == 0) AppStrings.off else "${AppStrings.ultraBassLevel} $currentLevel",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (currentLevel > 0) vibe.accent else CmfTextSecondary,

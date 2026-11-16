@@ -19,6 +19,7 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.runtime.Immutable
 import androidx.core.app.NotificationManagerCompat
+import com.cmf.budscontroller.i18n.AppStrings
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,8 +27,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 @Immutable
 data class CmfMediaState(
-    val title: String = "Нет активного трека",
-    val artist: String = "Подключите плеер",
+    val title: String = if (AppStrings.isRussian) "Нет активного трека" else "No active track",
+    val artist: String = if (AppStrings.isRussian) "Подключите плеер" else "Media player paused",
     val album: String = "",
     val isPlaying: Boolean = false,
     val durationMs: Long = 0L,
@@ -76,7 +77,7 @@ class CmfMediaTracker private constructor(private val context: Context) {
                 if (!track.isNullOrEmpty()) {
                     _mediaState.value = _mediaState.value.copy(
                         title = track,
-                        artist = artist ?: "Неизвестный исполнитель",
+                        artist = artist ?: (if (AppStrings.isRussian) "Неизвестный исполнитель" else "Unknown Artist"),
                         isPlaying = isPlaying
                     )
                 }
@@ -199,12 +200,12 @@ class CmfMediaTracker private constructor(private val context: Context) {
 
         val title = meta?.getString(MediaMetadata.METADATA_KEY_TITLE)
             ?: meta?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
-            ?: if (isPlaying) "Воспроизведение звука" else "Нет активного трека"
+            ?: if (isPlaying) (if (AppStrings.isRussian) "Воспроизведение звука" else "Audio Playing") else (if (AppStrings.isRussian) "Нет активного трека" else "No active track")
 
         val artist = meta?.getString(MediaMetadata.METADATA_KEY_ARTIST)
             ?: meta?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
             ?: meta?.getString(MediaMetadata.METADATA_KEY_AUTHOR)
-            ?: if (isPlaying) "Аудиопоток CMF" else "Плеер на паузе"
+            ?: if (isPlaying) (if (AppStrings.isRussian) "Аудиопоток CMF" else "CMF Audio Stream") else (if (AppStrings.isRussian) "Плеер на паузе" else "Player paused")
 
         val album = meta?.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: ""
         val duration = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L

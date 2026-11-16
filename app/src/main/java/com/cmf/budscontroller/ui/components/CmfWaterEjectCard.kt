@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.tools.WaterEjectState
 import com.cmf.budscontroller.ui.theme.*
 
@@ -36,7 +37,7 @@ fun CmfWaterEjectCard(
             .padding(20.dp)
     ) {
         Text(
-            text = "ВЫТАЛКИВАНИЕ ВОДЫ И ЧИСТКА",
+            text = AppStrings.waterEjectTitle,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -47,7 +48,7 @@ fun CmfWaterEjectCard(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Генерирует резонансную звуковую волну (140–180 Гц), механически раскачивающую 11-мм диафрагму для удаления капель воды и пыли из сетки динамиков:",
+            text = if (AppStrings.isRussian) "Генерирует резонансную звуковую волну (140–180 Гц), механически раскачивающую 11-мм диафрагму для удаления капель воды и пыли из сетки динамиков:" else "Generates resonant acoustic waves (140–180 Hz) to kinetically displace water droplets and dust from speaker meshes:",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )
@@ -71,14 +72,14 @@ fun CmfWaterEjectCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "ИДЕТ ОЧИСТКА ДИАФРАГМЫ...",
+                    text = if (AppStrings.isRussian) "ИДЕТ ОЧИСТКА ДИАФРАГМЫ..." else "EJECTING WATER...",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = CmfOrange,
                     fontFamily = FontFamily.Default
                 )
                 Text(
-                    text = "${ejectState.totalSeconds - ejectState.progressSeconds} сек",
+                    text = "${ejectState.totalSeconds - ejectState.progressSeconds} ${if (AppStrings.isRussian) "сек" else "s"}",
                     fontSize = 11.sp,
                     color = CmfTextPrimary,
                     fontFamily = FontFamily.Default
@@ -96,7 +97,7 @@ fun CmfWaterEjectCard(
             )
         ) {
             Text(
-                text = if (ejectState.isRunning) "ПРЕРВАТЬ ОЧИСТКУ" else "ЗАПУСТИТЬ ОЧИСТКУ ДИНАМИКОВ",
+                text = if (ejectState.isRunning) (if (AppStrings.isRussian) "ПРЕРВАТЬ ОЧИСТКУ" else "STOP EJECTION") else (if (AppStrings.isRussian) "ЗАПУСТИТЬ ОЧИСТКУ ДИНАМИКОВ" else "START WATER EJECTION"),
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp,
                 color = if (ejectState.isRunning) CmfOrange else CmfTextPrimary,

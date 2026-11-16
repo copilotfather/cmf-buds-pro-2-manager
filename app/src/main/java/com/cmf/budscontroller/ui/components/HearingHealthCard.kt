@@ -88,7 +88,7 @@ fun HearingHealthCard(
                             color = CmfTextSecondary
                         )
                         Text(
-                            text = "Акустическая доза ВОЗ/ITU",
+                            text = if (AppStrings.isRussian) "Акустическая доза ВОЗ/ITU" else "WHO/ITU Acoustic Dose",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = CmfTextPrimary
@@ -167,8 +167,8 @@ fun HearingHealthCard(
                             tint = Color(0xFF64D2FF)
                         )
                         Column {
-                            Text("СЕССИЯ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
-                            Text("${hearingStatus.sessionMinutes} мин / ${hearingStatus.restThresholdMinutes}м", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CmfTextPrimary)
+                            Text(if (AppStrings.isRussian) "СЕССИЯ" else "SESSION", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
+                            Text("${hearingStatus.sessionMinutes} ${AppStrings.minUnit} / ${hearingStatus.restThresholdMinutes}${AppStrings.minUnit.first()}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CmfTextPrimary)
                         }
                     }
                 }
@@ -193,7 +193,7 @@ fun HearingHealthCard(
                             tint = Color(0xFFFF9F0A)
                         )
                         Column {
-                            Text("ГРОМКОСТЬ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
+                            Text(if (AppStrings.isRussian) "ГРОМКОСТЬ" else "VOLUME", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = CmfTextDisabled)
                             Text("${hearingStatus.currentVolumePercent}%", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = CmfTextPrimary)
                         }
                     }
@@ -224,7 +224,7 @@ fun HearingHealthCard(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = "Рекомендуется 10-минутный отдых для слуха",
+                            text = if (AppStrings.isRussian) "Рекомендуется 10-минутный отдых для слуха" else "10-minute ear rest recommended",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = CmfTextPrimary
@@ -242,7 +242,7 @@ fun HearingHealthCard(
                     ) {
                         Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "СБРОС", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(text = if (AppStrings.isRussian) "СБРОС" else "RESET", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

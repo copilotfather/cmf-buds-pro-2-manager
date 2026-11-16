@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmf.budscontroller.analytics.BatteryPrediction
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.protocol.BatteryInfo
 import com.cmf.budscontroller.ui.theme.*
 
@@ -45,14 +46,14 @@ fun CmfBatteryHero(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Аккумуляторы",
+                text = if (AppStrings.isRussian) "Аккумуляторы" else "Batteries",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = CmfTextPrimary,
                 fontFamily = FontFamily.Default
             )
             Text(
-                text = if (battery.isLeftConnected || battery.isRightConnected || battery.leftPercent > 0) "Подключено" else "Ожидание",
+                text = if (battery.isLeftConnected || battery.isRightConnected || battery.leftPercent > 0) AppStrings.statusConnected else (if (AppStrings.isRussian) "Ожидание" else "Standby"),
                 fontSize = 13.sp,
                 color = if (battery.leftPercent > 0) CmfGreen else CmfTextSecondary,
                 fontWeight = FontWeight.Medium,
@@ -68,19 +69,19 @@ fun CmfBatteryHero(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AppleBatteryCard(
-                title = "Левый",
+                title = AppStrings.batteryLeft,
                 percent = battery.leftPercent,
                 isCharging = battery.isLeftCharging,
                 iconType = "L"
             )
             AppleBatteryCard(
-                title = "Правый",
+                title = AppStrings.batteryRight,
                 percent = battery.rightPercent,
                 isCharging = battery.isRightCharging,
                 iconType = "R"
             )
             AppleBatteryCard(
-                title = "Кейс",
+                title = AppStrings.batteryCase,
                 percent = battery.casePercent,
                 isCharging = battery.isCaseCharging,
                 iconType = "C"
@@ -100,14 +101,14 @@ fun CmfBatteryHero(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Осталось: ${prediction.earbudFormattedTime}",
+                text = "${AppStrings.sleepRemainingLabel} ${prediction.earbudFormattedTime}",
                 fontSize = 12.sp,
                 color = CmfTextPrimary,
                 fontWeight = FontWeight.Medium,
                 fontFamily = FontFamily.Default
             )
             Text(
-                text = "С кейсом: ${prediction.totalWithCaseFormattedTime}",
+                text = "${AppStrings.caseBatteryPrefix} ${prediction.totalWithCaseFormattedTime}",
                 fontSize = 12.sp,
                 color = CmfTextSecondary,
                 fontFamily = FontFamily.Default
@@ -181,7 +182,7 @@ private fun RowScope.AppleBatteryCard(
         Spacer(modifier = Modifier.height(2.dp))
 
         Text(
-            text = if (isCharging) "Зарядка" else title,
+            text = if (isCharging) AppStrings.chargingLabel else title,
             fontSize = 11.sp,
             color = if (isCharging) CmfGreen else CmfTextSecondary,
             fontFamily = FontFamily.Default

@@ -17,13 +17,22 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cmf.budscontroller.i18n.AppStrings
 import com.cmf.budscontroller.ui.theme.*
 
-enum class NothingXTab(val title: String) {
-    DEVICE("ДЕВАЙС"),
-    EQUALIZER("ЗВУК"),
-    PC_BRIDGE("МОСТ"),
-    FEATURES("ФУНКЦИИ")
+enum class NothingXTab {
+    DEVICE,
+    EQUALIZER,
+    PC_BRIDGE,
+    FEATURES;
+
+    val title: String
+        get() = when (this) {
+            DEVICE -> if (AppStrings.isRussian) "ДЕВАЙС" else "DEVICE"
+            EQUALIZER -> if (AppStrings.isRussian) "ЗВУК" else "SOUND"
+            PC_BRIDGE -> if (AppStrings.isRussian) "МОСТ" else "BRIDGE"
+            FEATURES -> if (AppStrings.isRussian) "ФУНКЦИИ" else "FEATURES"
+        }
 }
 
 private val bottomNavShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
