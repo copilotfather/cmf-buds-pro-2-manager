@@ -9,6 +9,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -55,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -90,6 +93,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(28, 28, 30))
+        )
         AppStrings.init(this)
 
         val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -226,8 +233,11 @@ fun HiFiStudioBudsApp(
     var showSleepTimerDialog by remember { mutableStateOf(false) }
     var showWhisperDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showDevDialog by remember { mutableStateOf(false) }
     var showUpdatePopupDialog by remember { mutableStateOf(false) }
     var showFindMyBudsSafetyDialog by remember { mutableStateOf(false) }
+    var chirpLeft by remember { mutableStateOf(true) }
+    var chirpRight by remember { mutableStateOf(true) }
     var showWaterEjectSafetyDialog by remember { mutableStateOf(false) }
 
     // Auto-popup when update is detected
@@ -272,6 +282,8 @@ fun HiFiStudioBudsApp(
                                     text = "CMF Buds Pro 2",
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 20.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     letterSpacing = (-0.3).sp,
                                     color = colorScheme.onSurface
                                 )
@@ -416,7 +428,8 @@ fun HiFiStudioBudsApp(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .consumeWindowInsets(padding)
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AnimatedContent(
@@ -435,7 +448,7 @@ fun HiFiStudioBudsApp(
             ) { tab ->
                 CompositionLocalProvider(LocalEntryStagger provides remember(tab) { EntryStagger() }) {
                     Column(
-                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
             when (tab) {
@@ -581,13 +594,18 @@ fun HiFiStudioBudsApp(
                             accentColor = if (isChirping) Color(0xFFFF453A) else colorScheme.primary,
                             onClick = {
                                 if (isChirping) viewModel.stopChirp()
-                                else showFindMyBudsSafetyDialog = true
+                                else {
+                                    chirpLeft = true
+                                    chirpRight = true
+                                    showFindMyBudsSafetyDialog = true
+                                }
                             }
                         )
                     }
                 }
 
                 StudioTab.STUDIO -> {
+                    com.cmf.budscontroller.ui.components.ComparisonPanel(viewModel)
                     // Hi-Res Codec Engine Card (LDAC, LHDC, aptX HD)
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -660,6 +678,7 @@ fun HiFiStudioBudsApp(
                 }
 
                 StudioTab.INSIGHTS -> {
+                    com.cmf.budscontroller.ui.components.BatteryHistoryPanel(viewModel)
                     // Deep User Analytics Dashboard
                     BudsDeepAnalyticsDashboard(insights = insights)
 
@@ -673,6 +692,20 @@ fun HiFiStudioBudsApp(
                 }
 
                 StudioTab.FEATURES -> {
+                    com.cmf.budscontroller.ui.components.ProfilePanel(viewModel)
+                    com.cmf.budscontroller.ui.components.DiagnosticsPanel(viewModel)
+                    com.cmf.budscontroller.ui.components.WidgetSettingsPanel()
+                    val lastLocation by viewModel.lastLocation.collectAsState()
+                    com.cmf.budscontroller.ui.components.FindMyBudsCard(
+                        isChirping = isChirping,
+                        lastLocation = lastLocation,
+                        onStartChirp = { left, right ->
+                            chirpLeft = left
+                            chirpRight = right
+                            showFindMyBudsSafetyDialog = true
+                        },
+                        onStopChirp = { viewModel.stopChirp() }
+                    )
                     Text(
                         text = uiText("ИНТЕЛЛЕКТУАЛЬНЫЕ ФУНКЦИИ", "SMART FEATURES"),
                         fontSize = 11.sp,
@@ -914,7 +947,6 @@ fun HiFiStudioBudsApp(
             }
 
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -1210,7 +1242,7 @@ fun HiFiStudioBudsApp(
     }
 
     if (showDevicePicker) {
-        val bondedDevices = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val bondedDevices = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (ContextCompat.checkSelfPermission(LocalContext.current, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                 bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
             } else emptyList()
@@ -1218,6 +1250,7 @@ fun HiFiStudioBudsApp(
             bluetoothAdapter?.bondedDevices?.toList() ?: emptyList()
         }
 
+        ).filter { com.cmf.budscontroller.bluetooth.CmfBluetoothManager.getInstance().isCmfOrNothingDevice(it) }
         AlertDialog(
             onDismissRequest = { showDevicePicker = false },
             icon = { Icon(Icons.Outlined.Bluetooth, contentDescription = null, tint = colorScheme.primary) },
@@ -1425,6 +1458,11 @@ fun HiFiStudioBudsApp(
 
                     HorizontalDivider(thickness = 0.8.dp)
 
+                    OutlinedButton(
+                        onClick = { showSettingsDialog = false; showDevDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("DEV · CMF Watch Pro 2 β") }
+
                     // Quick Actions
                     Text(uiText("Обновления и система", "Updates & system"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
 
@@ -1449,6 +1487,10 @@ fun HiFiStudioBudsApp(
             },
             shape = RoundedCornerShape(20.dp)
         )
+    }
+
+    if (showDevDialog) {
+        com.cmf.budscontroller.ui.components.DevDialog(viewModel) { showDevDialog = false }
     }
 
     // Auto-Popup Dialog when an update is available
@@ -1594,7 +1636,7 @@ fun HiFiStudioBudsApp(
                 Button(
                     onClick = {
                         showFindMyBudsSafetyDialog = false
-                        viewModel.startChirp(left = true, right = true)
+                        viewModel.startChirp(left = chirpLeft, right = chirpRight)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF453A)),
                     shape = RoundedCornerShape(12.dp)
@@ -1741,6 +1783,24 @@ fun StudioMasterEqualizerCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Smooth Morphing Kinetic Frequency Curve
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = { onPresetSelected("Nothing Clean") }) {
+                    Text(uiText("Сброс", "Reset"))
+                }
+                OutlinedButton(onClick = {
+                    eqState.bandLevels.forEachIndexed { index, db -> onBandChanged(index, -db) }
+                }) { Text(uiText("Инверсия", "Invert")) }
+                OutlinedButton(onClick = {
+                    eqState.bandLevels.forEachIndexed { index, db -> onBandChanged(index, (db - 1).coerceAtLeast(-10)) }
+                }) { Text("−1 dB") }
+                OutlinedButton(onClick = {
+                    eqState.bandLevels.forEachIndexed { index, db -> onBandChanged(index, (db + 1).coerceAtMost(10)) }
+                }) { Text("+1 dB") }
+            }
+            Spacer(Modifier.height(12.dp))
             val b0 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(0) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b0")
             val b1 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(1) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b1")
             val b2 by animateFloatAsState(targetValue = eqState.bandLevels.getOrElse(2) { 0 }.toFloat(), animationSpec = spring(stiffness = 300f, dampingRatio = 0.72f), label = "eq_b2")
@@ -2254,7 +2314,7 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Bottom,
-                        modifier = Modifier.fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     ) {
                         Text(
                         text = if (hasMins) "${day.minutes}${uiText("м", "m")}" else "-",
@@ -2282,6 +2342,8 @@ fun BudsDeepAnalyticsDashboard(insights: BudsUsageInsights) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = day.dayName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontSize = 11.5.sp,
                             fontWeight = if (isPeak) FontWeight.Bold else FontWeight.Medium,
                             color = if (isPeak) Color.White else colorScheme.onSurfaceVariant
@@ -2445,9 +2507,9 @@ fun StudioProductStage(
 
             if (earbudTimeFormatted.isNotBlank() && earbudTimeFormatted != "—") {
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text("${AppStrings.earbudBatteryPrefix} ~$earbudTimeFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
                     Text("${AppStrings.caseBatteryPrefix} ~$totalWithCaseFormatted", fontSize = 11.sp, color = Color(0xFF8E8E93))
@@ -2835,6 +2897,7 @@ fun BentoCard(
                     fontWeight = FontWeight.Normal,
                     color = colorScheme.onSurfaceVariant,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     lineHeight = 18.sp
                 )
 

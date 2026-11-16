@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible device, UI or connection issue
+title: "[Bug]: "
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Device, firmware, Android and app version
+      placeholder: "Buds Pro 2 / firmware … / Android … / app …"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include expected and actual behavior. English or Russian is fine.
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Validation environment
+      options:
+        - Physical device
+        - Emulator / simulator
+        - Build only
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots or sanitized error text
+      description: Remove MAC addresses, secrets, notification contents, health and location data.

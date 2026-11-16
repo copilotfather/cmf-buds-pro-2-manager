@@ -25,6 +25,10 @@ class CmfBluetoothManager private constructor() {
 
     private val _deviceStatus = MutableStateFlow(DeviceStatus())
     val deviceStatus: StateFlow<DeviceStatus> = _deviceStatus.asStateFlow()
+    private val _commandStatus = MutableStateFlow("")
+    val commandStatus: StateFlow<String> = _commandStatus.asStateFlow()
+    private var awaitingAnc: AncMode? = null
+    private var ancCheckJob: Job? = null
 
     private var socket: BluetoothSocket? = null
     private var inputStream: InputStream? = null
@@ -588,21 +592,7 @@ class CmfBluetoothManager private constructor() {
         val name = try { (device.name ?: "").trim().lowercase() } catch (_: Exception) { "" }
         if (name.isBlank()) return false
 
-        val cmfKeywords = listOf(
-            "cmf", "nothing", "buds", "ear (", "ear(", "ear 1", "ear 2", "ear a",
-            "ear open", "ear (open)", "ear (a)", "ear (1)", "ear (2)", "neckband",
-            "b163", "b162", "b164", "b159", "b171", "b155", "b157", "b181"
-        )
-        if (cmfKeywords.any { name.contains(it) }) {
-            return true
-        }
-
-        val pref = preferredAddress
-        if (!pref.isNullOrBlank() && device.address.equals(pref, ignoreCase = true)) {
-            return true
-        }
-
-        return false
+        return name.replace(Regex("[^a-z0-9]"), "") == "cmfbudspro2"
     }
 
     @SuppressLint("MissingPermission")
@@ -646,7 +636,7 @@ class CmfBluetoothManager private constructor() {
 
     @SuppressLint("MissingPermission")
     fun getAllBondedDevices(adapter: BluetoothAdapter): List<BluetoothDevice> {
-        return adapter.bondedDevices?.filter { !isExcludedWatchOrNonHeadset(it) }?.toList() ?: emptyList()
+        return adapter.bondedDevices?.filter { isCmfOrNothingDevice(it) }?.toList() ?: emptyList()
     }
 
     /**
@@ -658,6 +648,7 @@ class CmfBluetoothManager private constructor() {
      */
     @SuppressLint("MissingPermission")
     suspend fun connect(device: BluetoothDevice, context: Context? = null): Boolean = withContext(Dispatchers.IO) {
+        if (!isCmfOrNothingDevice(device)) return@withContext false
         val devName = try { device.name ?: "CMF Buds" } catch (_: Exception) { "CMF Buds" }
         val devAddr = device.address ?: ""
         currentDevice = device
@@ -894,20 +885,38 @@ class CmfBluetoothManager private constructor() {
     }
 
     suspend fun setAnc(mode: AncMode, level: AncLevel = AncLevel.HIGH) {
-        sendPacket(CmfProtocol.createSetAncPacket(mode, level))
-        sendPacket(CmfProtocol.createSetListenModeCmf(mode, level))
-        _deviceStatus.value = _deviceStatus.value.copy(ancMode = mode, ancLevel = level)
+        val primarySent = sendPacket(CmfProtocol.createSetAncPacket(mode, level))
+        val fallbackSent = sendPacket(CmfProtocol.createSetListenModeCmf(mode, level))
+        if (primarySent || fallbackSent) {
+            awaitingAnc = mode
+            _commandStatus.value = if (AppStrings.isRussian) "ANC: отправлено, ожидается ответ" else "ANC: sent, awaiting response"
+            ancCheckJob?.cancel()
+            sendPacket(CmfProtocol.createReadAncPacket())
+            ancCheckJob = scope.launch {
+                delay(4000)
+                if (awaitingAnc == mode) {
+                    _commandStatus.value = if (AppStrings.isRussian) "ANC: нет подтверждения от наушников" else "ANC: no confirmation from earbuds"
+                    awaitingAnc = null
+                }
+            }
+        } else {
+            _commandStatus.value = if (AppStrings.isRussian) "ANC: команда не отправлена" else "ANC: command not sent"
+        }
     }
 
     suspend fun setUltraBass(level: Int) {
         val clamped = level.coerceIn(0, 5)
-        sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))
-        _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = clamped)
+        if (sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))) {
+            _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = clamped)
+            _commandStatus.value = if (AppStrings.isRussian) "Бас: команда отправлена; применение не подтверждено" else "Bass: sent; application not confirmed"
+        }
     }
 
     suspend fun setGameMode(enabled: Boolean) {
-        sendPacket(CmfProtocol.createSetGameModePacket(enabled))
-        _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
+        if (sendPacket(CmfProtocol.createSetGameModePacket(enabled))) {
+            _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
+            _commandStatus.value = if (AppStrings.isRussian) "Игровой режим: команда отправлена; применение не подтверждено" else "Game mode: sent; application not confirmed"
+        }
     }
 
     suspend fun setHdAudio(enabled: Boolean): Boolean =
@@ -1136,9 +1145,16 @@ class CmfBluetoothManager private constructor() {
                         0x01 -> AncMode.OFF
                         0x02 -> AncMode.TRANSPARENCY
                         0x03 -> AncMode.NOISE_CANCELLATION
-                        else -> _deviceStatus.value.ancMode
+                        else -> return
                     }
                     _deviceStatus.value = _deviceStatus.value.copy(ancMode = mode)
+                    awaitingAnc?.let { expected ->
+                        _commandStatus.value = if (expected == mode) {
+                            if (AppStrings.isRussian) "ANC: подтверждён ответом наушников" else "ANC: confirmed by earbud response"
+                        } else if (AppStrings.isRussian) "ANC: наушники вернули другой режим" else "ANC: earbuds returned a different mode"
+                        awaitingAnc = null
+                        ancCheckJob?.cancel()
+                    }
                 }
             }
             CmfProtocol.CMD_READ_FIRMWARE -> {

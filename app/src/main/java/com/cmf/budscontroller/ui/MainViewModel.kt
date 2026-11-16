@@ -25,11 +25,77 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val bluetoothManager = CmfBluetoothManager.getInstance()
+    val watchBeta = com.cmf.budscontroller.watch.WatchBetaManager(application)
+    val devUnlocked = MutableStateFlow(false)
+    private var devAttempts = 0
+    private var devRetryAfter = 0L
+
+    fun unlockDev(password: String): Boolean {
+        if (android.os.SystemClock.elapsedRealtime() < devRetryAfter) return false
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(password.toByteArray(Charsets.UTF_8))
+        val expected = "65a17618b17c902e1d7fb00edc098307bd49e412bbf6834828f0e67029996d81"
+            .chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val valid = java.security.MessageDigest.isEqual(digest, expected)
+        if (valid) { devAttempts = 0; devUnlocked.value = true }
+        else if (++devAttempts >= 5) { devRetryAfter = android.os.SystemClock.elapsedRealtime() + 30_000; devAttempts = 0 }
+        return valid
+    }
+    fun lockDev() {
+        watchBeta.enable(false)
+        devUnlocked.value = false
+    }
+    private var connectionJob: Job? = null
     val deviceStatus: StateFlow<DeviceStatus> = bluetoothManager.deviceStatus
+    val commandStatus = bluetoothManager.commandStatus
+    val features = BudsFeatures(application)
+    val batteryHistory = features.history
+    private var profileJob: Job? = null
+    private var comparisonA: List<Int>? = null
+    private var comparisonB: List<Int>? = null
+    val comparisonSide = MutableStateFlow("A")
+    val profileMessage = MutableStateFlow("")
+
+    fun saveProfile(id: String) {
+        features.saveProfile(id, deviceStatus.value, eqState.value.bandLevels)
+        profileMessage.value = if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Настройки сохранены" else "Settings saved"
+    }
+
+    fun applyProfile(id: String) {
+        if (profileJob?.isActive == true) return
+        if (!deviceStatus.value.isConnected) {
+            profileMessage.value = if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Подключите наушники" else "Connect earbuds first"
+            return
+        }
+        profileJob = viewModelScope.launch {
+            val p = features.profile(id)
+            bluetoothManager.setAnc(p.mode)
+            bluetoothManager.setUltraBass(p.bass)
+            bluetoothManager.setGameMode(p.game)
+            equalizerManager.toggleEqualizer(true)
+            p.bands.forEachIndexed { i, db -> equalizerManager.setCustomBand(i, db) }
+            val result = deviceStatus.value
+            val sent = result.ancMode == p.mode && result.ultraBassLevel == p.bass && result.isGameModeEnabled == p.game
+            profileMessage.value = if (sent) {
+                if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Профиль отправлен" else "Profile sent"
+            } else if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Не все команды отправлены — проверьте соединение" else "Some commands failed — check connection"
+        }
+    }
+
+    fun captureComparison(side: String) {
+        if (side == "A") comparisonA = eqState.value.bandLevels.toList() else comparisonB = eqState.value.bandLevels.toList()
+        comparisonSide.value = side
+    }
+    fun compare(side: String) {
+        val bands = (if (side == "A") comparisonA else comparisonB) ?: return
+        equalizerManager.toggleEqualizer(true)
+        bands.forEachIndexed { i, db -> equalizerManager.setCustomBand(i, db) }
+        comparisonSide.value = side
+    }
 
     // Core Managers
     val hearingManager = HearingProtectionManager(application)
@@ -121,7 +187,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             updateManager.checkForUpdates()
         }
         viewModelScope.launch {
+            var previouslyConnected = false
             deviceStatus.collect { status ->
+                features.record(status)
                 BatteryAnalyticsManager.recordSample(status.battery)
                 val pred = BatteryAnalyticsManager.calculatePrediction(status)
                 _batteryPrediction.value = pred
@@ -140,8 +208,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (!status.isConnected) {
                     hasSpokenGreeting = false
-                    findMyBudsManager.recordDisconnectLocation()
+                    if (previouslyConnected) findMyBudsManager.recordDisconnectLocation()
                 }
+                previouslyConnected = status.isConnected
             }
         }
 
@@ -165,6 +234,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun connectDevice(adapter: BluetoothAdapter?, customDevice: android.bluetooth.BluetoothDevice? = null) {
+        if (connectionJob?.isActive == true) return
         if (adapter == null || !adapter.isEnabled) return
         val app = getApplication<Application>()
         val prefs = app.getSharedPreferences("cmf_prefs", android.content.Context.MODE_PRIVATE)
@@ -184,7 +254,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         bluetoothManager.checkProfileBattery()
 
         val device = customDevice ?: bluetoothManager.findCmfDevice(adapter, savedAddr) ?: return
-        viewModelScope.launch {
+        connectionJob = viewModelScope.launch {
             val success = bluetoothManager.connect(device, app)
             if (success) {
                 prefs.edit().putString("last_device_address", device.address).apply()
@@ -249,11 +319,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Acoustic Chirp / Find Buds
     fun startChirp(left: Boolean, right: Boolean) {
-        if (deviceStatus.value.isConnected) {
-            viewModelScope.launch {
-                bluetoothManager.startFindMyBuds(left, right)
-            }
-        }
+        if (!deviceStatus.value.isConnected) return
         findMyBudsManager.startAcousticChirp(left, right)
     }
 
@@ -472,6 +538,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
+        watchBeta.release()
         super.onCleared()
         audioRelayManager.stopRelay()
         noiseDetector.stopMonitoring()

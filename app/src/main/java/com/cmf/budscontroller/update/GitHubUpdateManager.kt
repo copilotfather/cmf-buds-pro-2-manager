@@ -314,6 +314,7 @@ class GitHubUpdateManager(private val context: Context) {
             // Follow HTTP redirects across domains (GitHub releases -> AWS S3 objects.githubusercontent.com)
             while (redirects < 10) {
                 val url = URL(currentUrl)
+                require(url.protocol == "https") { "Update download requires HTTPS" }
                 connection = (url.openConnection() as HttpURLConnection).apply {
                     instanceFollowRedirects = false
                     connectTimeout = 12000
@@ -324,7 +325,8 @@ class GitHubUpdateManager(private val context: Context) {
                 val status = connection.responseCode
                 if (status in 300..399) {
                     val location = connection.getHeaderField("Location") ?: break
-                    currentUrl = location
+                    currentUrl = URL(url, location).toString()
+                    connection.disconnect()
                     redirects++
                     continue
                 }

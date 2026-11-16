@@ -28,6 +28,11 @@ class CmfApplication : Application() {
         super.onCreate()
 
         val btManager = CmfBluetoothManager.getInstance()
+        appScope.launch {
+            btManager.deviceStatus.collect {
+                com.cmf.budscontroller.widget.BudsWidget.updateAll(this@CmfApplication)
+            }
+        }
         val btAdapter = BluetoothAdapter.getDefaultAdapter()
 
         // 1. Initialize Android system profile proxies (A2DP & Headset)

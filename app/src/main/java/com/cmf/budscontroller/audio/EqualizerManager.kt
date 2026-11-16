@@ -28,7 +28,10 @@ data class EqualizerState(
             EqPreset("Vocal Clarity", listOf(-2, 1, 6, 5, 2)),
             EqPreset("Electronic / EDM", listOf(7, 3, -1, 4, 6)),
             EqPreset("Rock & Metal", listOf(5, 3, -2, 5, 5)),
-            EqPreset("Acoustic Air", listOf(2, 1, 3, 4, 7))
+            EqPreset("Acoustic Air", listOf(2, 1, 3, 4, 7)),
+            EqPreset("Warm & Smooth", listOf(3, 2, 0, -2, -1)),
+            EqPreset("Podcast", listOf(-4, -1, 4, 3, -2)),
+            EqPreset("Late Night", listOf(-3, 0, 2, 1, -3))
         )
     }
 }
@@ -53,11 +56,16 @@ class EqualizerManager(private val context: Context) {
         val allPresets = EqualizerState.defaultPresets + customPresets
 
         val activePreset = allPresets.find { it.name == activeName }
-        val bands = activePreset?.bands ?: listOf(0, 0, 0, 0, 0)
+        val bands = if (activeName == "__custom__") {
+            runCatching {
+                val saved = JSONArray(prefs.getString("eq_manual_bands", "[0,0,0,0,0]"))
+                (0..4).map { saved.getInt(it).coerceIn(-10, 10) }
+            }.getOrDefault(listOf(0, 0, 0, 0, 0))
+        } else activePreset?.bands ?: listOf(0, 0, 0, 0, 0)
 
         _state.value = EqualizerState(
             isEnabled = isEnabled,
-            activePresetName = activeName,
+            activePresetName = if (activeName == "__custom__") com.cmf.budscontroller.i18n.AppStrings.eqPresetCustom else activeName,
             bandLevels = bands,
             presets = allPresets
         )
@@ -65,10 +73,18 @@ class EqualizerManager(private val context: Context) {
 
     fun initEqualizer(audioSessionId: Int = 0) {
         try {
+            equalizer?.release()
             equalizer = Equalizer(0, audioSessionId).apply {
                 enabled = _state.value.isEnabled
             }
-            applyPreset(_state.value.activePresetName)
+            _state.value.bandLevels.forEachIndexed { index, db ->
+                equalizer?.let { eq ->
+                    if (index < eq.numberOfBands) {
+                        val range = eq.bandLevelRange
+                        eq.setBandLevel(index.toShort(), (db * 100).coerceIn(range[0].toInt(), range[1].toInt()).toShort())
+                    }
+                }
+            }
         } catch (_: Exception) {}
     }
 
@@ -100,7 +116,8 @@ class EqualizerManager(private val context: Context) {
                 activePresetName = com.cmf.budscontroller.i18n.AppStrings.eqPresetCustom,
                 bandLevels = updated
             )
-            prefs.edit().putString("eq_active_preset", com.cmf.budscontroller.i18n.AppStrings.eqPresetCustom).apply()
+            prefs.edit().putString("eq_active_preset", "__custom__")
+                .putString("eq_manual_bands", JSONArray(updated).toString()).apply()
 
             equalizer?.let { eq ->
                 try {
@@ -113,6 +130,7 @@ class EqualizerManager(private val context: Context) {
     fun saveCurrentAsPreset(name: String): Boolean {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return false
+        if (EqualizerState.defaultPresets.any { it.name.equals(trimmed, ignoreCase = true) }) return false
 
         val currentBands = _state.value.bandLevels
         val newPreset = EqPreset(trimmed, currentBands, isCustom = true)

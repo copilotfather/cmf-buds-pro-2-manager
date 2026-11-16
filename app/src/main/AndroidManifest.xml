@@ -43,6 +43,8 @@
     <application
         android:name=".CmfApplication"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@drawable/ic_anc"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_anc"
@@ -50,6 +52,15 @@
         android:resizeableActivity="true"
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.CMFBudsController">
+
+        <receiver android:name=".widget.BudsWidget" android:exported="false" android:label="CMF · Nothing style">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.BatteryWidget" android:exported="false" android:label="CMF · Battery">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_battery_info" />
+        </receiver>
 
         <!-- Support 20:9 and 21:9 displays (POCO X7 Pro, Nothing Phone, modern flagships) -->
         <meta-data android:name="android.max_aspect" android:value="2.5" />
@@ -124,6 +135,11 @@
             </intent-filter>
         </receiver>
 
+<receiver android:name=".widget.AncWidget" android:exported="false" android:label="CMF · ANC"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
+<receiver android:name=".widget.GameWidget" android:exported="false" android:label="CMF · Game mode"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
+<receiver android:name=".widget.BassWidget" android:exported="false" android:label="CMF · Ultra Bass"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
+<receiver android:name=".widget.TransparencyWidget" android:exported="false" android:label="CMF · Transparency"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
+<receiver android:name=".widget.ConnectionWidget" android:exported="false" android:label="CMF · Connection"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
     </application>
 
 </manifest>

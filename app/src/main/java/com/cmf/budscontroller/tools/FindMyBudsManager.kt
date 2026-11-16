@@ -33,6 +33,18 @@ class FindMyBudsManager(private val context: Context) {
 
     private val _lastLocation = MutableStateFlow<DisconnectLocation?>(null)
     val lastLocation: StateFlow<DisconnectLocation?> = _lastLocation.asStateFlow()
+    private val locationPrefs = context.getSharedPreferences("buds_location", Context.MODE_PRIVATE)
+
+    init {
+        if (locationPrefs.contains("time")) {
+            val time = locationPrefs.getLong("time", 0)
+            _lastLocation.value = DisconnectLocation(
+                java.lang.Double.longBitsToDouble(locationPrefs.getLong("lat", 0)),
+                java.lang.Double.longBitsToDouble(locationPrefs.getLong("lon", 0)), time,
+                java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(time))
+            )
+        }
+    }
 
     private var chirpJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -46,9 +58,8 @@ class FindMyBudsManager(private val context: Context) {
     private fun getBluetoothAudioDevice(): AudioDeviceInfo? {
         val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
         return devices.firstOrNull { dev ->
-            dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-            dev.type == AudioDeviceInfo.TYPE_BLE_HEADSET ||
-            dev.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+            dev.type in listOf(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLE_HEADSET) &&
+                dev.productName.toString().lowercase().replace(Regex("[^a-z0-9]"), "") == "cmfbudspro2"
         }
     }
 
@@ -62,11 +73,12 @@ class FindMyBudsManager(private val context: Context) {
      * NEVER routes to the phone's built-in speaker.
      */
     fun startAcousticChirp(left: Boolean = true, right: Boolean = true) {
+        if (!left && !right) return
         if (_isChirping.value) return
 
         val btDevice = getBluetoothAudioDevice()
         // CRITICAL: If Bluetooth earbuds are not connected as audio output, NEVER play through phone speaker!
-        if (btDevice == null && !audioManager.isBluetoothA2dpOn) {
+        if (btDevice == null) {
             _isChirping.value = false
             return
         }
@@ -150,10 +162,7 @@ class FindMyBudsManager(private val context: Context) {
 
                     // Safety check: if routing falls back to internal speaker, abort immediately!
                     val routed = track.routedDevice
-                    if (routed != null && (
-                        routed.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER ||
-                        routed.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-                    )) {
+                    if (getBluetoothAudioDevice() == null || (routed != null && routed.id != btDevice.id)) {
                         break
                     }
 
@@ -197,11 +206,12 @@ class FindMyBudsManager(private val context: Context) {
     fun recordDisconnectLocation() {
         try {
             val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val loc: Location? = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            val loc: Location? = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+                .mapNotNull { provider -> runCatching { lm.getLastKnownLocation(provider) }.getOrNull() }
+                .maxByOrNull { it.time }
 
             loc?.let {
-                val now = System.currentTimeMillis()
+                val now = it.time
                 val dateStr = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date(now))
                 _lastLocation.value = DisconnectLocation(
@@ -210,6 +220,8 @@ class FindMyBudsManager(private val context: Context) {
                     timestamp = now,
                     formattedTime = dateStr
                 )
+                locationPrefs.edit().putLong("lat", java.lang.Double.doubleToLongBits(it.latitude))
+                    .putLong("lon", java.lang.Double.doubleToLongBits(it.longitude)).putLong("time", now).apply()
             }
         } catch (_: Exception) {}
     }

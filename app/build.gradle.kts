@@ -12,8 +12,8 @@ android {
         applicationId = "com.cmf.budscontroller"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2400
-        versionName = "2.3.10"
+        versionCode = 2500
+        versionName = "2.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -72,6 +72,7 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

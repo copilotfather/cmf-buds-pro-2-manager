@@ -106,6 +106,7 @@ fun FindMyBudsCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
+            enabled = isChirping || chirpLeft || chirpRight,
             onClick = {
                 if (isChirping) onStopChirp() else onStartChirp(chirpLeft, chirpRight)
             },
@@ -135,7 +136,7 @@ fun FindMyBudsCard(
             ) {
                 Column {
                     Text(
-                        text = if (AppStrings.isRussian) "ТОЧКА ОТКЛЮЧЕНИЯ: ${lastLocation.formattedTime}" else "DISCONNECT LOCATION: ${lastLocation.formattedTime}",
+                        text = if (AppStrings.isRussian) "ПОСЛЕДНЯЯ ИЗВЕСТНАЯ ПОЗИЦИЯ ТЕЛЕФОНА: ${lastLocation.formattedTime}" else "LAST KNOWN PHONE LOCATION: ${lastLocation.formattedTime}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = CmfTextPrimary,
@@ -152,7 +153,8 @@ fun FindMyBudsCard(
                     OutlinedButton(
                         onClick = {
                             val uri = Uri.parse("geo:${lastLocation.latitude},${lastLocation.longitude}?q=${lastLocation.latitude},${lastLocation.longitude}(CMF Buds)")
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            val intent = Intent(Intent.ACTION_VIEW, uri)
+                            if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = CircleShape

@@ -1,89 +1,78 @@
+<p align="center"><img src="docs/banner.svg" alt="CMF companion — Buds Pro 2 Manager and Watch Pro 2 beta" width="100%" /></p>
+
+<p align="center">
+  <a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/copilotfather/cmf-buds-pro-2-manager?style=flat-square&amp;color=0a84ff" /></a>
+  <a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/actions/workflows/build-apk.yml"><img alt="Build" src="https://github.com/copilotfather/cmf-buds-pro-2-manager/actions/workflows/build-apk.yml/badge.svg" /></a>
+  <img alt="Android 8 and newer" src="https://img.shields.io/badge/Android-8.0%2B-30d158?style=flat-square" />
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-98989d?style=flat-square" /></a>
+</p>
+<p align="center"><a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest">Download APK</a> · <a href="docs/README.ru.md">Русский</a> · <a href="docs/WATCH_BETA.md">Watch beta guide</a> · <a href="ROADMAP.md">Roadmap</a> · <a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/issues/new/choose">Report a bug</a></p>
+
 # CMF Buds Pro 2 Manager
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/copilotfather/cmf-buds-pro-2-manager/main/app/src/main/res/drawable/cmf_case_dial.png" width="120" alt="CMF Buds Pro 2 Dial" />
-</p>
+An independent Android companion for **CMF Buds Pro 2**, with a sound studio, home screen widgets, listening profiles and experimental **CMF Watch Pro 2** integration. Built with Kotlin and Jetpack Compose. English and Russian interfaces.
 
-<p align="center">
-  <b>Audiophile companion app for Nothing CMF Buds Pro 2</b><br/>
-  Hardware Bluetooth controls, Sony LDAC engine, Studio Equalizer, and Liquid Gray Glass UI.
-</p>
+> **Compatibility status:** the current release passes compilation and four watch-protocol unit tests. Physical-device validation is still pending. Watch integration is beta; command support varies by device firmware. This project is not affiliated with Nothing or CMF.
 
-<p align="center">
-  <a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest"><img src="https://img.shields.io/github/v/release/copilotfather/cmf-buds-pro-2-manager?color=FF5722&label=Download%20APK&style=for-the-badge&logo=android" alt="Download APK" /></a>
-  <img src="https://img.shields.io/badge/Android-8.0%2B-blue?style=for-the-badge&logo=android" alt="Android Version" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
-</p>
+## Sound, in your hands
 
----
+| Feature | What you get |
+|---|---|
+| Studio equalizer | Five bands, animated curve, presets, custom curves, JSON sharing, ±1 dB adjustments and A/B comparison |
+| Listening profiles | Metro, Work, Games and Sleep; save your own ANC, bass, game mode and EQ settings |
+| Connection diagnostics | Separate audio, SPP and BLE status; ANC readback and explicit command status |
+| Home screen widgets | Seven variants: controls, battery, ANC, transparency, game mode, bass and connection; light/dark style and accent choices |
+| Battery history | Local seven-day samples, individual earbud curves and charge-imbalance warning |
+| Find earbuds | Left/right acoustic signal with a safety confirmation; last known phone location at disconnect |
+| Everyday tools | Sleep timer, ambient sounds, voice prompts and GitHub release updates |
 
-## English
+## Device compatibility
 
-**CMF Buds Pro 2 Manager** is a dedicated Android app designed specifically for the **CMF Buds Pro 2** by Nothing. Built from scratch with Kotlin and Jetpack Compose, it connects directly to the earbuds' Bluetooth RFCOMM/SPP service interface to deliver hardware-level control and detailed listening telemetry.
+| Device / capability | Status |
+|---|---|
+| CMF Buds Pro 2 discovery | Model-name filtering; Bluetooth pairing is managed by Android |
+| ANC / bass / game mode | Firmware-dependent transport commands; ANC readback implemented, bass/game application is not independently confirmed |
+| LDAC | Earbud high-quality-mode request; **Android negotiates the actual codec and bitrate** |
+| EQ / audio processing | Android audio effects; effectiveness depends on phone and player audio sessions |
+| CMF Watch Pro 2 | Beta BLE discovery, pairing handshake, encrypted session, health sync and notification forwarding |
+| Other earbuds or watches | Not supported |
 
-### <img src="docs/icons/sparkles.svg" width="18" height="18" /> Features
+Smart Dial, spatial effects, audio relay and the remaining vendor commands still need hardware validation. Battery predictions and hearing-dose displays are estimates. Acoustic tools are not a substitute for the manufacturer's care instructions.
 
-- **Liquid Gray Glass Design:** Clean, smoked-glass interface with high-refraction borders and smooth 60/120 FPS animations.
-- **Hi-Res Codec Support:** Hardware switching and Sony LDAC up to 990 kbps (24-bit/96kHz), alongside LHDC, aptX HD, and AAC.
-- **Listening & Battery Analytics:** Tracks listening duration across sound levels (0–30%, 31–70%, 71–100%), weekly listening habits, case lid openings, and estimated battery health.
-- **5-Band Master Equalizer:** Real-time frequency curve drawn on GPU Canvas with studio sliders (60Hz, 230Hz, 910Hz, 3.6kHz, 14kHz) and tuned presets.
-- **Continuous Noise Control:** Stepless transition between ANC (up to 50dB), Transparency, and Normal modes.
-- **Hardware Utilities:** Ultra Bass boost (Levels 0–5), Smart Dial remapping, Sonic Water Eject (resonant acoustic sweeps), and Sonar finder with GPS disconnect logging.
+## Install
 
-### <img src="docs/icons/download.svg" width="18" height="18" /> Download & Install
+1. Download **`CMF_Buds_Pro_2_Manager.apk`** from the [latest release](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest).
+2. Allow installation from your browser/file manager when Android asks. Install on Android 8.0 or newer.
+3. Pair **CMF Buds Pro 2** in Android Bluetooth settings, then open the app and grant Bluetooth permissions.
+4. Add widgets through your launcher's widget picker → **CMF**. Nothing Launcher has not yet been validated on a physical phone.
 
-1. Download the latest `CMF_Buds_Pro_2_Manager.apk` from [Releases](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases).
-2. Install the APK on your Android device (Android 8.0 or newer).
-3. Connect your earbuds via Bluetooth and launch the app.
+Updates use GitHub Releases with fallback metadata. Android still requires installer approval. If an old installation misses an update, install the latest release APK manually.
 
----
+## Watch Pro 2 beta
 
-## Русский
+Open **Settings → DEV**, enter **`betatestdev`**, enable beta support, scan and connect. Then select **Authenticate** and confirm pairing on the watch. Close other watch companion apps first. Pairing may replace their binding.
 
-**CMF Buds Pro 2 Manager** — специализированное Android-приложение для наушников **CMF Buds Pro 2** от Nothing. Разработано на Kotlin и Jetpack Compose. Приложение подключается напрямую к сервисному Bluetooth-интерфейсу наушников (RFCOMM/SPP), предоставляя доступ к аппаратным функциям и детальной статистике использования.
+- Health: steps, distance, calories, heart rate, SpO₂, stress and sleep, stored locally with deduplication and a delete action.
+- Notifications: explicitly enable forwarding, grant Android notification access and select apps. Only new notifications while the phone is unlocked are eligible; missed messages are not queued.
+- Keys are session-only; authenticate again after reconnection. Workout summaries, Health Connect export and watch firmware updates are not implemented.
 
-### <img src="docs/icons/sparkles.svg" width="18" height="18" /> Возможности
+See the [beta guide](docs/WATCH_BETA.md) for limitations and troubleshooting. The DEV password is a local feature gate, not a security boundary.
 
-- **Дизайн Liquid Gray Glass:** Премиальное серое дымчатое стекло, зеркальная подсветка граней и плавная работа интерфейса при 60/120 FPS.
-- **Hi-Res аудиокодеки:** Аппаратное переключение и поддержка Sony LDAC до 990 кбит/с (24 бит / 96 кГц), а также LHDC, aptX HD и AAC.
-- **Аналитика прослушивания:** Замер времени на разных уровнях громкости (0–30%, 31–70%, 71–100%), активность по дням недели, счётчик открытий кейса и состояние аккумулятора.
-- **Студийный 5-полосный эквалайзер:** Живая кривая частотного отклика на Canvas, точная настройка полос (60 Гц, 230 Гц, 910 Гц, 3.6 кГц, 14 кГц) и готовые пресеты.
-- **Плавное шумоподавление:** Режимы ANC (до 50 дБ), Прозрачность и Выключено с плавной регулировкой.
-- **Инструменты:** Усилитель Ultra Bass (уровни 0–5), настройка колесика Smart Dial, выдувание воды звуком (Sonic Water Eject) и звуковой маяк Sonar с запоминанием координат GPS.
+## Build & checks
 
-### <img src="docs/icons/download.svg" width="18" height="18" /> Установка
+Requires **JDK 17**, Android SDK 35 and the included Gradle wrapper.
 
-1. Скачайте актуальный `CMF_Buds_Pro_2_Manager.apk` в разделе [Releases](https://github.com/copilotfather/cmf-buds-pro-2-manager/releases).
-2. Установите APK на Android (версия 8.0 или выше).
-3. Подключите наушники по Bluetooth и откройте приложение.
-
----
-
-## <img src="docs/icons/terminal.svg" width="20" height="20" /> Build from Source
-
-```bash
-git clone https://github.com/copilotfather/cmf-buds-pro-2-manager.git
-cd cmf-buds-pro-2-manager
-./gradlew assembleRelease
+```sh
+./gradlew testDebugUnitTest assembleRelease
 ```
 
----
+Windows: `gradlew.bat testDebugUnitTest assembleRelease`.
 
-## 📖 Architecture & Roadmap
+APK output: `app/build/outputs/apk/release/app-release.apk`. Repository signing configuration is intended for development/distribution compatibility; use your own private signing key for an independent production fork. Never commit personal tokens or signing credentials.
 
-- 👉 **[Read the Full Architecture Documentation (ARCHITECTURE.md)](ARCHITECTURE.md)** — Protocol, packet structure, DSP & MVI state flow.
-- 📋 **[Project Roadmap & Tasklist (ROADMAP.md)](ROADMAP.md)** — Current status, completed milestones, and upcoming features.
+## Explore & contribute
 
----
-
-## 👥 Contributors
-
-- **Dmitry ([@copilotfather](https://github.com/copilotfather))** — Creator & Lead Maintainer
-- **Antigravity (Google DeepMind)** — Autonomous Architecture, SPP/BES Protocol Engineering, DSP & Cyber UI Co-Developer
-
----
-
-## <img src="docs/icons/file-text.svg" width="20" height="20" /> License
-
-This project is open-source under the [MIT License](LICENSE).  
-Developed by [copilotfather](https://github.com/copilotfather) & Antigravity.
+- [Architecture](ARCHITECTURE.md) · [Release notes](CHANGELOG.md) · [Roadmap](ROADMAP.md)
+- [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
+- Maintained by [Dmitry / copilotfather](https://github.com/copilotfather).
+- Watch interoperability reference: [CMF Watch Pro 2 BLE Protocol](https://github.com/joshuapassos/CMF-Watch-Pro-2-BLE-Protocol). The implementation is independent; documented behavior still needs validation against the user's firmware.

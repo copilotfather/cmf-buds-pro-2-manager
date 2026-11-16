@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.10",
-  "versionCode": 2400,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.10/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "HOTFIX v2.3.10: Fixed overlapping tab contents, independent page scrolling, scrollable dialogs and clipped chart labels."
+  "versionName": "2.4.0",
+  "versionCode": 2500,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.0/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "v2.4.0 · Companion & Watch Beta\n• Profiles, EQ A/B, seven widgets and battery history\n• UI layout fixes, connection diagnostics and ANC readback\n• Watch Pro 2 beta: authentication, health sync and opt-in notifications\n• Hardware validation is pending; see the release guide"
 }
