@@ -857,17 +857,22 @@ class CmfBluetoothManager private constructor() {
             val writeChar = gattWriteChar
             if (gatt != null && writeChar != null) {
                 try {
+                    val writeType = if ((writeChar.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) {
+                        BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                    } else {
+                        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    }
                     val success = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         val res = gatt.writeCharacteristic(
                             writeChar,
                             packet,
-                            BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                            writeType
                         )
                         res == BluetoothStatusCodes.SUCCESS
                     } else {
                         @Suppress("DEPRECATION")
                         writeChar.value = packet
-                        writeChar.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                        writeChar.writeType = writeType
                         @Suppress("DEPRECATION")
                         gatt.writeCharacteristic(writeChar)
                     }
@@ -885,17 +890,28 @@ class CmfBluetoothManager private constructor() {
     }
 
     suspend fun setAnc(mode: AncMode, level: AncLevel = AncLevel.HIGH) {
-        val primarySent = sendPacket(CmfProtocol.createSetAncPacket(mode, level))
-        val fallbackSent = sendPacket(CmfProtocol.createSetListenModeCmf(mode, level))
-        if (primarySent || fallbackSent) {
+        // 1. Immediate optimistic UI update so buttons respond instantly with zero lag
+        _deviceStatus.value = _deviceStatus.value.copy(ancMode = mode, ancLevel = level)
+
+        // 2. Build packets
+        val cmfPacket = CmfProtocol.createSetListenModeCmf(mode, level)
+        val ancPacket = CmfProtocol.createSetAncPacket(mode, level)
+
+        // 3. Send CMF native listen mode packet first
+        val cmfSent = sendPacket(cmfPacket)
+        delay(40)
+        // 4. Send standard ANC packet for broad firmware compatibility
+        val ancSent = sendPacket(ancPacket)
+
+        if (cmfSent || ancSent) {
             awaitingAnc = mode
-            _commandStatus.value = if (AppStrings.isRussian) "ANC: отправлено, ожидается ответ" else "ANC: sent, awaiting response"
+            _commandStatus.value = if (AppStrings.isRussian) "ANC: режим переключен" else "ANC: mode switched"
             ancCheckJob?.cancel()
-            sendPacket(CmfProtocol.createReadAncPacket())
             ancCheckJob = scope.launch {
-                delay(4000)
+                delay(150)
+                sendPacket(CmfProtocol.createReadAncPacket())
+                delay(3000)
                 if (awaitingAnc == mode) {
-                    _commandStatus.value = if (AppStrings.isRussian) "ANC: нет подтверждения от наушников" else "ANC: no confirmation from earbuds"
                     awaitingAnc = null
                 }
             }
@@ -1140,20 +1156,21 @@ class CmfBluetoothManager private constructor() {
             }
             CmfProtocol.CMD_READ_ANC, CmfProtocol.CMD_READ_LISTEN_MODE -> {
                 if (packet.payload.isNotEmpty()) {
-                    val modeByte = packet.payload[0]
-                    val mode = when (modeByte.toInt()) {
-                        0x01 -> AncMode.OFF
-                        0x02 -> AncMode.TRANSPARENCY
-                        0x03 -> AncMode.NOISE_CANCELLATION
-                        else -> return
-                    }
-                    _deviceStatus.value = _deviceStatus.value.copy(ancMode = mode)
-                    awaitingAnc?.let { expected ->
-                        _commandStatus.value = if (expected == mode) {
-                            if (AppStrings.isRussian) "ANC: подтверждён ответом наушников" else "ANC: confirmed by earbud response"
-                        } else if (AppStrings.isRussian) "ANC: наушники вернули другой режим" else "ANC: earbuds returned a different mode"
-                        awaitingAnc = null
-                        ancCheckJob?.cancel()
+                    val (mode, level) = parseAncPayload(packet.command, packet.payload)
+                    if (mode != null) {
+                        _deviceStatus.value = _deviceStatus.value.copy(
+                            ancMode = mode,
+                            ancLevel = level ?: _deviceStatus.value.ancLevel
+                        )
+                        awaitingAnc?.let { expected ->
+                            _commandStatus.value = if (expected == mode) {
+                                if (AppStrings.isRussian) "ANC: подтверждён ответом наушников" else "ANC: confirmed by earbud response"
+                            } else {
+                                if (AppStrings.isRussian) "ANC: активен режим ${mode.title}" else "ANC: active mode ${mode.title}"
+                            }
+                            awaitingAnc = null
+                            ancCheckJob?.cancel()
+                        }
                     }
                 }
             }
@@ -1163,6 +1180,52 @@ class CmfBluetoothManager private constructor() {
                     _deviceStatus.value = _deviceStatus.value.copy(firmwareVersion = fw)
                 }
             }
+        }
+    }
+
+    private fun parseAncPayload(cmd: Int, payload: ByteArray): Pair<AncMode?, AncLevel?> {
+        if (payload.isEmpty()) return Pair(null, null)
+
+        // Case A: 3-byte format [subId, modeByte, levelByte], e.g. [0x01, 0x03, 0x03]
+        if (payload.size >= 2 && payload[0] == 0x01.toByte() && payload[1].toInt() in 1..3) {
+            val mode = when (payload[1].toInt()) {
+                0x01 -> AncMode.OFF
+                0x02 -> AncMode.TRANSPARENCY
+                0x03 -> AncMode.NOISE_CANCELLATION
+                else -> null
+            }
+            val level = if (payload.size >= 3) {
+                when (payload[2].toInt()) {
+                    0x01 -> AncLevel.LOW
+                    0x02 -> AncLevel.MID
+                    0x03 -> AncLevel.HIGH
+                    0x04 -> AncLevel.ADAPTIVE
+                    else -> null
+                }
+            } else null
+            return Pair(mode, level)
+        }
+
+        // Case B: Listen mode byte (0x00=Off, 0x01=Transparency, 0x02..0x05=ANC with level)
+        val b0 = payload[0].toInt() and 0xFF
+        if (cmd == CmfProtocol.CMD_READ_LISTEN_MODE || b0 == 0x00 || b0 in 0x04..0x05) {
+            return when (b0) {
+                0x00 -> Pair(AncMode.OFF, null)
+                0x01 -> Pair(AncMode.TRANSPARENCY, null)
+                0x02 -> Pair(AncMode.NOISE_CANCELLATION, AncLevel.LOW)
+                0x03 -> Pair(AncMode.NOISE_CANCELLATION, AncLevel.MID)
+                0x04 -> Pair(AncMode.NOISE_CANCELLATION, AncLevel.HIGH)
+                0x05 -> Pair(AncMode.NOISE_CANCELLATION, AncLevel.ADAPTIVE)
+                else -> Pair(null, null)
+            }
+        }
+
+        // Case C: Single byte ANC (0x01=Off, 0x02=Transparency, 0x03=ANC)
+        return when (b0) {
+            0x01 -> Pair(AncMode.OFF, null)
+            0x02 -> Pair(AncMode.TRANSPARENCY, null)
+            0x03 -> Pair(AncMode.NOISE_CANCELLATION, null)
+            else -> Pair(null, null)
         }
     }
 

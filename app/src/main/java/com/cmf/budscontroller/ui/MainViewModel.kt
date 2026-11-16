@@ -280,9 +280,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setAncLevel(level: AncLevel) {
-        val currentMode = deviceStatus.value.ancMode
         viewModelScope.launch {
-            bluetoothManager.setAnc(currentMode, level)
+            bluetoothManager.setAnc(AncMode.NOISE_CANCELLATION, level)
         }
     }
 

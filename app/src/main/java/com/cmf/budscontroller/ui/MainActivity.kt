@@ -2691,7 +2691,7 @@ fun StudioNoiseControlBar(
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
+                                    interactionSource = remember(mode) { MutableInteractionSource() },
                                     indication = null
                                 ) {
                                     haptic.tick()

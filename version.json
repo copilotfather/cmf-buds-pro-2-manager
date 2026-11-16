@@ -1,6 +1,6 @@
 {
-  "versionName": "2.4.0",
-  "versionCode": 2500,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.0/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "v2.4.0 · Companion & Watch Beta\n• Profiles, EQ A/B, seven widgets and battery history\n• UI layout fixes, connection diagnostics and ANC readback\n• Watch Pro 2 beta: authentication, health sync and opt-in notifications\n• Hardware validation is pending; see the release guide"
+  "versionName": "2.4.1",
+  "versionCode": 2510,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.1/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.4.1:\n• Fixed ANC noise cancellation control buttons (Off / Transparency / Noise Cancellation / Depth levels)\n• Instant responsive state switching with zero latency\n• Robust bidirectional decoding for both CMF Listen Mode and standard Nothing ANC packets\n• Dynamic BLE GATT write type matching (NO_RESPONSE vs DEFAULT)"
 }
