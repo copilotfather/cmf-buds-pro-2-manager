@@ -1,13 +1,11 @@
 package com.cmf.budscontroller.update
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
@@ -15,14 +13,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedInputStream
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.regex.Pattern
 
 data class UpdateInfo(
     val hasUpdate: Boolean = false,
@@ -37,6 +35,7 @@ data class UpdateInfo(
 
 class GitHubUpdateManager(private val context: Context) {
 
+    private val TAG = "GitHubUpdate"
     private val repoOwner = "copilotfather"
     private val repoName = "cmf-buds-pro-2-manager"
 
@@ -52,55 +51,101 @@ class GitHubUpdateManager(private val context: Context) {
         }
     }
 
+    /**
+     * Bulletproof multi-tier update checker.
+     * Uses 4 independent channels so updates are NEVER missed:
+     * 1. GitHub Releases Atom Feed (Zero rate limit, fast, no API key needed)
+     * 2. GitHub 302 Location Redirect on /releases/latest (Direct HTTP header check)
+     * 3. Raw version.json CDN
+     * 4. GitHub REST API /releases list
+     */
     suspend fun checkForUpdates(): UpdateInfo = withContext(Dispatchers.IO) {
-        _updateState.value = _updateState.value.copy(isChecking = true)
+        _updateState.value = _updateState.value.copy(isChecking = true, downloadError = null)
         val currentVer = getCurrentVersionName()
+        Log.i(TAG, "Starting update check. Current app version: $currentVer")
 
-        // 1. Try releases/latest (Zero cache, zero API rate limits, instantaneous)
+        // -------------------------------------------------------------
+        // Channel 1: GitHub Releases Atom Feed (Fastest, zero rate limit)
+        // -------------------------------------------------------------
         try {
-            val redirectUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
-            val conn = (URL(redirectUrl).openConnection() as HttpURLConnection).apply {
-                instanceFollowRedirects = true
+            val atomUrl = "https://github.com/$repoOwner/$repoName/releases.atom"
+            val conn = (URL(atomUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
-                connectTimeout = 5000
-                readTimeout = 5000
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                connectTimeout = 4000
+                readTimeout = 4000
                 useCaches = false
             }
-            conn.connect()
+            if (conn.responseCode == 200) {
+                val xml = conn.inputStream.bufferedReader().use { it.readText() }
+                val entryMatcher = Pattern.compile("<entry>.*?<title>(.*?)</title>", Pattern.DOTALL).matcher(xml)
+                if (entryMatcher.find()) {
+                    val rawTitle = entryMatcher.group(1)?.trim() ?: ""
+                    val tag = rawTitle.split(" ").firstOrNull()?.removePrefix("v")?.trim() ?: ""
+                    if (tag.isNotBlank()) {
+                        val hasNew = isNewerVersion(tag, currentVer)
+                        val dlUrl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
+                        Log.i(TAG, "[Channel 1: Atom] Latest tag: $tag, current: $currentVer, hasUpdate: $hasNew")
 
-            val finalUrl = conn.url.toString()
+                        val res = UpdateInfo(
+                            hasUpdate = hasNew,
+                            latestVersion = tag,
+                            releaseNotes = "Доступна новая версия v$tag на GitHub. Нажмите для быстрой установки.",
+                            downloadUrl = dlUrl,
+                            isChecking = false
+                        )
+                        _updateState.value = res
+                        return@withContext res
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "[Channel 1: Atom] Error: ${e.message}")
+        }
+
+        // -------------------------------------------------------------
+        // Channel 2: HTTP 302 Redirect Header on /releases/latest
+        // -------------------------------------------------------------
+        try {
+            val latestUrl = "https://github.com/$repoOwner/$repoName/releases/latest"
+            val conn = (URL(latestUrl).openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = false // Keep 302 header intact!
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                connectTimeout = 4000
+                readTimeout = 4000
+                useCaches = false
+            }
             val location = conn.getHeaderField("Location") ?: ""
-            val target = if (finalUrl.contains("/tag/")) finalUrl else location
-
-            if (target.isNotBlank() && target.contains("/tag/")) {
-                val tag = target.substringAfterLast("/tag/").removePrefix("v").trim()
+            if (location.contains("/tag/")) {
+                val tag = location.substringAfterLast("/tag/").removePrefix("v").trim()
                 val hasNew = isNewerVersion(tag, currentVer)
-                val dl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
-                android.util.Log.i("GitHubUpdate", "Latest Check: target=$target, tag=$tag, current=$currentVer, hasNew=$hasNew")
+                val dlUrl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"
+                Log.i(TAG, "[Channel 2: 302 Redirect] Location: $location, tag: $tag, hasUpdate: $hasNew")
 
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
                     latestVersion = tag,
-                    releaseNotes = "Новое обновление v$tag доступно на GitHub.",
-                    downloadUrl = dl,
+                    releaseNotes = "Доступна новая версия v$tag на GitHub.",
+                    downloadUrl = dlUrl,
                     isChecking = false
                 )
                 _updateState.value = res
                 return@withContext res
             }
         } catch (e: Exception) {
-            android.util.Log.w("GitHubUpdate", "Latest Check failed: ${e.message}")
+            Log.w(TAG, "[Channel 2: 302 Redirect] Error: ${e.message}")
         }
 
-        // 2. Try raw CDN version.json (Fast worldwide CDN)
+        // -------------------------------------------------------------
+        // Channel 3: version.json via GitHub Raw CDN
+        // -------------------------------------------------------------
         try {
             val rawUrl = "https://raw.githubusercontent.com/$repoOwner/$repoName/main/version.json?t=${System.currentTimeMillis()}"
             val conn = (URL(rawUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36")
-                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-                setRequestProperty("Pragma", "no-cache")
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                setRequestProperty("Cache-Control", "no-cache")
                 connectTimeout = 4000
                 readTimeout = 4000
                 useCaches = false
@@ -110,9 +155,9 @@ class GitHubUpdateManager(private val context: Context) {
                 val json = JSONObject(text)
                 val ver = json.optString("versionName", "").removePrefix("v").trim()
                 val notes = json.optString("releaseNotes", "Доступно обновление.")
-                val dl = json.optString("downloadUrl", "")
+                val dl = json.optString("downloadUrl", "https://github.com/$repoOwner/$repoName/releases/download/v$ver/CMF_Buds_Pro_2_Manager.apk")
                 val hasNew = isNewerVersion(ver, currentVer)
-                android.util.Log.i("GitHubUpdate", "CDN Check: latest=$ver, current=$currentVer, hasNew=$hasNew")
+                Log.i(TAG, "[Channel 3: CDN version.json] Latest: $ver, current: $currentVer, hasUpdate: $hasNew")
 
                 val res = UpdateInfo(
                     hasUpdate = hasNew,
@@ -125,58 +170,63 @@ class GitHubUpdateManager(private val context: Context) {
                 return@withContext res
             }
         } catch (e: Exception) {
-            android.util.Log.w("GitHubUpdate", "CDN Check failed: ${e.message}")
+            Log.w(TAG, "[Channel 3: CDN] Error: ${e.message}")
         }
 
-        // 3. Fallback to GitHub REST API
+        // -------------------------------------------------------------
+        // Channel 4: GitHub REST API (/releases array fallback)
+        // -------------------------------------------------------------
         try {
-            val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases/latest"
-            val url = URL(apiUrl)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
-            connection.setRequestProperty("User-Agent", "CMFBudsPro2Manager-Updater")
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
+            val apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
+            val conn = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/vnd.github.v3+json")
+                setRequestProperty("User-Agent", "CMFBudsPro2Manager-Updater")
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            if (conn.responseCode == 200) {
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                val array = JSONArray(body)
+                if (array.length() > 0) {
+                    val latestRelease = array.getJSONObject(0)
+                    val tagName = latestRelease.optString("tag_name", "").removePrefix("v").trim()
+                    val notes = latestRelease.optString("body", "Новые функции и оптимизация.")
+                    val assets = latestRelease.optJSONArray("assets")
 
-            if (connection.responseCode == 200) {
-                val reader = BufferedReader(InputStreamReader(connection.inputStream))
-                val response = reader.readText()
-                reader.close()
-
-                val json = JSONObject(response)
-                val tagName = json.optString("tag_name", "").removePrefix("v").trim()
-                val body = json.optString("body", "Новые функции и оптимизация.")
-                val assets = json.optJSONArray("assets")
-
-                var apkDownloadUrl = ""
-                if (assets != null) {
-                    for (i in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(i)
-                        val name = asset.optString("name", "")
-                        if (name.endsWith(".apk", ignoreCase = true)) {
-                            apkDownloadUrl = asset.optString("browser_download_url", "")
-                            break
+                    var apkUrl = ""
+                    if (assets != null) {
+                        for (i in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(i)
+                            val name = asset.optString("name", "")
+                            if (name.endsWith(".apk", ignoreCase = true)) {
+                                apkUrl = asset.optString("browser_download_url", "")
+                                break
+                            }
                         }
                     }
-                }
+                    if (apkUrl.isBlank()) {
+                        apkUrl = "https://github.com/$repoOwner/$repoName/releases/download/v$tagName/CMF_Buds_Pro_2_Manager.apk"
+                    }
 
-                val hasNew = isNewerVersion(tagName, currentVer)
-                android.util.Log.i("GitHubUpdate", "API Check: latest=$tagName, current=$currentVer, hasNew=$hasNew")
-                val res = UpdateInfo(
-                    hasUpdate = hasNew,
-                    latestVersion = tagName,
-                    releaseNotes = body,
-                    downloadUrl = apkDownloadUrl,
-                    isChecking = false
-                )
-                _updateState.value = res
-                return@withContext res
+                    val hasNew = isNewerVersion(tagName, currentVer)
+                    Log.i(TAG, "[Channel 4: REST API] Tag: $tagName, current: $currentVer, hasUpdate: $hasNew")
+
+                    val res = UpdateInfo(
+                        hasUpdate = hasNew,
+                        latestVersion = tagName,
+                        releaseNotes = notes,
+                        downloadUrl = apkUrl,
+                        isChecking = false
+                    )
+                    _updateState.value = res
+                    return@withContext res
+                }
             } else {
-                android.util.Log.w("GitHubUpdate", "GitHub API returned HTTP ${connection.responseCode}")
+                Log.w(TAG, "[Channel 4: REST API] HTTP ${conn.responseCode}")
             }
         } catch (e: Exception) {
-            android.util.Log.e("GitHubUpdate", "API Check failed: ${e.message}", e)
+            Log.e(TAG, "[Channel 4: REST API] Error: ${e.message}", e)
         } finally {
             _updateState.value = _updateState.value.copy(isChecking = false)
         }
@@ -184,10 +234,16 @@ class GitHubUpdateManager(private val context: Context) {
         return@withContext _updateState.value
     }
 
-    private fun isNewerVersion(latest: String, current: String): Boolean {
+    /**
+     * Compares two semantic version strings safely (e.g., "2.3.0" vs "2.2.3.3").
+     */
+    fun isNewerVersion(latest: String, current: String): Boolean {
         if (latest.isBlank()) return false
-        val lParts = latest.split(".").mapNotNull { it.toIntOrNull() }
-        val cParts = current.split(".").mapNotNull { it.toIntOrNull() }
+        val cleanLatest = latest.removePrefix("v").trim()
+        val cleanCurrent = current.removePrefix("v").trim()
+
+        val lParts = cleanLatest.split(".").mapNotNull { it.toIntOrNull() }
+        val cParts = cleanCurrent.split(".").mapNotNull { it.toIntOrNull() }
 
         val maxLen = maxOf(lParts.size, cParts.size)
         for (i in 0 until maxLen) {
@@ -201,16 +257,19 @@ class GitHubUpdateManager(private val context: Context) {
 
     fun openInBrowser(url: String = "") {
         try {
-            val target = if (url.isNotBlank()) url else "https://github.com/$repoOwner/$repoName/releases/latest"
+            val target = if (url.isNotBlank()) url else "https://github.com/$repoOwner/$repoName/releases"
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(target)).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(browserIntent)
         } catch (e: Exception) {
-            android.util.Log.e("GitHubUpdate", "Failed to open browser: ${e.message}")
+            Log.e(TAG, "Failed to open browser: ${e.message}")
         }
     }
 
+    /**
+     * Downloads the APK file directly with smooth progress tracking and follows all CDN redirects.
+     */
     suspend fun downloadAndInstallDirectly(apkUrl: String) = withContext(Dispatchers.IO) {
         val targetUrl = if (apkUrl.isNotBlank()) apkUrl else "https://github.com/$repoOwner/$repoName/releases/latest"
 
@@ -225,7 +284,8 @@ class GitHubUpdateManager(private val context: Context) {
 
         _updateState.value = _updateState.value.copy(isDownloading = true, downloadProgress = 0, downloadError = null)
 
-        val destination = File(context.cacheDir, "CMF_Buds_Pro_2_Update.apk")
+        val destinationDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
+        val destination = File(destinationDir, "CMF_Buds_Pro_2_Manager.apk")
         if (destination.exists()) destination.delete()
 
         try {
@@ -233,20 +293,18 @@ class GitHubUpdateManager(private val context: Context) {
             var connection: HttpURLConnection? = null
             var redirects = 0
 
-            // Follow HTTP redirects (GitHub releases redirect to AWS S3 / objects.githubusercontent.com)
-            while (redirects < 6) {
+            // Follow HTTP redirects across domains (GitHub releases -> AWS S3 objects.githubusercontent.com)
+            while (redirects < 10) {
                 val url = URL(currentUrl)
-                connection = url.openConnection() as HttpURLConnection
-                connection.instanceFollowRedirects = false
-                connection.connectTimeout = 12000
-                connection.readTimeout = 20000
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 CMFBudsPro2Manager")
+                connection = (url.openConnection() as HttpURLConnection).apply {
+                    instanceFollowRedirects = false
+                    connectTimeout = 12000
+                    readTimeout = 25000
+                    setRequestProperty("User-Agent", "Mozilla/5.0 CMFBudsPro2Manager")
+                }
 
                 val status = connection.responseCode
-                if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
-                    status == HttpURLConnection.HTTP_MOVED_PERM ||
-                    status == 307 || status == 308
-                ) {
+                if (status in 300..399) {
                     val location = connection.getHeaderField("Location") ?: break
                     currentUrl = location
                     redirects++
@@ -255,9 +313,9 @@ class GitHubUpdateManager(private val context: Context) {
                 break
             }
 
-            val conn = connection ?: throw Exception("Failed to establish connection")
+            val conn = connection ?: throw Exception("Не удалось установить соединение")
             if (conn.responseCode !in 200..299) {
-                throw Exception("HTTP ${conn.responseCode}")
+                throw Exception("Сервер ответил HTTP ${conn.responseCode}")
             }
 
             val totalBytes = conn.contentLength
@@ -289,28 +347,31 @@ class GitHubUpdateManager(private val context: Context) {
                 installApk(destination)
             }
         } catch (e: Exception) {
-            android.util.Log.e("GitHubUpdate", "Direct download error: ${e.message}", e)
+            Log.e(TAG, "Direct download error: ${e.message}", e)
             _updateState.value = _updateState.value.copy(isDownloading = false, downloadError = e.message)
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Не удалось загрузить напрямую (${e.message}). Открываем браузер...", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Загрузка не удалась (${e.message}). Открываем браузер...", Toast.LENGTH_LONG).show()
                 openInBrowser(apkUrl)
             }
         }
     }
 
+    /**
+     * Invokes Android Package Installer with FileProvider permissions.
+     */
     fun installApk(file: File) {
         try {
             if (!file.exists() || file.length() < 1000) {
-                android.util.Log.w("GitHubUpdate", "APK file missing or too small: ${file.length()} bytes")
+                Log.w(TAG, "APK file missing or invalid: ${file.length()} bytes")
                 openInBrowser()
                 return
             }
 
-            // Check if app has permission to install packages on Android 8.0+
+            // Check if app has permission to install unknown apps on Android 8.0+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
-                    Toast.makeText(context, "Разрешите установку неизвестных приложений для завершения обновления", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Разрешите установку приложений для завершения обновления", Toast.LENGTH_LONG).show()
                     val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                         data = Uri.parse("package:${context.packageName}")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -332,7 +393,7 @@ class GitHubUpdateManager(private val context: Context) {
             }
             context.startActivity(installIntent)
         } catch (e: Exception) {
-            android.util.Log.e("GitHubUpdate", "Package installer invocation failed: ${e.message}", e)
+            Log.e(TAG, "Package installer invocation failed: ${e.message}", e)
             openInBrowser()
         }
     }

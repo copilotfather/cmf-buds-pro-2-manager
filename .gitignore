@@ -17,6 +17,7 @@ captures/
 
 # Signing
 *.jks
+!app/cmf_release.jks
 *.keystore
 
 # APK binaries (ready builds live in GitHub Releases)

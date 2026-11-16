@@ -1,6 +1,6 @@
 {
-  "versionName": "2.2.3.1",
-  "versionCode": 2231,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.2.3.1/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "Release v2.2.3.1: Автоматическая локализация (English / Русский) в зависимости от системного языка устройства, обновление раздела Contributors (Dmitry & Antigravity AI)."
+  "versionName": "2.3.0",
+  "versionCode": 2300,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.0/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.0:\n• Минималистичный скандинавский тёмный интерфейс (Nothing / CMF Industrial)\n• Полностью переработана и исправлена система автообновлений (Atom / 302 Redirect / CDN / REST)\n• Исправлена стабильность Bluetooth (A2DP/Headset fallback и фоновый автореконнект)\n• Устранено ложное отключение и отображение фейкового заряда"
 }
