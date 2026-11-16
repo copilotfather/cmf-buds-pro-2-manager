@@ -79,10 +79,18 @@ class GitHubUpdateManager(private val context: Context) {
             }
             if (conn.responseCode == 200) {
                 val xml = conn.inputStream.bufferedReader().use { it.readText() }
-                val entryMatcher = Pattern.compile("<entry>.*?<title>(.*?)</title>", Pattern.DOTALL).matcher(xml)
+                val entryMatcher = Pattern.compile("<entry>(.*?)</entry>", Pattern.DOTALL).matcher(xml)
                 if (entryMatcher.find()) {
-                    val rawTitle = entryMatcher.group(1)?.trim() ?: ""
-                    val tag = rawTitle.split(" ").firstOrNull()?.removePrefix("v")?.trim() ?: ""
+                    val entry = entryMatcher.group(1).orEmpty()
+                    val tagMatcher = Pattern.compile(
+                        "<link[^>]*href=\"[^\"]*/releases/tag/([^\"?#]+)[^\"]*\"[^>]*/?>",
+                        Pattern.DOTALL
+                    ).matcher(entry)
+                    val tag = if (tagMatcher.find()) {
+                        tagMatcher.group(1)?.substringAfterLast('/')?.removePrefix("v")?.trim().orEmpty()
+                    } else {
+                        ""
+                    }
                     if (tag.isNotBlank()) {
                         val hasNew = isNewerVersion(tag, currentVer)
                         val dlUrl = "https://github.com/$repoOwner/$repoName/releases/download/v$tag/CMF_Buds_Pro_2_Manager.apk"

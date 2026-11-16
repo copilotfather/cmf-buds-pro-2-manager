@@ -1,6 +1,6 @@
 {
-  "versionName": "2.3.4",
-  "versionCode": 2340,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.4/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.4:\n• Fixed fragmented Bluetooth protocol packets being dropped during SPP/GATT reads\n• Bound the audio lab timer to the ViewModel lifecycle to prevent background coroutine leaks\n• Fixed Windows PC Manager UI updates from its audio worker thread\n• Corrected ADB Toolbox battery display to show the actual percentage\n• Release workflow now fails instead of silently publishing a debug APK"
+  "versionName": "2.3.5",
+  "versionCode": 2350,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.3.5/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.3.5:\n• Fixed update links by reading the release tag from the Atom entry URL instead of the display title\n• Preserved fallback update channels when an Atom entry has no valid release link"
 }
