@@ -184,7 +184,8 @@ enum class StudioTab(val icon: ImageVector) {
     STUDIO(Icons.Outlined.GraphicEq),
     INSIGHTS(Icons.Outlined.BarChart),
     FEATURES(Icons.Outlined.Tune),
-    BRIDGE(Icons.Outlined.Devices);
+    BRIDGE(Icons.Outlined.Devices),
+    WATCH(Icons.Outlined.WatchLater);
 
     val label: String
         get() = when (this) {
@@ -193,6 +194,7 @@ enum class StudioTab(val icon: ImageVector) {
             INSIGHTS -> AppStrings.tabStats
             FEATURES -> AppStrings.tabFeatures
             BRIDGE -> AppStrings.tabBridge
+            WATCH -> "WATCH"
         }
 }
 
@@ -939,6 +941,10 @@ fun HiFiStudioBudsApp(
                             }
                         }
                     }
+                }
+
+                StudioTab.WATCH -> {
+                    com.cmf.budscontroller.ui.components.WatchPage(viewModel.watchBeta)
                 }
             }
                 }

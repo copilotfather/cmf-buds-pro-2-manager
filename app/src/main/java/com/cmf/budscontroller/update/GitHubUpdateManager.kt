@@ -110,6 +110,7 @@ class GitHubUpdateManager(private val context: Context) {
                     }
                 }
             }
+            conn.disconnect()
         } catch (e: Exception) {
             Log.w(TAG, "[Channel 1: Atom] Error: ${e.message}")
         }
@@ -143,6 +144,7 @@ class GitHubUpdateManager(private val context: Context) {
                 )
                 if (isValidVersion(tag)) fallback = res
             }
+            conn.disconnect()
         } catch (e: Exception) {
             Log.w(TAG, "[Channel 2: 302 Redirect] Error: ${e.message}")
         }
@@ -178,6 +180,7 @@ class GitHubUpdateManager(private val context: Context) {
                 )
                 if (isValidVersion(ver) && dl.startsWith("https://github.com/$repoOwner/$repoName/releases/download/")) fallback = res
             }
+            conn.disconnect()
         } catch (e: Exception) {
             Log.w(TAG, "[Channel 3: CDN] Error: ${e.message}")
         }
@@ -237,6 +240,7 @@ class GitHubUpdateManager(private val context: Context) {
             } else {
                 Log.w(TAG, "[Channel 4: REST API] HTTP ${conn.responseCode}")
             }
+            conn.disconnect()
         } catch (e: Exception) {
             Log.e(TAG, "[Channel 4: REST API] Error: ${e.message}", e)
         } finally {
@@ -345,20 +349,20 @@ class GitHubUpdateManager(private val context: Context) {
             var bytesRead: Int
             var downloadedBytes: Long = 0
 
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                outputStream.write(buffer, 0, bytesRead)
-                downloadedBytes += bytesRead
-                if (totalBytes > 0) {
-                    val progress = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
-                    if (progress != _updateState.value.downloadProgress) {
-                        _updateState.value = _updateState.value.copy(downloadProgress = progress)
+            inputStream.use { input -> outputStream.use { output ->
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    output.write(buffer, 0, bytesRead)
+                    downloadedBytes += bytesRead
+                    if (totalBytes > 0) {
+                        val progress = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                        if (progress != _updateState.value.downloadProgress) {
+                            _updateState.value = _updateState.value.copy(downloadProgress = progress)
+                        }
                     }
                 }
-            }
-
-            outputStream.flush()
-            outputStream.close()
-            inputStream.close()
+                output.flush()
+            } }
+            conn.disconnect()
 
             _updateState.value = _updateState.value.copy(isDownloading = false, downloadProgress = 100)
 

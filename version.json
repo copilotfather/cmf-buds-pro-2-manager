@@ -1,6 +1,6 @@
 {
-  "versionName": "2.4.2",
-  "versionCode": 2520,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.2/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.4.2:\n• Instant, responsive UI feedback for Ultra Bass, Game Mode, and ANC toggles\n• Direct level clickability on Ultra Bass bar indicators\n• Fixed event propagation collision on Adaptive Auto-ANC switch and Water Eject cards\n• Local optimistic state synchronization across all hardware features"
+  "versionName": "2.4.3",
+  "versionCode": 2521,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.3/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "CMF Buds Pro 2 Manager v2.4.3:\n• Added a dedicated CMF Watch Pro 2 dashboard\n• Improved watch pairing response handling and fragmented BLE frame parsing\n• Closed updater network connections and download streams reliably"
 }

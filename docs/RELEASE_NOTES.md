@@ -1,3 +1,17 @@
+## v2.4.3 · CMF Watch dashboard
+
+### What's new
+
+- Added a dedicated CMF Watch Pro 2 page with BLE discovery, connection status, battery and health summaries.
+- Improved watch pairing by handling fragmented shell responses and BLE frames correctly.
+- Improved updater cleanup for HTTP connections and interrupted downloads.
+
+### По-русски
+
+Добавлена отдельная страница CMF Watch Pro 2 с поиском часов, зарядом и показателями здоровья. Улучшена обработка авторизации и фрагментированных BLE-кадров; исправлено закрытие сетевых ресурсов при обновлении.
+
+---
+
 ## v2.4.0 · Companion & Watch Beta
 
 A companion update for CMF Buds Pro 2 with experimental Watch Pro 2 integration.

@@ -19,6 +19,7 @@ class WatchControlChannel(private val context: Context, private val handler: Han
     private val writes = ArrayDeque<Pair<BluetoothGattCharacteristic,ByteArray>>()
     private var writing = false
     private var shellInput = ""
+    private var secretRequested = false
     private val timeout = Runnable { fail("Authentication timed out") }
     private val writeTimeout = Runnable { fail("GATT write timed out") }
     private val syncTimeout = Runnable {
@@ -47,7 +48,7 @@ class WatchControlChannel(private val context: Context, private val handler: Han
         WatchNotificationBridge.send = null
         handler.removeCallbacks(timeout); handler.removeCallbacks(writeTimeout); handler.removeCallbacks(syncTimeout)
         session.reset(); health.flush(); writes.clear(); subscriptions.clear()
-        client = null; commandWrite = null; shellWrite = null; writing = false; shellInput = ""
+        client = null; commandWrite = null; shellWrite = null; writing = false; shellInput = ""; secretRequested = false
     }
     fun authenticate(gatt: BluetoothGatt) {
         if (state().authenticating || state().authenticated) return
@@ -67,7 +68,13 @@ class WatchControlChannel(private val context: Context, private val handler: Han
     }
     private fun subscribeNext() {
         val gatt = client ?: return
-        if (subscriptions.isEmpty()) { enqueue(shellWrite!!,"AT GETSECRET".toByteArray()); return }
+        if (subscriptions.isEmpty()) {
+            if (!secretRequested) {
+                secretRequested = true
+                enqueue(shellWrite ?: error("Missing shell channel"), "AT GETSECRET\r\n".toByteArray(Charsets.US_ASCII))
+            }
+            return
+        }
         val characteristic = subscriptions.removeFirst()
         require(gatt.setCharacteristicNotification(characteristic,true))
         val descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")) ?: error("Missing CCCD")
@@ -100,9 +107,9 @@ class WatchControlChannel(private val context: Context, private val handler: Han
     fun receive(id: UUID, value: ByteArray) {
         try {
             if (id.toString() == "77d4ff02-2fe2-2334-0d35-9ccd078f529c" && state().authenticating) {
-                shellInput += value.toString(Charsets.US_ASCII)
+                shellInput += value.toString(Charsets.US_ASCII).filter { it == '\r' || it == '\n' || it in ' '..'~' }
                 require(shellInput.length <= 1024)
-                val match = Regex("GETSECRET:([0-9a-fA-F]{32}),OK").find(shellInput)
+                val match = Regex("GETSECRET:([0-9a-fA-F]{32}),OK(?:\\r?\\n|$)").find(shellInput)
                 if (match != null) {
                     val secret = match.groupValues[1].chunked(2).map { it.toInt(16).toByte() }.toByteArray()
                     shellInput = ""; session.pair(secret); secret.fill(0)

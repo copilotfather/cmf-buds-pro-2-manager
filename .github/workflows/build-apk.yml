@@ -68,3 +68,22 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Announce release on Discord
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            python - <<'PY' > discord-payload.json
+          import json, os
+          tag = os.environ["RELEASE_TAG"]
+          url = f"https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/tag/{tag}"
+          print(json.dumps({"content": f"CMF Buds Pro 2 Manager {tag} is released: {url}"}))
+          PY
+            curl --fail --silent --show-error -H "Content-Type: application/json" --data-binary @discord-payload.json "$DISCORD_WEBHOOK"
+          else
+            echo "DISCORD_WEBHOOK secret is not configured; skipping Discord announcement."
+          fi

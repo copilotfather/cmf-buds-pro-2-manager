@@ -18,7 +18,7 @@ class WatchSession(private val send: (ByteArray) -> Unit, private val onReady: (
     private var secret: ByteArray? = null
     private var random: ByteArray? = null
     private var stage = 0
-    private var input = byteArrayOf()
+    private var input = ByteArrayOutputStream()
     private val parts = ByteArrayOutputStream()
     private var partCommand = 0L
     private var expectedPart = 1
@@ -28,7 +28,7 @@ class WatchSession(private val send: (ByteArray) -> Unit, private val onReady: (
     fun reset() {
         key?.fill(0); authKey?.fill(0); secret?.fill(0); random?.fill(0)
         key = null; authKey = null; secret = null; random = null
-        ready = false; stage = 0; input = byteArrayOf(); parts.reset(); expectedPart = 1
+        ready = false; stage = 0; input.reset(); parts.reset(); expectedPart = 1
     }
     fun pair(deviceSecret: ByteArray) {
         require(deviceSecret.size == 16)
@@ -51,11 +51,13 @@ class WatchSession(private val send: (ByteArray) -> Unit, private val onReady: (
         }
     }
     fun receive(bytes: ByteArray) {
-        require(input.size + bytes.size <= 65536) { "Watch frame buffer overflow" }
-        input += bytes
-        while (input.size >= 11) {
-            require(input[0] == 0xf5.toByte()) { "Invalid watch frame" }
-            val header = ByteBuffer.wrap(input).order(ByteOrder.BIG_ENDIAN)
+        require(input.size() + bytes.size <= 65536) { "Watch frame buffer overflow" }
+        input.write(bytes)
+        var buffered = input.toByteArray()
+        var offset = 0
+        while (buffered.size - offset >= 11) {
+            require(buffered[offset] == 0xf5.toByte()) { "Invalid watch frame" }
+            val header = ByteBuffer.wrap(buffered, offset, buffered.size - offset).order(ByteOrder.BIG_ENDIAN)
             header.get()
             val length = header.short.toInt() and 65535
             val a = header.short.toInt() and 65535
@@ -66,9 +68,9 @@ class WatchSession(private val send: (ByteArray) -> Unit, private val onReady: (
             val encrypted = key != null && !plaintext
             val actual = if (encrypted) length else length - 4
             require(actual in 0..8192 && count in 1..512 && index in 1..count)
-            if (input.size < 11 + actual) return
-            val wire = input.copyOfRange(11, 11+actual)
-            input = input.copyOfRange(11+actual, input.size)
+            if (buffered.size - offset < 11 + actual) break
+            val wire = buffered.copyOfRange(offset + 11, offset + 11 + actual)
+            offset += 11 + actual
             val body = if (encrypted) {
                 val decoded = crypt(Cipher.DECRYPT_MODE, wire)
                 require(decoded.size >= 4)
@@ -82,6 +84,9 @@ class WatchSession(private val send: (ByteArray) -> Unit, private val onReady: (
             parts.write(body); expectedPart++
             if (index == count) { val payload = parts.toByteArray(); parts.reset(); handle(a,b,payload) }
         }
+        if (offset > 0) buffered = buffered.copyOfRange(offset, buffered.size)
+        input.reset()
+        input.write(buffered)
     }
     private fun handle(a: Int, b: Int, payload: ByteArray) {
         if (a == 0xffff) when (b) {
