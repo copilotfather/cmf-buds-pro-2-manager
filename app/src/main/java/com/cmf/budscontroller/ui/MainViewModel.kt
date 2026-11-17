@@ -331,6 +331,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         findMyBudsManager.stopAcousticChirp()
     }
 
+    fun clearLastLocation() {
+        findMyBudsManager.clearLastLocation()
+    }
+
     // Audio Tweaks & Equalizer
     fun setChannelBalance(balance: Float) {
         audioEffectsManager.setChannelBalance(balance)

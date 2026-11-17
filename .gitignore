@@ -1,5 +1,6 @@
 # Gradle / build
 .gradle/
+.gradle-user/
 build/
 .kotlin/
 app/build/
@@ -17,8 +18,11 @@ captures/
 
 # Signing
 *.jks
-!app/cmf_release.jks
 *.keystore
+keystore.properties
+.release-signing/
+cmf-buds-deploy-key
+cmf-buds-deploy-key.pub
 
 # APK binaries (ready builds live in GitHub Releases)
 *.apk

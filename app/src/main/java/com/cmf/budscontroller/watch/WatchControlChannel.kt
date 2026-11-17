@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.content.Context
 import android.os.Build
 import android.os.Handler
+import com.cmf.budscontroller.i18n.AppStrings
 import java.util.UUID
 
 @SuppressLint("MissingPermission")
@@ -23,7 +24,14 @@ class WatchControlChannel(private val context: Context, private val handler: Han
     private val timeout = Runnable { fail("Authentication timed out") }
     private val writeTimeout = Runnable { fail("GATT write timed out") }
     private val syncTimeout = Runnable {
-        health.flush(); update(state().copy(syncing = false, message = "Sync timed out; partial data saved"))
+        val saved = health.flush()
+        val message = when {
+            !saved && AppStrings.isRussian -> "Тайм-аут синхронизации; локально сохранить данные не удалось"
+            !saved -> "Sync timed out; local data could not be saved"
+            AppStrings.isRussian -> "Тайм-аут синхронизации; частичные данные сохранены"
+            else -> "Sync timed out; partial data saved"
+        }
+        update(state().copy(syncing = false, message = message))
     }
     private val session: WatchSession = WatchSession(
         send = { enqueue(commandWrite ?: error("Missing command channel"),it) },
@@ -36,8 +44,15 @@ class WatchControlChannel(private val context: Context, private val handler: Han
             if (a == 0xffff && b == 5 && payload.isNotEmpty()) {
                 if (payload[0] == 1.toByte() && state().syncing) fetchSecond()
                 if (payload[0] == 2.toByte() && state().syncing) {
-                    handler.removeCallbacks(syncTimeout); health.flush(true)
-                    update(state().copy(syncing = false, message = "Health sync complete"))
+                    handler.removeCallbacks(syncTimeout)
+                    val saved = health.flush(true)
+                    val message = when {
+                        saved && AppStrings.isRussian -> "Синхронизация здоровья завершена"
+                        saved -> "Health sync complete"
+                        AppStrings.isRussian -> "Не удалось безопасно сохранить данные здоровья"
+                        else -> "Health data could not be saved securely"
+                    }
+                    update(state().copy(syncing = false, message = message))
                 }
             } else if (b == 1 && state().syncing) health.accept(a,payload)
             if (a == 0x65 && b == 3) update(state().copy(notificationAcknowledged = true))

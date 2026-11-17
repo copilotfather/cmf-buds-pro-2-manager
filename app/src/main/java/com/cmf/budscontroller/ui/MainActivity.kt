@@ -73,6 +73,11 @@ import com.cmf.budscontroller.relay.RelayMode
 import com.cmf.budscontroller.tools.DialClickAction
 import com.cmf.budscontroller.tools.DialRotateAction
 import com.cmf.budscontroller.tools.RelaxNoiseType
+import com.cmf.budscontroller.ui.components.CmfVibeSelector
+import com.cmf.budscontroller.ui.components.CmfSpectrumVisualizer
+import com.cmf.budscontroller.ui.theme.CMFTheme
+import com.cmf.budscontroller.ui.theme.VibeColorTheme
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
@@ -101,37 +106,22 @@ class MainActivity : ComponentActivity() {
 
         val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = btManager.adapter
+        val preferences = getSharedPreferences("cmf_prefs", Context.MODE_PRIVATE)
+        val initialVibeTheme = VibeColorTheme.values().firstOrNull {
+            it.name == preferences.getString("vibe_theme", VibeColorTheme.CMF_ORANGE.name)
+        } ?: VibeColorTheme.CMF_ORANGE
 
         setContent {
-            // System-style dark palette inspired by iOS grouped surfaces.
-            val colorScheme = darkColorScheme(
-                primary = Color(0xFF0A84FF),
-                onPrimary = Color(0xFFFFFFFF),
-                primaryContainer = Color(0xFF123052),
-                onPrimaryContainer = Color(0xFFD8EBFF),
-                secondary = Color(0xFF98989D),
-                onSecondary = Color(0xFF000000),
-                background = Color(0xFF000000),
-                onBackground = Color(0xFFF5F5F7),
-                surface = Color(0xFF1C1C1E),
-                onSurface = Color(0xFFF5F5F7),
-                surfaceVariant = Color(0xFF2C2C2E),
-                onSurfaceVariant = Color(0xFF98989D),
-                outline = Color(0xFF38383A),
-                outlineVariant = Color(0xFF2C2C2E)
-            )
-
-            MaterialTheme(
-                colorScheme = colorScheme,
-                shapes = Shapes(
-                    small = RoundedCornerShape(8.dp),
-                    medium = RoundedCornerShape(14.dp),
-                    large = RoundedCornerShape(20.dp)
-                )
-            ) {
+            var vibeTheme by rememberSaveable { mutableStateOf(initialVibeTheme) }
+            CMFTheme(vibeTheme = vibeTheme) {
                 HiFiStudioBudsApp(
                     viewModel = viewModel,
                     bluetoothAdapter = bluetoothAdapter,
+                    vibeTheme = vibeTheme,
+                    onVibeThemeSelected = { selectedTheme ->
+                        vibeTheme = selectedTheme
+                        preferences.edit().putString("vibe_theme", selectedTheme.name).apply()
+                    },
                     onConnectClicked = {
                         checkAndRequestPermissions()
                     }
@@ -196,6 +186,16 @@ enum class StudioTab(val icon: ImageVector) {
             BRIDGE -> AppStrings.tabBridge
             WATCH -> "WATCH"
         }
+
+    val compactLabel: String
+        get() = when (this) {
+            DEVICE -> uiText("БУДЫ", "BUDS")
+            STUDIO -> uiText("ЗВУК", "SOUND")
+            INSIGHTS -> uiText("СТАТ", "STATS")
+            FEATURES -> uiText("ФУНКЦ", "TOOLS")
+            BRIDGE -> uiText("МОСТ", "BRIDGE")
+            WATCH -> uiText("ЧАСЫ", "WATCH")
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -203,6 +203,8 @@ enum class StudioTab(val icon: ImageVector) {
 fun HiFiStudioBudsApp(
     viewModel: MainViewModel,
     bluetoothAdapter: BluetoothAdapter?,
+    vibeTheme: VibeColorTheme,
+    onVibeThemeSelected: (VibeColorTheme) -> Unit,
     onConnectClicked: () -> Unit
 ) {
     val status by viewModel.deviceStatus.collectAsState()
@@ -220,6 +222,7 @@ fun HiFiStudioBudsApp(
     val insights by viewModel.usageInsights.collectAsState()
     val hearingStatus by viewModel.hearingStatus.collectAsState()
     val codecState by viewModel.codecState.collectAsState()
+    val mediaState by viewModel.mediaState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
 
     var currentTab by rememberSaveable { mutableStateOf(StudioTab.DEVICE) }
@@ -251,6 +254,9 @@ fun HiFiStudioBudsApp(
 
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val compactNavigation = configuration.screenWidthDp < 380 || configuration.fontScale > 1.15f
+    val scrollableNavigation = configuration.fontScale > 1.2f
     val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
     Box(
@@ -333,12 +339,26 @@ fun HiFiStudioBudsApp(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(
-                                    imageVector = if (status.isConnected) Icons.Outlined.BluetoothConnected else Icons.AutoMirrored.Outlined.BluetoothSearching,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = if (status.isConnected) colorScheme.primary else colorScheme.onSurfaceVariant
+                                val bluetoothTint by animateColorAsState(
+                                    targetValue = if (status.isConnected) colorScheme.primary else colorScheme.onSurfaceVariant,
+                                    animationSpec = tween(180),
+                                    label = "bluetooth_action_tint"
                                 )
+                                AnimatedContent(
+                                    targetState = status.isConnected,
+                                    transitionSpec = {
+                                        (fadeIn(tween(130)) + scaleIn(tween(150), initialScale = 0.82f)) togetherWith
+                                            (fadeOut(tween(90)) + scaleOut(tween(110), targetScale = 0.82f))
+                                    },
+                                    label = "bluetooth_action_icon"
+                                ) { connected ->
+                                    Icon(
+                                        imageVector = if (connected) Icons.Outlined.BluetoothConnected else Icons.AutoMirrored.Outlined.BluetoothSearching,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = bluetoothTint
+                                    )
+                                }
                                 Text(
                                     text = if (status.isConnected) {
                                         if (status.connectionType.isNotBlank()) status.connectionType else AppStrings.statusConnected
@@ -375,16 +395,23 @@ fun HiFiStudioBudsApp(
                 Column {
                     HorizontalDivider(color = colorScheme.outlineVariant, thickness = 0.5.dp)
                     Row(
-                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 6.dp, vertical = 6.dp),
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 6.dp, vertical = 6.dp)
+                            .then(if (scrollableNavigation) Modifier.horizontalScroll(rememberScrollState()) else Modifier),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         StudioTab.values().forEach { tab ->
                             val isSelected = currentTab == tab
+                            val tabInteraction = remember(tab) { MutableInteractionSource() }
+                            val isTabPressed by tabInteraction.collectIsPressedAsState()
                             val tint = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
                             val iconScale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.12f else 1f,
-                                animationSpec = spring(dampingRatio = 0.48f, stiffness = 520f),
+                                targetValue = when {
+                                    isTabPressed -> 0.92f
+                                    isSelected -> 1.08f
+                                    else -> 1f
+                                },
+                                animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
                                 label = "tab_icon_bounce"
                             )
                             val indicatorWidth by animateDpAsState(
@@ -393,8 +420,12 @@ fun HiFiStudioBudsApp(
                                 label = "tab_indicator_morph"
                             )
                             Column(
-                                modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
-                                    .clickable { currentTab = tab }
+                                modifier = (if (scrollableNavigation) Modifier.width(64.dp) else Modifier.weight(1f))
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable(interactionSource = tabInteraction, indication = null) {
+                                        if (currentTab != tab) haptic.click()
+                                        currentTab = tab
+                                    }
                                     .padding(vertical = 5.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(3.dp)
@@ -407,11 +438,12 @@ fun HiFiStudioBudsApp(
                                     Icon(tab.icon, contentDescription = tab.label, modifier = Modifier.size(21.dp).graphicsLayer { scaleX = iconScale; scaleY = iconScale }, tint = tint)
                                 }
                                 Text(
-                                    text = tab.label,
+                                    text = if (compactNavigation) tab.compactLabel else tab.label,
                                     fontSize = 10.sp,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                                     color = tint,
                                     maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     softWrap = false
                                 )
                                 Box(
@@ -438,13 +470,11 @@ fun HiFiStudioBudsApp(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 targetState = currentTab,
                 transitionSpec = {
-                    val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
-                    (fadeIn(tween(420, easing = FastOutSlowInEasing)) +
-                        slideInHorizontally(tween(520, easing = FastOutSlowInEasing)) { direction * it / 3 } +
-                        scaleIn(spring(dampingRatio = 0.78f, stiffness = 280f), initialScale = 0.94f)) togetherWith
-                        (fadeOut(tween(180, easing = FastOutLinearInEasing)) +
-                            slideOutHorizontally(tween(260, easing = FastOutLinearInEasing)) { -direction * it / 7 } +
-                            scaleOut(tween(220), targetScale = 0.98f))
+                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (fadeIn(tween(240, easing = FastOutSlowInEasing)) +
+                        slideInHorizontally(tween(280, easing = FastOutSlowInEasing)) { direction * it / 14 }) togetherWith
+                        (fadeOut(tween(120, easing = FastOutLinearInEasing)) +
+                            slideOutHorizontally(tween(180, easing = FastOutLinearInEasing)) { -direction * it / 14 })
                 },
                 label = "tab_page_transition"
             ) { tab ->
@@ -508,6 +538,7 @@ fun HiFiStudioBudsApp(
                     // Studio Stage: All 3 devices + Battery
                     StudioProductStage(
                         battery = status.battery,
+                        isConnected = status.isConnected,
                         earbudTimeFormatted = batteryPred.earbudFormattedTime,
                         totalWithCaseFormatted = batteryPred.totalWithCaseFormattedTime
                     )
@@ -544,12 +575,17 @@ fun HiFiStudioBudsApp(
                             ) {
                                 (1..5).forEach { lvl ->
                                     val active = lvl <= status.ultraBassLevel
+                                    val segmentColor by animateColorAsState(
+                                        targetValue = if (active) colorScheme.primary else colorScheme.outlineVariant,
+                                        animationSpec = tween(180),
+                                        label = "bass_level_segment"
+                                    )
                                     Box(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(8.dp)
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(if (active) colorScheme.primary else colorScheme.outlineVariant)
+                                            .background(segmentColor)
                                             .clickable { viewModel.setUltraBass(if (status.ultraBassLevel == lvl) 0 else lvl) }
                                     )
                                 }
@@ -659,6 +695,8 @@ fun HiFiStudioBudsApp(
                         haptic = haptic
                     )
 
+                    CmfSpectrumVisualizer(isPlaying = mediaState.isPlaying)
+
                     // Spatial Audio 360 Card
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -707,7 +745,8 @@ fun HiFiStudioBudsApp(
                             chirpRight = right
                             showFindMyBudsSafetyDialog = true
                         },
-                        onStopChirp = { viewModel.stopChirp() }
+                        onStopChirp = { viewModel.stopChirp() },
+                        onClearLocation = { viewModel.clearLastLocation() }
                     )
                     Text(
                         text = uiText("ИНТЕЛЛЕКТУАЛЬНЫЕ ФУНКЦИИ", "SMART FEATURES"),
@@ -759,6 +798,29 @@ fun HiFiStudioBudsApp(
                         ) {
                             Text(if (waterState.isRunning) (if (AppStrings.isRussian) "Остановить очистку" else "Stop Ejection") else (if (AppStrings.isRussian) "Запустить резонансную очистку (18 сек)" else "Start Resonance Ejection (18s)"), fontSize = 12.sp)
                         }
+                        AnimatedVisibility(
+                            visible = waterState.isRunning,
+                            enter = fadeIn(tween(160)) + expandVertically(tween(220, easing = FastOutSlowInEasing)),
+                            exit = fadeOut(tween(100)) + shrinkVertically(tween(160, easing = FastOutSlowInEasing)),
+                            label = "water_eject_progress_visibility"
+                        ) {
+                            val targetProgress = if (waterState.totalSeconds > 0) {
+                                (waterState.progressSeconds.toFloat() / waterState.totalSeconds).coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
+                            val animatedProgress by animateFloatAsState(
+                                targetValue = targetProgress,
+                                animationSpec = tween(220, easing = FastOutSlowInEasing),
+                                label = "water_eject_progress"
+                            )
+                            LinearProgressIndicator(
+                                progress = { animatedProgress },
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(5.dp).clip(RoundedCornerShape(3.dp)),
+                                color = Color(0xFF0A84FF),
+                                trackColor = colorScheme.surfaceVariant
+                            )
+                        }
                     }
 
                     // Sleep Timer
@@ -803,8 +865,13 @@ fun HiFiStudioBudsApp(
                         if (updateState.hasUpdate) {
                             Spacer(modifier = Modifier.height(10.dp))
                             if (updateState.isDownloading) {
+                                val animatedDownloadFraction by animateFloatAsState(
+                                    targetValue = (updateState.downloadProgress / 100f).coerceIn(0f, 1f),
+                                    animationSpec = tween(220, easing = FastOutSlowInEasing),
+                                    label = "ota_card_progress"
+                                )
                                 LinearProgressIndicator(
-                                    progress = { updateState.downloadProgress / 100f },
+                                    progress = { animatedDownloadFraction },
                                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
                                     color = Color(0xFF0A84FF),
                                     trackColor = colorScheme.surfaceVariant
@@ -840,7 +907,7 @@ fun HiFiStudioBudsApp(
 
                 StudioTab.BRIDGE -> {
                     Text(
-                        text = uiText("БЕСПРОВОДНОЙ АУДИО МОСТ", "WIRELESS AUDIO BRIDGE"),
+                        text = uiText("ЛОКАЛЬНЫЙ USB АУДИО МОСТ", "LOCAL USB AUDIO BRIDGE"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.4.sp,
@@ -852,7 +919,7 @@ fun HiFiStudioBudsApp(
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
                         title = uiText("ТРАНСЛЯЦИЯ ЗВУКА С ПК (LOW LATENCY)", "PC AUDIO STREAM (LOW LATENCY)"),
-                        subtitle = if (relayState.isRunning) "${uiText("Сервер запущен (порт", "Server running (port")} ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}) • ${uiText("Задержка", "Latency")} ~${relayState.latencyEstimateMs} ${uiText("мс", "ms")}" else uiText("Слушайте звук с компьютера на наушниках через Wi-Fi/USB", "Stream PC audio to your earbuds over Wi-Fi or USB"),
+                        subtitle = if (relayState.isRunning) "${uiText("Сервер запущен (порт", "Server running (port")} ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}) • ${uiText("Задержка", "Latency")} ~${relayState.latencyEstimateMs} ${uiText("мс", "ms")}" else uiText("Передавайте звук с компьютера через USB и ADB", "Stream PC audio over USB with ADB forwarding"),
                         icon = Icons.Outlined.Computer,
                         accentColor = colorScheme.primary
                     ) {
@@ -919,8 +986,8 @@ fun HiFiStudioBudsApp(
                                     Text("2", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(uiText("Выберите способ передачи (USB или Wi-Fi)", "Choose a connection method (USB or Wi-Fi)"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text(uiText("• USB (ultra-low latency, ~10–15 ms): connect the cable and run cmf_pc_relay_usb.bat from the PC_Client folder.\n• Wi-Fi: run cmf_pc_relay.bat and enter your phone's local IP address.", "• USB (ultra-low latency, ~10–15 ms): connect the cable and run cmf_pc_relay_usb.bat from the PC_Client folder.\n• Wi-Fi: run cmf_pc_relay.bat and enter your phone's local IP address."), fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
+                                    Text(uiText("Подключите телефон по USB", "Connect your phone over USB"), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text(uiText("Включите USB-отладку, подтвердите компьютер на телефоне и запустите cmf_pc_relay_usb.bat из папки PC_Client. Скрипт настроит ADB-проброс порта ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT}.", "Enable USB debugging, authorize the computer on your phone, then run cmf_pc_relay_usb.bat from PC_Client. The script forwards port ${com.cmf.budscontroller.relay.CmfAudioRelayManager.RELAY_PORT} through ADB."), fontSize = 11.5.sp, color = colorScheme.onSurfaceVariant)
                                 }
                             }
 
@@ -1095,9 +1162,19 @@ fun HiFiStudioBudsApp(
             text = {
                 Column(modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("${uiText("Баланс левого / правого канала", "Left / right balance")} (${String.format("%.1f", audioState.channelBalance)}):", style = MaterialTheme.typography.labelMedium)
+                    var lastBalanceHaptic by remember(audioState.channelBalance) {
+                        mutableIntStateOf(((audioState.channelBalance + 1f) * 10f).roundToInt())
+                    }
                     Slider(
                         value = audioState.channelBalance,
-                        onValueChange = { viewModel.setChannelBalance(it) },
+                        onValueChange = { value ->
+                            val step = ((value + 1f) * 10f).roundToInt()
+                            if (step != lastBalanceHaptic) {
+                                haptic.tick()
+                                lastBalanceHaptic = step
+                            }
+                            viewModel.setChannelBalance(value)
+                        },
                         valueRange = -1.0f..1.0f,
                         steps = 20
                     )
@@ -1105,9 +1182,19 @@ fun HiFiStudioBudsApp(
                     HorizontalDivider(thickness = 0.8.dp)
 
                     Text("${uiText("Усиление громкости", "Loudness boost")} (+${audioState.loudnessBoostMilliBels / 100} dB):", style = MaterialTheme.typography.labelMedium)
+                    var lastLoudnessHaptic by remember(audioState.loudnessBoostMilliBels) {
+                        mutableIntStateOf((audioState.loudnessBoostMilliBels / 100f).roundToInt())
+                    }
                     Slider(
                         value = (audioState.loudnessBoostMilliBels / 100).toFloat(),
-                        onValueChange = { viewModel.setLoudnessGain((it * 100).toInt()) },
+                        onValueChange = { value ->
+                            val step = value.roundToInt()
+                            if (step != lastLoudnessHaptic) {
+                                haptic.tick()
+                                lastLoudnessHaptic = step
+                            }
+                            viewModel.setLoudnessGain((value * 100).toInt())
+                        },
                         valueRange = 0f..12f,
                         steps = 12
                     )
@@ -1288,9 +1375,9 @@ fun HiFiStudioBudsApp(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
-                                        Text(name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
-                                        Text(dev.address, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                        Text(name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(dev.address, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                     Icon(Icons.Outlined.Headphones, contentDescription = null, tint = colorScheme.primary)
                                 }
@@ -1324,6 +1411,11 @@ fun HiFiStudioBudsApp(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    CmfVibeSelector(
+                        activeTheme = vibeTheme,
+                        onThemeSelected = onVibeThemeSelected
+                    )
+
                     // Language Switcher (Instant EN / RU)
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -1546,8 +1638,13 @@ fun HiFiStudioBudsApp(
 
                     if (updateState.isDownloading) {
                         Spacer(modifier = Modifier.height(4.dp))
+                        val animatedDownloadFraction by animateFloatAsState(
+                            targetValue = (updateState.downloadProgress / 100f).coerceIn(0f, 1f),
+                            animationSpec = tween(220, easing = FastOutSlowInEasing),
+                            label = "ota_dialog_progress"
+                        )
                         LinearProgressIndicator(
-                            progress = { updateState.downloadProgress / 100f },
+                            progress = { animatedDownloadFraction },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
@@ -1899,15 +1996,17 @@ fun StudioMasterEqualizerCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 eqState.bandLevels.forEachIndexed { index, levelDb ->
+                    val animatedDb = animatedBands.getOrElse(index) { levelDb.toFloat() }
+                    val displayedDb = animatedDb.roundToInt()
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = if (levelDb > 0) "+$levelDb" else "$levelDb",
+                            text = if (displayedDb > 0) "+$displayedDb" else "$displayedDb",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (levelDb != 0) colorScheme.primary else colorScheme.onSurfaceVariant
+                            color = if (displayedDb != 0) colorScheme.primary else colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(6.dp))
 
@@ -1939,10 +2038,10 @@ fun StudioMasterEqualizerCard(
                                 }
 
                                 Text(
-                                    text = "${levelDb}dB",
+                                    text = "${displayedDb}dB",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (levelDb != 0) colorScheme.primary else colorScheme.onSurfaceVariant
+                                    color = if (displayedDb != 0) colorScheme.primary else colorScheme.onSurfaceVariant
                                 )
 
                                 IconButton(
@@ -2008,13 +2107,22 @@ fun StudioMasterEqualizerCard(
                 eqState.presets.forEach { preset ->
                     val isSel = eqState.activePresetName == preset.name
                     val chipBg by animateColorAsState(if (isSel) colorScheme.primary else Color(0xFF000000), tween(180))
-                    val chipFg = if (isSel) Color.White else Color(0xFF8E8E93)
+                    val chipFg by animateColorAsState(
+                        targetValue = if (isSel) Color.White else Color(0xFF8E8E93),
+                        animationSpec = tween(180),
+                        label = "studio_eq_preset_text"
+                    )
+                    val chipBorder by animateColorAsState(
+                        targetValue = if (isSel) colorScheme.primary else Color(0x15FFFFFF),
+                        animationSpec = tween(180),
+                        label = "studio_eq_preset_border"
+                    )
 
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(chipBg)
-                            .border(1.dp, if (isSel) colorScheme.primary else Color(0x15FFFFFF), RoundedCornerShape(12.dp))
+                            .border(1.dp, chipBorder, RoundedCornerShape(12.dp))
                             .clickable {
                                 effectiveHaptic.click()
                                 onPresetSelected(preset.name)
@@ -2434,6 +2542,7 @@ fun VolumeStatPill(
 @Composable
 fun StudioProductStage(
     battery: BatteryInfo,
+    isConnected: Boolean,
     earbudTimeFormatted: String,
     totalWithCaseFormatted: String
 ) {
@@ -2493,20 +2602,31 @@ fun StudioProductStage(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF000000))
-                    .padding(vertical = 8.dp, horizontal = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = isConnected,
+                enter = fadeIn(tween(180)) +
+                    expandHorizontally(spring(dampingRatio = 0.78f, stiffness = 380f)) +
+                    scaleIn(spring(dampingRatio = 0.76f, stiffness = 420f), initialScale = 0.96f),
+                exit = fadeOut(tween(120)) +
+                    shrinkHorizontally(spring(dampingRatio = 0.86f, stiffness = 500f)) +
+                    scaleOut(tween(150), targetScale = 0.97f),
+                label = "battery_pills_connection"
             ) {
-                MiniBatteryTag(name = "L", percent = battery.leftPercent, isCharging = battery.isLeftCharging)
-                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
-                MiniBatteryTag(name = AppStrings.batteryCase, percent = battery.casePercent, isCharging = battery.isCaseCharging)
-                Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
-                MiniBatteryTag(name = "R", percent = battery.rightPercent, isCharging = battery.isRightCharging)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF000000))
+                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MiniBatteryTag(name = "L", percent = battery.leftPercent, isCharging = battery.isLeftCharging)
+                    Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
+                    MiniBatteryTag(name = AppStrings.batteryCase, percent = battery.casePercent, isCharging = battery.isCaseCharging)
+                    Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFF2C2C2E)))
+                    MiniBatteryTag(name = "R", percent = battery.rightPercent, isCharging = battery.isRightCharging)
+                }
             }
 
             if (earbudTimeFormatted.isNotBlank() && earbudTimeFormatted != "—") {
@@ -2525,14 +2645,23 @@ fun StudioProductStage(
 
 @Composable
 fun MiniBatteryTag(name: String, percent: Int, isCharging: Boolean) {
-    val text = if (percent in 0..100) "$percent%" else "—"
-    val levelColor = when {
+    val animatedPercent by animateIntAsState(
+        targetValue = percent.coerceIn(0, 100),
+        animationSpec = tween(420, easing = FastOutSlowInEasing),
+        label = "battery_percent"
+    )
+    val targetLevelColor = when {
         isCharging -> Color(0xFF00E676)
         percent > 50 -> Color(0xFF00E676)
         percent > 20 -> Color(0xFFFFB300)
         percent >= 0 -> Color(0xFFFF334B)
         else -> Color(0xFF8E95A5)
     }
+    val levelColor by animateColorAsState(
+        targetValue = targetLevelColor,
+        animationSpec = tween(260),
+        label = "battery_level_color"
+    )
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -2562,10 +2691,10 @@ fun MiniBatteryTag(name: String, percent: Int, isCharging: Boolean) {
             letterSpacing = 0.5.sp
         )
         Text(
-            text = text,
+            text = if (percent in 0..100) "$animatedPercent%" else "—",
             fontSize = 13.5.sp,
             fontWeight = FontWeight.Black,
-            color = if (isCharging) Color(0xFF00E676) else Color.White
+            color = if (isCharging) levelColor else Color.White
         )
     }
 }
@@ -2600,16 +2729,31 @@ fun StudioNoiseControlBar(
                     letterSpacing = 1.3.sp,
                     color = colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = when (currentMode) {
-                        AncMode.OFF -> AppStrings.ancOff
-                        AncMode.TRANSPARENCY -> AppStrings.ancTransparency
-                        AncMode.NOISE_CANCELLATION -> "${AppStrings.ancCancellation} (${currentLevel.title})"
-                    },
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (currentMode != AncMode.OFF) colorScheme.primary else colorScheme.onSurfaceVariant
+                val modeLabel = when (currentMode) {
+                    AncMode.OFF -> AppStrings.ancOff
+                    AncMode.TRANSPARENCY -> AppStrings.ancTransparency
+                    AncMode.NOISE_CANCELLATION -> "${AppStrings.ancCancellation} (${currentLevel.title})"
+                }
+                val modeLabelColor by animateColorAsState(
+                    targetValue = if (currentMode != AncMode.OFF) colorScheme.primary else colorScheme.onSurfaceVariant,
+                    animationSpec = tween(180),
+                    label = "noise_mode_label_color"
                 )
+                AnimatedContent(
+                    targetState = modeLabel,
+                    transitionSpec = {
+                        (fadeIn(tween(140)) + slideInVertically(tween(160)) { it / 3 }) togetherWith
+                            (fadeOut(tween(100)) + slideOutVertically(tween(120)) { -it / 3 })
+                    },
+                    label = "noise_mode_label"
+                ) { label ->
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = modeLabelColor
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -2740,14 +2884,23 @@ fun StudioNoiseControlBar(
                         AncLevel.values().forEach { lvl ->
                             val isSel = currentLevel == lvl
                             val chipBg by animateColorAsState(if (isSel) colorScheme.primary else colorScheme.surface, tween(180))
-                            val chipFg = if (isSel) Color.White else colorScheme.onSurfaceVariant
+                            val chipFg by animateColorAsState(
+                                targetValue = if (isSel) Color.White else colorScheme.onSurfaceVariant,
+                                animationSpec = tween(180),
+                                label = "anc_level_text"
+                            )
+                            val chipBorder by animateColorAsState(
+                                targetValue = if (isSel) colorScheme.primary else colorScheme.outlineVariant,
+                                animationSpec = tween(180),
+                                label = "anc_level_border"
+                            )
 
                             Box(
                                 modifier = Modifier
                                     .weight(if (lvl == AncLevel.ADAPTIVE) 1.22f else 1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(chipBg)
-                                    .border(1.dp, if (isSel) colorScheme.primary else colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                                    .border(1.dp, chipBorder, RoundedCornerShape(12.dp))
                                     .clickable {
                                         haptic.tick()
                                         onLevelSelected(lvl)
@@ -2822,27 +2975,38 @@ fun BentoCard(
     val colorScheme = MaterialTheme.colorScheme
     val entrySequence = LocalEntryStagger.current
     val entryDelay = remember(entrySequence) { entrySequence?.nextDelayMillis() ?: 0 }
+    val animatedAccent by animateColorAsState(
+        targetValue = accentColor,
+        animationSpec = tween(220),
+        label = "bento_card_accent"
+    )
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.955f else 1f,
-        animationSpec = spring(dampingRatio = 0.52f, stiffness = 680f),
+        targetValue = if (isPressed) 0.985f else 1f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
         label = "card_press_scale"
+    )
+    val cardOutline by animateColorAsState(
+        targetValue = if (isPressed) accentColor.copy(alpha = 0.34f) else colorScheme.outlineVariant.copy(alpha = 0.38f),
+        animationSpec = tween(180, easing = FastOutSlowInEasing),
+        label = "card_press_outline"
     )
 
     AnimatedVisibility(
         visible = true,
         modifier = modifier,
-        enter = fadeIn(tween(420, delayMillis = entryDelay, easing = FastOutSlowInEasing)) +
-            slideInVertically(tween(520, delayMillis = entryDelay, easing = FastOutSlowInEasing)) { it / 5 } +
-            scaleIn(spring(dampingRatio = 0.72f, stiffness = 300f), initialScale = 0.88f),
+        enter = fadeIn(tween(300, delayMillis = entryDelay, easing = FastOutSlowInEasing)) +
+            slideInVertically(tween(340, delayMillis = entryDelay, easing = FastOutSlowInEasing)) { it / 12 } +
+            scaleIn(tween(300, delayMillis = entryDelay, easing = FastOutSlowInEasing), initialScale = 0.97f),
         label = "card_cascade_entry"
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(spring(dampingRatio = 0.78f, stiffness = 360f))
+                .animateContentSize(spring(dampingRatio = 0.82f, stiffness = 420f))
                 .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+                .border(1.dp, cardOutline, RoundedCornerShape(20.dp))
                 .then(if (onClick != null) Modifier.clickable(interactionSource = interactionSource, indication = null) { onClick() } else Modifier),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
@@ -2869,7 +3033,7 @@ fun BentoCard(
                             imageVector = icon,
                             contentDescription = null,
                             modifier = Modifier.size(19.dp),
-                            tint = accentColor
+                            tint = animatedAccent
                         )
                     }
 
@@ -2895,15 +3059,38 @@ fun BentoCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Text(
-                    text = subtitle,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp
-                )
+                if (subtitle.length <= 40) {
+                    AnimatedContent(
+                        targetState = subtitle,
+                        transitionSpec = {
+                            (fadeIn(tween(150, easing = FastOutSlowInEasing)) +
+                                slideInVertically(tween(180, easing = FastOutSlowInEasing)) { it / 4 }) togetherWith
+                                (fadeOut(tween(100, easing = FastOutLinearInEasing)) +
+                                    slideOutVertically(tween(130, easing = FastOutLinearInEasing)) { -it / 4 })
+                        },
+                        label = "bento_short_status"
+                    ) { statusText ->
+                        Text(
+                            text = statusText,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 18.sp
+                        )
+                    }
+                } else {
+                    Text(
+                        text = subtitle,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 18.sp
+                    )
+                }
 
                 if (extraContent != null) {
                     extraContent()

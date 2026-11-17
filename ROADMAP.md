@@ -21,8 +21,10 @@
 
 ## Reliability and security
 
-- [ ] Authenticate LAN audio-relay clients and review automation-receiver access.
-- [ ] Review release signing and move private production credentials outside the source tree.
+- [x] Bind the audio relay to loopback and restrict the automation receiver to same-signature callers.
+- [x] Remove the release keystore from the working tree; configure signing through ignored local properties or CI environment variables.
+- [x] Encrypt locally stored Watch health records with Android Keystore and exclude them from device backup/transfer.
+- [ ] Rotate the exposed signing key and remove it from Git history before the next trusted release.
 - [ ] Add long-lived background-session handling with explicit user controls.
 - [ ] Persist watch authorization securely after hardware validation.
 

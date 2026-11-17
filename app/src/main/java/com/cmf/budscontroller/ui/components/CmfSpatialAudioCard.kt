@@ -1,10 +1,13 @@
 package com.cmf.budscontroller.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -93,16 +97,21 @@ fun CmfSpatialAudioCard(
                 .border(1.dp, CmfBorder, RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "spatial_pulse")
-            val waveRadius by infiniteTransition.animateFloat(
-                initialValue = 0.2f,
-                targetValue = 0.95f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1800, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "waveRadius"
-            )
+            val waveRadius = if (spatialState.mode != SpatialMode.OFF) {
+                val infiniteTransition = rememberInfiniteTransition(label = "spatial_pulse")
+                val radius by infiniteTransition.animateFloat(
+                    initialValue = 0.2f,
+                    targetValue = 0.95f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1800, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "waveRadius"
+                )
+                radius
+            } else {
+                1f
+            }
 
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
@@ -184,12 +193,30 @@ fun CmfSpatialAudioCard(
         ) {
             SpatialMode.values().forEach { mode ->
                 val isSelected = spatialState.mode == mode
+                val modeInteraction = androidx.compose.runtime.remember(mode) { MutableInteractionSource() }
+                val modePressed by modeInteraction.collectIsPressedAsState()
+                val modeScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (modePressed) 0.96f else 1f,
+                    animationSpec = spring(dampingRatio = 0.74f, stiffness = 560f),
+                    label = "spatial_mode_press"
+                )
+                val modeBackground by animateColorAsState(
+                    targetValue = if (isSelected) vibe.accent else Color.Transparent,
+                    animationSpec = tween(200),
+                    label = "spatial_mode_background"
+                )
+                val modeTextColor by animateColorAsState(
+                    targetValue = if (isSelected) CmfBlack else CmfTextSecondary,
+                    animationSpec = tween(200),
+                    label = "spatial_mode_text"
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .scale(modeScale)
                         .clip(RoundedCornerShape(13.dp))
-                        .background(if (isSelected) vibe.accent else Color.Transparent)
-                        .clickable { onModeSelected(mode) }
+                        .background(modeBackground)
+                        .clickable(interactionSource = modeInteraction, indication = null) { onModeSelected(mode) }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -197,7 +224,7 @@ fun CmfSpatialAudioCard(
                         text = mode.title,
                         fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-                        color = if (isSelected) CmfBlack else CmfTextSecondary,
+                        color = modeTextColor,
                         fontFamily = FontFamily.Default
                     )
                 }

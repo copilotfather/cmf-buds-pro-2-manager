@@ -39,7 +39,7 @@ fun CmfDotMatrixHud(
     val vibe = LocalVibeTheme.current
     var activeMode by remember { mutableStateOf(DotMatrixMode.SPECTRUM) }
 
-    // Only animate when media is actively playing or in marquee mode (prevents background lag)
+    // Keep the spectrum static on standby; marquee remains animated by design.
     val shouldAnimate = mediaState.isPlaying || activeMode == DotMatrixMode.MARQUEE
     val time = if (shouldAnimate) {
         val infiniteTransition = rememberInfiniteTransition(label = "matrix_anim")
@@ -153,7 +153,7 @@ fun CmfDotMatrixHud(
                                 val wave2 = sin(time * 0.8f + c * 0.2f) * 0.5f + 0.5f
                                 ((wave1 * 0.6f + wave2 * 0.4f) * rows).toInt().coerceIn(1, rows)
                             } else {
-                                // Standby gentle breathing wave
+                                // Static standby wave
                                 (sin(time * 0.2f + c * 0.15f) * 1.5f + 2f).toInt().coerceIn(1, 3)
                             }
                         }

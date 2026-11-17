@@ -1,16 +1,28 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +43,11 @@ fun CmfAncSection(
 ) {
     val vibe = LocalVibeTheme.current
     val dimens = LocalCmfDimens.current
+    val modeTint by animateColorAsState(
+        targetValue = if (currentMode == AncMode.OFF) CmfTextSecondary else vibe.accent,
+        animationSpec = tween(180),
+        label = "anc_current_mode_tint"
+    )
 
     Column(
         modifier = modifier
@@ -52,13 +69,22 @@ fun CmfAncSection(
                 color = CmfTextPrimary,
                 fontFamily = FontFamily.Default
             )
-            Text(
-                text = currentMode.title,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (currentMode == AncMode.OFF) CmfTextSecondary else vibe.accent,
-                fontFamily = FontFamily.Default
-            )
+            AnimatedContent(
+                targetState = currentMode.title,
+                transitionSpec = {
+                    (fadeIn(tween(150)) + slideInVertically(tween(170)) { it / 3 }) togetherWith
+                        (fadeOut(tween(100)) + slideOutVertically(tween(120)) { -it / 3 })
+                },
+                label = "anc_current_mode"
+            ) { modeTitle ->
+                Text(
+                    text = modeTitle,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = modeTint,
+                    fontFamily = FontFamily.Default
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -74,12 +100,30 @@ fun CmfAncSection(
         ) {
             AncMode.values().forEach { mode ->
                 val isSelected = currentMode == mode
+                val interaction = androidx.compose.runtime.remember(mode) { MutableInteractionSource() }
+                val isPressed by interaction.collectIsPressedAsState()
+                val pressScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (isPressed) 0.96f else 1f,
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 600f),
+                    label = "anc_mode_press"
+                )
+                val modeBackground by animateColorAsState(
+                    targetValue = if (isSelected) Color(0x60FFFFFF) else Color.Transparent,
+                    animationSpec = tween(180),
+                    label = "anc_mode_background"
+                )
+                val modeTextColor by animateColorAsState(
+                    targetValue = if (isSelected) CmfTextPrimary else CmfTextSecondary,
+                    animationSpec = tween(180),
+                    label = "anc_mode_text"
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(11.dp))
-                        .background(if (isSelected) Color(0x60FFFFFF) else Color.Transparent)
-                        .clickable { onModeSelected(mode) }
+                        .background(modeBackground)
+                        .scale(pressScale)
+                        .clickable(interactionSource = interaction, indication = null) { onModeSelected(mode) }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -87,7 +131,7 @@ fun CmfAncSection(
                         text = mode.title,
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) CmfTextPrimary else CmfTextSecondary,
+                        color = modeTextColor,
                         fontFamily = FontFamily.Default
                     )
                 }
@@ -112,17 +156,40 @@ fun CmfAncSection(
                 ) {
                     AncLevel.values().forEach { level ->
                         val isLevelSelected = currentLevel == level
+                        val interaction = androidx.compose.runtime.remember(level) { MutableInteractionSource() }
+                        val isPressed by interaction.collectIsPressedAsState()
+                        val pressScale by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = if (isPressed) 0.96f else 1f,
+                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 600f),
+                            label = "anc_level_press"
+                        )
+                        val levelBorder by animateColorAsState(
+                            targetValue = if (isLevelSelected) vibe.accent else CmfBorder,
+                            animationSpec = tween(180),
+                            label = "anc_level_border"
+                        )
+                        val levelBackground by animateColorAsState(
+                            targetValue = if (isLevelSelected) vibe.accent.copy(alpha = 0.2f) else CmfSurfaceSubtle,
+                            animationSpec = tween(180),
+                            label = "anc_level_background"
+                        )
+                        val levelTextColor by animateColorAsState(
+                            targetValue = if (isLevelSelected) vibe.accent else CmfTextSecondary,
+                            animationSpec = tween(180),
+                            label = "anc_level_text"
+                        )
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(10.dp))
                                 .border(
                                     0.8.dp,
-                                    if (isLevelSelected) vibe.accent else CmfBorder,
+                                    levelBorder,
                                     RoundedCornerShape(10.dp)
                                 )
-                                .background(if (isLevelSelected) vibe.accent.copy(alpha = 0.2f) else CmfSurfaceSubtle)
-                                .clickable { onLevelSelected(level) }
+                                .background(levelBackground)
+                                .scale(pressScale)
+                                .clickable(interactionSource = interaction, indication = null) { onLevelSelected(level) }
                                 .padding(vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -130,7 +197,7 @@ fun CmfAncSection(
                                 text = level.title,
                                 fontSize = 11.sp,
                                 fontWeight = if (isLevelSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isLevelSelected) vibe.accent else CmfTextSecondary,
+                                color = levelTextColor,
                                 fontFamily = FontFamily.Default
                             )
                         }

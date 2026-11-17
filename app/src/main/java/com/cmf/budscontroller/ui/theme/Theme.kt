@@ -1,5 +1,7 @@
 package com.cmf.budscontroller.ui.theme
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -7,6 +9,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
@@ -41,6 +44,11 @@ fun CMFTheme(
     vibeTheme: VibeColorTheme = VibeColorTheme.CMF_ORANGE,
     content: @Composable () -> Unit
 ) {
+    val primaryColor by animateColorAsState(
+        targetValue = vibeTheme.accent,
+        animationSpec = tween(260),
+        label = "theme_primary_color"
+    )
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp
     val screenHeight = configuration.screenHeightDp
@@ -79,7 +87,9 @@ fun CMFTheme(
     }
 
     val colorScheme = darkColorScheme(
-        primary = Color(0xFF0A84FF),
+        primary = primaryColor,
+        primaryContainer = primaryColor.copy(alpha = 0.22f),
+        onPrimaryContainer = Color.White,
         secondary = Color(0xFF98989D),
         background = CmfBlack,
         surface = CmfSurface,

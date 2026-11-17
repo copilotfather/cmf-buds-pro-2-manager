@@ -49,6 +49,8 @@ class FindMyBudsManager(private val context: Context) {
     private var chirpJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val chirpLock = Any()
+    private var chirpGeneration = 0L
     private var savedVolume: Int? = null
 
     /**
@@ -74,18 +76,22 @@ class FindMyBudsManager(private val context: Context) {
      */
     fun startAcousticChirp(left: Boolean = true, right: Boolean = true) {
         if (!left && !right) return
-        if (_isChirping.value) return
 
         val btDevice = getBluetoothAudioDevice()
         // CRITICAL: If Bluetooth earbuds are not connected as audio output, NEVER play through phone speaker!
         if (btDevice == null) {
-            _isChirping.value = false
+            stopAcousticChirp()
             return
         }
 
-        _isChirping.value = true
+        val sessionId = synchronized(chirpLock) {
+            if (_isChirping.value) return
+            _isChirping.value = true
+            ++chirpGeneration
+        }
 
-        chirpJob = scope.launch {
+        val job = scope.launch {
+            var sessionVolume: Int? = null
             val sampleRate = 44100
             val durationSeconds = 0.40
             val numSamples = (durationSeconds * sampleRate).toInt()
@@ -111,7 +117,15 @@ class FindMyBudsManager(private val context: Context) {
             var track: AudioTrack? = null
             try {
                 // Save original media volume
-                savedVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                val previousVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                val ownsSession = synchronized(chirpLock) {
+                    if (sessionId != chirpGeneration) false else {
+                        sessionVolume = previousVolume
+                        savedVolume = previousVolume
+                        true
+                    }
+                }
+                if (!ownsSession) return@launch
                 val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
                 // Start at gentle volume (25%) so user isn't blasted
@@ -157,7 +171,13 @@ class FindMyBudsManager(private val context: Context) {
                         rampVolumes.last()
                     }
                     try {
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
+                        val ownsSession = synchronized(chirpLock) {
+                            if (sessionId != chirpGeneration) false else {
+                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, 0)
+                                true
+                            }
+                        }
+                        if (!ownsSession) break
                     } catch (_: Exception) {}
 
                     // Safety check: if routing falls back to internal speaker, abort immediately!
@@ -178,28 +198,41 @@ class FindMyBudsManager(private val context: Context) {
                     track?.release()
                 } catch (_: Exception) {}
 
-                // Guaranteed restoration of previous media volume
-                savedVolume?.let { prevVol ->
-                    try {
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, prevVol, 0)
-                    } catch (_: Exception) {}
-                    savedVolume = null
+                synchronized(chirpLock) {
+                    if (sessionId == chirpGeneration) {
+                        sessionVolume?.let { prevVol ->
+                            try {
+                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, prevVol, 0)
+                            } catch (_: Exception) {}
+                        }
+                        savedVolume = null
+                        chirpJob = null
+                        _isChirping.value = false
+                    }
                 }
-                _isChirping.value = false
             }
+        }
+        synchronized(chirpLock) {
+            if (sessionId == chirpGeneration && _isChirping.value) chirpJob = job else job.cancel()
         }
     }
 
     fun stopAcousticChirp() {
-        chirpJob?.cancel()
-        chirpJob = null
-        savedVolume?.let { prevVol ->
+        val (job, previousVolume) = synchronized(chirpLock) {
+            ++chirpGeneration
+            val activeJob = chirpJob
+            val volume = savedVolume
+            chirpJob = null
+            savedVolume = null
+            _isChirping.value = false
+            activeJob to volume
+        }
+        job?.cancel()
+        previousVolume?.let { prevVol ->
             try {
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, prevVol, 0)
             } catch (_: Exception) {}
-            savedVolume = null
         }
-        _isChirping.value = false
     }
 
     @SuppressLint("MissingPermission")
@@ -224,5 +257,10 @@ class FindMyBudsManager(private val context: Context) {
                     .putLong("lon", java.lang.Double.doubleToLongBits(it.longitude)).putLong("time", now).apply()
             }
         } catch (_: Exception) {}
+    }
+
+    fun clearLastLocation() {
+        locationPrefs.edit().remove("lat").remove("lon").remove("time").apply()
+        _lastLocation.value = null
     }
 }

@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.cmf.budscontroller"
     compileSdk = 35
@@ -12,33 +14,36 @@ android {
         applicationId = "com.cmf.budscontroller"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2521
-        versionName = "2.4.3"
+        versionCode = 2522
+        versionName = "2.4.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        create("release") {
-            val keyFile = file("cmf_release.jks")
-            if (keyFile.exists()) {
-                storeFile = keyFile
-                storePassword = "cmfbuds2026"
-                keyAlias = "cmfkey"
-                keyPassword = "cmfbuds2026"
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
-                enableV4Signing = true
-            }
-        }
+    val signingProperties = Properties().apply {
+        val propertiesFile = rootProject.file("keystore.properties")
+        if (propertiesFile.exists()) propertiesFile.inputStream().use { load(it) }
     }
+    val releaseKeyFile = signingProperties.getProperty("storeFile")
+        ?.let { rootProject.file(it) }
+        ?: System.getenv("CMF_RELEASE_KEYSTORE")?.let { file(it) }
 
     buildTypes {
         release {
-            val keyFile = file("cmf_release.jks")
-            if (keyFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+            if (releaseKeyFile?.exists() == true) {
+                signingConfig = signingConfigs.create("release") {
+                    storeFile = releaseKeyFile
+                    storePassword = signingProperties.getProperty("storePassword")
+                        ?: System.getenv("CMF_RELEASE_STORE_PASSWORD")
+                    keyAlias = signingProperties.getProperty("keyAlias")
+                        ?: System.getenv("CMF_RELEASE_KEY_ALIAS")
+                    keyPassword = signingProperties.getProperty("keyPassword")
+                        ?: System.getenv("CMF_RELEASE_KEY_PASSWORD")
+                    enableV1Signing = true
+                    enableV2Signing = true
+                    enableV3Signing = true
+                    enableV4Signing = true
+                }
             }
             isMinifyEnabled = false
             isShrinkResources = false
@@ -75,6 +80,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))

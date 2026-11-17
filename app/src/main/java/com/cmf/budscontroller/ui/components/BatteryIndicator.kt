@@ -1,6 +1,13 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -126,7 +133,12 @@ private fun RowScope.AppleBatteryCard(
 ) {
     val vibe = LocalVibeTheme.current
     val hasCharge = percent in 0..100
-    val displayPercent = if (hasCharge) "$percent%" else "—"
+    val animatedPercent by animateIntAsState(
+        targetValue = percent.coerceIn(0, 100),
+        animationSpec = tween(420, easing = FastOutSlowInEasing),
+        label = "battery_card_percent"
+    )
+    val displayPercent = if (hasCharge) "$animatedPercent%" else "—"
 
     val batteryColor = when {
         isCharging -> CmfGreen
@@ -134,6 +146,11 @@ private fun RowScope.AppleBatteryCard(
         hasCharge -> vibe.accent
         else -> CmfTextSecondary
     }
+    val animatedBatteryColor by animateColorAsState(
+        targetValue = batteryColor,
+        animationSpec = tween(240),
+        label = "battery_card_color"
+    )
 
     Column(
         modifier = Modifier
@@ -149,23 +166,32 @@ private fun RowScope.AppleBatteryCard(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(batteryColor.copy(alpha = 0.15f))
-                .border(1.5.dp, batteryColor.copy(alpha = 0.6f), CircleShape),
+                .background(animatedBatteryColor.copy(alpha = 0.15f))
+                .border(1.5.dp, animatedBatteryColor.copy(alpha = 0.6f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (isCharging) {
-                CmfIconBolt(
-                    modifier = Modifier.size(18.dp),
-                    tint = CmfGreen
-                )
-            } else {
-                Text(
-                    text = iconType,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = batteryColor,
-                    fontFamily = FontFamily.Default
-                )
+            AnimatedContent(
+                targetState = isCharging,
+                transitionSpec = {
+                    (fadeIn(tween(120)) + scaleIn(tween(160), initialScale = 0.78f)) togetherWith
+                        (fadeOut(tween(100)) + scaleOut(tween(120), targetScale = 0.78f))
+                },
+                label = "battery_charging_icon"
+            ) { charging ->
+                if (charging) {
+                    CmfIconBolt(
+                        modifier = Modifier.size(18.dp),
+                        tint = CmfGreen
+                    )
+                } else {
+                    Text(
+                        text = iconType,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = animatedBatteryColor,
+                        fontFamily = FontFamily.Default
+                    )
+                }
             }
         }
 

@@ -1,9 +1,17 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
@@ -164,7 +173,12 @@ fun CmfMusicPlayerCard(
         if (mediaState.durationMs > 0) {
             Spacer(modifier = Modifier.height(14.dp))
 
-            val progressFraction = (mediaState.positionMs.toFloat() / mediaState.durationMs.toFloat()).coerceIn(0f, 1f)
+            val targetProgress = (mediaState.positionMs.toFloat() / mediaState.durationMs.toFloat()).coerceIn(0f, 1f)
+            val progressFraction by animateFloatAsState(
+                targetValue = targetProgress,
+                animationSpec = tween(900, easing = LinearEasing),
+                label = "media_progress"
+            )
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 LinearProgressIndicator(
@@ -214,7 +228,7 @@ fun CmfMusicPlayerCard(
                     .clip(CircleShape)
                     .background(CmfSurfaceSubtle)
                     .border(1.2.dp, CmfBorder, CircleShape)
-                    .clickable { onPrevious() },
+                    .scalePressFeedback("previous_track_press", onPrevious),
                 contentAlignment = Alignment.Center
             ) {
                 CmfIconSkipPrevious(
@@ -229,19 +243,28 @@ fun CmfMusicPlayerCard(
                     .size(dimens.playButtonSize)
                     .clip(CircleShape)
                     .background(vibe.accent)
-                    .clickable { onTogglePlayPause() },
+                    .scalePressFeedback("play_pause_press", onTogglePlayPause),
                 contentAlignment = Alignment.Center
             ) {
-                if (mediaState.isPlaying) {
-                    CmfIconPause(
-                        modifier = Modifier.size(20.dp),
-                        tint = CmfBlack
-                    )
-                } else {
-                    CmfIconPlay(
-                        modifier = Modifier.size(20.dp),
-                        tint = CmfBlack
-                    )
+                AnimatedContent(
+                    targetState = mediaState.isPlaying,
+                    transitionSpec = {
+                        (fadeIn(tween(130)) + scaleIn(tween(160), initialScale = 0.78f)) togetherWith
+                            (fadeOut(tween(100)) + scaleOut(tween(120), targetScale = 0.78f))
+                    },
+                    label = "play_pause_icon"
+                ) { isPlaying ->
+                    if (isPlaying) {
+                        CmfIconPause(
+                            modifier = Modifier.size(20.dp),
+                            tint = CmfBlack
+                        )
+                    } else {
+                        CmfIconPlay(
+                            modifier = Modifier.size(20.dp),
+                            tint = CmfBlack
+                        )
+                    }
                 }
             }
 
@@ -252,7 +275,7 @@ fun CmfMusicPlayerCard(
                     .clip(CircleShape)
                     .background(CmfSurfaceSubtle)
                     .border(1.2.dp, CmfBorder, CircleShape)
-                    .clickable { onNext() },
+                    .scalePressFeedback("next_track_press", onNext),
                 contentAlignment = Alignment.Center
             ) {
                 CmfIconSkipNext(
@@ -373,44 +396,36 @@ private fun CmfEqualizerBars(
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "eq_bars")
-
-    val h1 by infiniteTransition.animateFloat(
-        initialValue = 6f,
-        targetValue = 24f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(380, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "h1"
-    )
-    val h2 by infiniteTransition.animateFloat(
-        initialValue = 18f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(450, easing = LinearOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "h2"
-    )
-    val h3 by infiniteTransition.animateFloat(
-        initialValue = 10f,
-        targetValue = 26f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(320, easing = FastOutLinearInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "h3"
-    )
-    val h4 by infiniteTransition.animateFloat(
-        initialValue = 22f,
-        targetValue = 12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(520, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "h4"
-    )
+    val bars = if (isPlaying) {
+        val infiniteTransition = rememberInfiniteTransition(label = "eq_bars")
+        val h1 by infiniteTransition.animateFloat(
+            initialValue = 6f,
+            targetValue = 24f,
+            animationSpec = infiniteRepeatable(tween(380, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+            label = "h1"
+        )
+        val h2 by infiniteTransition.animateFloat(
+            initialValue = 18f,
+            targetValue = 8f,
+            animationSpec = infiniteRepeatable(tween(450, easing = LinearOutSlowInEasing), RepeatMode.Reverse),
+            label = "h2"
+        )
+        val h3 by infiniteTransition.animateFloat(
+            initialValue = 10f,
+            targetValue = 26f,
+            animationSpec = infiniteRepeatable(tween(320, easing = FastOutLinearInEasing), RepeatMode.Reverse),
+            label = "h3"
+        )
+        val h4 by infiniteTransition.animateFloat(
+            initialValue = 22f,
+            targetValue = 12f,
+            animationSpec = infiniteRepeatable(tween(520, easing = LinearEasing), RepeatMode.Reverse),
+            label = "h4"
+        )
+        listOf(h1.dp, h2.dp, h3.dp, h4.dp)
+    } else {
+        listOf(4.dp, 4.dp, 4.dp, 4.dp)
+    }
 
     Row(
         modifier = modifier
@@ -419,18 +434,35 @@ private fun CmfEqualizerBars(
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalAlignment = Alignment.Bottom
     ) {
-        val bars = listOf(h1, h2, h3, h4)
-        bars.forEach { animatedHeight ->
-            val actualHeight = if (isPlaying) animatedHeight.dp else 4.dp
+        bars.forEach { actualHeight ->
+            val animatedHeight by animateDpAsState(
+                targetValue = actualHeight,
+                animationSpec = tween(180, easing = FastOutSlowInEasing),
+                label = "eq_bar_height"
+            )
             Box(
                 modifier = Modifier
                     .width(4.dp)
-                    .height(actualHeight)
+                    .height(animatedHeight)
                     .clip(RoundedCornerShape(2.dp))
                     .background(if (isPlaying) accentColor else CmfBorder)
             )
         }
     }
+}
+
+@Composable
+private fun Modifier.scalePressFeedback(label: String, onClick: () -> Unit): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.9f else 1f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 560f),
+        label = label
+    )
+    return this
+        .scale(scale)
+        .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
 }
 
 private fun formatDuration(ms: Long): String {

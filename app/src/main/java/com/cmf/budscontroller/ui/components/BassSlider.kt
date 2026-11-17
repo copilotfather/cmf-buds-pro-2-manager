@@ -1,15 +1,21 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,6 +70,28 @@ fun CmfUltraBassSection(
         ) {
             (0..5).forEach { level ->
                 val isSelected = currentLevel == level
+                val interaction = androidx.compose.runtime.remember(level) { MutableInteractionSource() }
+                val isPressed by interaction.collectIsPressedAsState()
+                val pressScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (isPressed) 0.92f else 1f,
+                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 600f),
+                    label = "bass_level_press"
+                )
+                val levelBorder by animateColorAsState(
+                    targetValue = if (isSelected) vibe.accent else CmfBorder,
+                    animationSpec = tween(180),
+                    label = "bass_level_border"
+                )
+                val levelBackground by animateColorAsState(
+                    targetValue = if (isSelected) vibe.accent else CmfSurfaceSubtle,
+                    animationSpec = tween(180),
+                    label = "bass_level_background"
+                )
+                val levelText by animateColorAsState(
+                    targetValue = if (isSelected) CmfTextPrimary else CmfTextSecondary,
+                    animationSpec = tween(180),
+                    label = "bass_level_text"
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -71,18 +99,19 @@ fun CmfUltraBassSection(
                         .clip(RoundedCornerShape(12.dp))
                         .border(
                             0.8.dp,
-                            if (isSelected) vibe.accent else CmfBorder,
+                            levelBorder,
                             RoundedCornerShape(12.dp)
                         )
-                        .background(if (isSelected) vibe.accent else CmfSurfaceSubtle)
-                        .clickable { onLevelChanged(level) },
+                        .background(levelBackground)
+                        .scale(pressScale)
+                        .clickable(interactionSource = interaction, indication = null) { onLevelChanged(level) },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "$level",
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) CmfTextPrimary else CmfTextSecondary,
+                        color = levelText,
                         fontFamily = FontFamily.Default
                     )
                 }

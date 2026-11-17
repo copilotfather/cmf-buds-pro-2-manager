@@ -1,5 +1,10 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,6 +18,7 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +40,11 @@ fun HearingHealthCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val dosePercent = hearingStatus.dailySafeDosePercent
+    val animatedDosePercent by animateIntAsState(
+        targetValue = dosePercent,
+        animationSpec = tween(320, easing = FastOutSlowInEasing),
+        label = "hearing_dose_percent"
+    )
     val isOverdose = dosePercent > 100
     val doseColor = when {
         isOverdose -> Color(0xFFFF334B)
@@ -105,7 +116,7 @@ fun HearingHealthCard(
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = "$dosePercent% ${AppStrings.doseLabel}",
+                        text = "$animatedDosePercent% ${AppStrings.doseLabel}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
                         color = doseColor
@@ -116,7 +127,16 @@ fun HearingHealthCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Dual Glow Progress Track
-            val doseFraction = (dosePercent / 100f).coerceIn(0f, 1f)
+            val doseFraction by animateFloatAsState(
+                targetValue = (dosePercent / 100f).coerceIn(0f, 1f),
+                animationSpec = tween(420, easing = FastOutSlowInEasing),
+                label = "hearing_dose_progress"
+            )
+            val animatedDoseColor by animateColorAsState(
+                targetValue = doseColor,
+                animationSpec = tween(260),
+                label = "hearing_dose_color"
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,7 +154,7 @@ fun HearingHealthCard(
                             Brush.horizontalGradient(
                                 listOf(
                                     Color(0xFF00E676),
-                                    if (isOverdose) Color(0xFFFF334B) else doseColor
+                                    if (isOverdose) Color(0xFFFF334B) else animatedDoseColor
                                 )
                             )
                         )

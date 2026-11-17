@@ -5,15 +5,19 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -38,6 +42,18 @@ fun CmfAudioRelayCard(
     val vibe = LocalVibeTheme.current
 
     val dimens = LocalCmfDimens.current
+    val relayInteraction = remember { MutableInteractionSource() }
+    val relayPressed by relayInteraction.collectIsPressedAsState()
+    val relayScale by animateFloatAsState(
+        targetValue = if (relayPressed) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = 0.76f, stiffness = 520f),
+        label = "relay_toggle_press"
+    )
+    val relayStatusColor by androidx.compose.animation.animateColorAsState(
+        targetValue = if (relayState.clientConnected) Color(0xFF00E676) else vibe.accent,
+        animationSpec = tween(240),
+        label = "relay_status_color"
+    )
 
     Column(
         modifier = modifier
@@ -58,7 +74,7 @@ fun CmfAudioRelayCard(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(if (relayState.clientConnected) Color(0xFF00E676) else vibe.accent)
+                        .background(relayStatusColor)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -75,7 +91,7 @@ fun CmfAudioRelayCard(
                 text = if (relayState.clientConnected) "ACTIVE 10ms" else "STANDBY",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
-                color = if (relayState.clientConnected) Color(0xFF00E676) else vibe.accent,
+                color = relayStatusColor,
                 fontFamily = FontFamily.Default
             )
         }
@@ -91,16 +107,21 @@ fun CmfAudioRelayCard(
                 .border(1.dp, CmfBorder, RoundedCornerShape(16.dp))
                 .padding(vertical = 14.dp, horizontal = 16.dp)
         ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "bus_pulse")
-            val pulseProgress by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1200, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "pulseProgress"
-            )
+            val pulseProgress = if (relayState.isRunning) {
+                val infiniteTransition = rememberInfiniteTransition(label = "bus_pulse")
+                val progress by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1200, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "pulseProgress"
+                )
+                progress
+            } else {
+                0f
+            }
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -165,12 +186,20 @@ fun CmfAudioRelayCard(
         ) {
             RelayMode.values().forEach { mode ->
                 val isSelected = relayState.mode == mode
+                val modeInteraction = remember(mode) { MutableInteractionSource() }
+                val modePressed by modeInteraction.collectIsPressedAsState()
+                val modeScale by animateFloatAsState(
+                    targetValue = if (modePressed) 0.96f else 1f,
+                    animationSpec = spring(dampingRatio = 0.74f, stiffness = 560f),
+                    label = "relay_mode_press"
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .scale(modeScale)
                         .clip(RoundedCornerShape(13.dp))
                         .background(if (isSelected) vibe.accent else Color.Transparent)
-                        .clickable { onModeSelected(mode) }
+                        .clickable(interactionSource = modeInteraction, indication = null) { onModeSelected(mode) }
                         .padding(vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -194,9 +223,17 @@ fun CmfAudioRelayCard(
         ) {
             BufferPreset.values().forEach { preset ->
                 val isSelected = relayState.bufferPreset == preset
+                val presetInteraction = remember(preset) { MutableInteractionSource() }
+                val presetPressed by presetInteraction.collectIsPressedAsState()
+                val presetScale by animateFloatAsState(
+                    targetValue = if (presetPressed) 0.96f else 1f,
+                    animationSpec = spring(dampingRatio = 0.74f, stiffness = 560f),
+                    label = "relay_buffer_press"
+                )
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .scale(presetScale)
                         .clip(RoundedCornerShape(10.dp))
                         .border(
                             1.dp,
@@ -204,7 +241,7 @@ fun CmfAudioRelayCard(
                             RoundedCornerShape(10.dp)
                         )
                         .background(if (isSelected) vibe.accentSubtle else CmfSurfaceSubtle)
-                        .clickable { onBufferPresetSelected(preset) }
+                        .clickable(interactionSource = presetInteraction, indication = null) { onBufferPresetSelected(preset) }
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -225,10 +262,11 @@ fun CmfAudioRelayCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .scale(relayScale)
                 .clip(RoundedCornerShape(16.dp))
                 .background(if (relayState.isRunning) Color(0xFF1E1E22) else vibe.accent)
                 .border(1.5.dp, if (relayState.isRunning) vibe.accent else Color.Transparent, RoundedCornerShape(16.dp))
-                .clickable { onToggleRelay() }
+                .clickable(interactionSource = relayInteraction, indication = null) { onToggleRelay() }
                 .padding(vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -257,7 +295,7 @@ fun CmfAudioRelayCard(
                     text = if (AppStrings.isRussian) "СТАТУС: ${relayState.statusMessage}" else "STATUS: ${relayState.statusMessage}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (relayState.clientConnected) Color(0xFF00E676) else CmfTextPrimary,
+                    color = if (relayState.clientConnected) relayStatusColor else CmfTextPrimary,
                     fontFamily = FontFamily.Default
                 )
                 Spacer(modifier = Modifier.height(4.dp))

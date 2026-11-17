@@ -1,8 +1,17 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +22,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -28,10 +38,37 @@ fun FindMyBudsCard(
     lastLocation: DisconnectLocation?,
     onStartChirp: (left: Boolean, right: Boolean) -> Unit,
     onStopChirp: () -> Unit,
+    onClearLocation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var chirpLeft by remember { mutableStateOf(true) }
     var chirpRight by remember { mutableStateOf(true) }
+    var confirmClearLocation by remember { mutableStateOf(false) }
+    val chirpButtonColor by animateColorAsState(
+        targetValue = if (isChirping) CmfGreen else CmfOrange,
+        animationSpec = tween(220),
+        label = "chirp_button_color"
+    )
+    val leftBackground by animateColorAsState(
+        targetValue = if (chirpLeft) CmfOrange else CmfSurfaceSubtle,
+        animationSpec = tween(180),
+        label = "left_chirp_background"
+    )
+    val rightBackground by animateColorAsState(
+        targetValue = if (chirpRight) CmfOrange else CmfSurfaceSubtle,
+        animationSpec = tween(180),
+        label = "right_chirp_background"
+    )
+    val leftTextColor by animateColorAsState(
+        targetValue = if (chirpLeft) CmfTextPrimary else CmfTextSecondary,
+        animationSpec = tween(180),
+        label = "left_chirp_text"
+    )
+    val rightTextColor by animateColorAsState(
+        targetValue = if (chirpRight) CmfTextPrimary else CmfTextSecondary,
+        animationSpec = tween(180),
+        label = "right_chirp_text"
+    )
 
     Column(
         modifier = modifier
@@ -64,13 +101,21 @@ fun FindMyBudsCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val leftInteraction = remember { MutableInteractionSource() }
+            val leftPressed by leftInteraction.collectIsPressedAsState()
+            val leftScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (leftPressed) 0.96f else 1f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.74f, stiffness = 560f),
+                label = "left_chirp_press"
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .scale(leftScale)
                     .clip(CircleShape)
                     .border(1.dp, if (chirpLeft) CmfOrange else CmfBorder, CircleShape)
-                    .background(if (chirpLeft) CmfOrange else CmfSurfaceSubtle)
-                    .clickable { chirpLeft = !chirpLeft }
+                    .background(leftBackground)
+                    .clickable(interactionSource = leftInteraction, indication = null) { chirpLeft = !chirpLeft }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -78,18 +123,26 @@ fun FindMyBudsCard(
                     text = "${AppStrings.batteryLeft} (L)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (chirpLeft) CmfTextPrimary else CmfTextSecondary,
+                    color = leftTextColor,
                     fontFamily = FontFamily.Default
                 )
             }
 
+            val rightInteraction = remember { MutableInteractionSource() }
+            val rightPressed by rightInteraction.collectIsPressedAsState()
+            val rightScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (rightPressed) 0.96f else 1f,
+                animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.74f, stiffness = 560f),
+                label = "right_chirp_press"
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .scale(rightScale)
                     .clip(CircleShape)
                     .border(1.dp, if (chirpRight) CmfOrange else CmfBorder, CircleShape)
-                    .background(if (chirpRight) CmfOrange else CmfSurfaceSubtle)
-                    .clickable { chirpRight = !chirpRight }
+                    .background(rightBackground)
+                    .clickable(interactionSource = rightInteraction, indication = null) { chirpRight = !chirpRight }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -97,7 +150,7 @@ fun FindMyBudsCard(
                     text = "${AppStrings.batteryRight} (R)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (chirpRight) CmfTextPrimary else CmfTextSecondary,
+                    color = rightTextColor,
                     fontFamily = FontFamily.Default
                 )
             }
@@ -113,7 +166,7 @@ fun FindMyBudsCard(
             modifier = Modifier.fillMaxWidth(),
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isChirping) CmfGreen else CmfOrange
+                containerColor = chirpButtonColor
             )
         ) {
             Text(
@@ -124,7 +177,12 @@ fun FindMyBudsCard(
             )
         }
 
-        if (lastLocation != null) {
+        AnimatedVisibility(
+            visible = lastLocation != null,
+            enter = fadeIn(tween(220)) + expandVertically(tween(260)),
+            exit = fadeOut(tween(140)) + shrinkVertically(tween(200)),
+            label = "last_location_visibility"
+        ) {
             Spacer(modifier = Modifier.height(14.dp))
             Box(
                 modifier = Modifier
@@ -136,33 +194,57 @@ fun FindMyBudsCard(
             ) {
                 Column {
                     Text(
-                        text = if (AppStrings.isRussian) "ПОСЛЕДНЯЯ ИЗВЕСТНАЯ ПОЗИЦИЯ ТЕЛЕФОНА: ${lastLocation.formattedTime}" else "LAST KNOWN PHONE LOCATION: ${lastLocation.formattedTime}",
+                        text = if (AppStrings.isRussian) "ПОСЛЕДНЯЯ ИЗВЕСТНАЯ ПОЗИЦИЯ ТЕЛЕФОНА: ${lastLocation?.formattedTime.orEmpty()}" else "LAST KNOWN PHONE LOCATION: ${lastLocation?.formattedTime.orEmpty()}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = CmfTextPrimary,
                         fontFamily = FontFamily.Default
                     )
                     Text(
-                        text = "GPS: ${lastLocation.latitude}, ${lastLocation.longitude}",
+                        text = "GPS: ${lastLocation?.latitude}, ${lastLocation?.longitude}",
                         fontSize = 10.sp,
                         color = CmfTextSecondary,
                         fontFamily = FontFamily.Default
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     val context = LocalContext.current
-                    OutlinedButton(
-                        onClick = {
-                            val uri = Uri.parse("geo:${lastLocation.latitude},${lastLocation.longitude}?q=${lastLocation.latitude},${lastLocation.longitude}(CMF Buds)")
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = CircleShape
-                    ) {
-                        Text(if (AppStrings.isRussian) "ОТКРЫТЬ НА КАРТЕ" else "OPEN IN MAPS", fontFamily = FontFamily.Default, fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                lastLocation?.let { location ->
+                                    val uri = Uri.parse("geo:${location.latitude},${location.longitude}?q=${location.latitude},${location.longitude}(CMF Buds)")
+                                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                                    if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = CircleShape
+                        ) {
+                            Text(if (AppStrings.isRussian) "ОТКРЫТЬ НА КАРТЕ" else "OPEN IN MAPS", fontFamily = FontFamily.Default, fontSize = 11.sp)
+                        }
+                        TextButton(onClick = { confirmClearLocation = true }) {
+                            Text(if (AppStrings.isRussian) "УДАЛИТЬ" else "DELETE", fontFamily = FontFamily.Default, fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (confirmClearLocation) {
+        AlertDialog(
+            onDismissRequest = { confirmClearLocation = false },
+            title = { Text(if (AppStrings.isRussian) "Удалить позицию?" else "Delete saved location?") },
+            text = { Text(if (AppStrings.isRussian) "Сохранённые координаты телефона будут удалены." else "The saved phone coordinates will be deleted.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onClearLocation()
+                    confirmClearLocation = false
+                }) { Text(if (AppStrings.isRussian) "Удалить" else "Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearLocation = false }) { Text(AppStrings.btnCancel) }
+            }
+        )
     }
 }

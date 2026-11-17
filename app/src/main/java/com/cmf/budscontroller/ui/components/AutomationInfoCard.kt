@@ -26,7 +26,7 @@ fun AutomationSection(modifier: Modifier = Modifier) {
             .padding(20.dp)
     ) {
         Text(
-            text = if (AppStrings.isRussian) "ТАСКЕР / ИНТЕНТЫ" else "TASKER / INTENTS",
+            text = if (AppStrings.isRussian) "ЗАЩИЩЁННЫЕ INTENTS" else "TRUSTED APP INTENTS",
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
@@ -37,7 +37,7 @@ fun AutomationSection(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = if (AppStrings.isRussian) "Широковещательные команды для управления из других программ:" else "Broadcast commands for control from other apps:",
+            text = if (AppStrings.isRussian) "Команды доступны только приложениям, подписанным тем же сертификатом:" else "Commands are available only to apps signed with the same certificate:",
             fontSize = 12.sp,
             color = CmfTextPrimary
         )

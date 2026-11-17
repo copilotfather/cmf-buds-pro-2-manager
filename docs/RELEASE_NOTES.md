@@ -1,3 +1,23 @@
+## v2.4.4 · Companion update
+
+### Важно для пользователей v2.4.3
+
+В релизе используется новый ключ подписи. Android не установит его поверх v2.4.3. В окне обновления нажмите **«Браузер»**, удалите старую версию, затем скачайте и установите новый APK. Заранее сохраните нужные данные приложения.
+
+### Important for v2.4.3 users
+
+This release uses a new signing key, so Android will not install it over v2.4.3. In the update dialog, tap **Browser**, uninstall the old version, then download and install the new APK. Back up any app data you need first.
+
+### What's new
+
+- Improved security and reliability across app services and local data handling.
+- Added battery status to Quick Settings tiles.
+- Added a live audio spectrum visualizer.
+- Refined color themes, screen transitions, and touch feedback.
+- Improved Watch health metric transitions.
+
+---
+
 ## v2.4.3 · CMF Watch dashboard
 
 ### What's new

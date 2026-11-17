@@ -33,6 +33,16 @@ fun WatchHealthNotificationsPanel(manager: WatchBetaManager) {
     Text(t("Шаги", "Steps") + ": ${health.steps} · ${health.distanceMeters} m · ${health.kcal} kcal")
     Text(t("Пульс", "Heart rate") + ": ${health.heartRate ?: "—"} bpm · SpO₂: ${health.spo2 ?: "—"}%")
     Text(t("Стресс", "Stress") + ": ${health.stress ?: "—"} · " + t("Сон", "Sleep") + ": ${health.sleepMinutes} min")
+    if (health.storageNeedsAttention) {
+        Text(
+            t(
+                "Не удалось открыть или безопасно сохранить историю. Перезапустите приложение; если ошибка останется, удалите локальные данные и синхронизируйте часы снова.",
+                "Could not read or securely save the history. Restart the app; if the problem persists, delete local data and sync the watch again."
+            ),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
     Text(t("Сохранено записей", "Stored records") + ": ${health.records}")
     if (health.lastSync > 0) Text(t("Синхронизация", "Last sync") + ": " + java.text.DateFormat.getDateTimeInstance().format(java.util.Date(health.lastSync)), style = MaterialTheme.typography.bodySmall)
     Text(t("Показатели с часов, не медицинская диагностика. Хранятся локально до 31 дня; тренировки пока не разбираются.", "Watch readings, not medical diagnostics. Stored locally for up to 31 days; workout summaries are not parsed yet."), style = MaterialTheme.typography.bodySmall)

@@ -1,16 +1,26 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -80,23 +90,43 @@ fun CmfBottomNav(
     ) {
         NothingXTab.values().forEach { tab ->
             val isSelected = activeTab == tab
-            val tabTint = if (isSelected) vibe.accent else CmfTextSecondary
+            val interactionSource = remember(tab) { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+            val tabTint by animateColorAsState(
+                targetValue = if (isSelected) vibe.accent else CmfTextSecondary,
+                animationSpec = tween(180),
+                label = "nav_tint"
+            )
+            val iconScale by animateFloatAsState(
+                targetValue = when {
+                    isPressed -> 0.9f
+                    isSelected -> 1.08f
+                    else -> 1f
+                },
+                animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+                label = "nav_icon_scale"
+            )
+            val indicatorWidth by animateDpAsState(
+                targetValue = if (isSelected) 18.dp else 4.dp,
+                animationSpec = spring(dampingRatio = 0.78f, stiffness = 500f),
+                label = "nav_indicator_width"
+            )
 
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onTabSelected(tab) }
+                    .clickable(interactionSource = interactionSource, indication = null) { onTabSelected(tab) }
                     .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 // Vector Tab Icon
                 when (tab) {
-                    NothingXTab.DEVICE -> CmfIconNavDevice(modifier = Modifier.size(iconSize), tint = tabTint)
-                    NothingXTab.EQUALIZER -> CmfIconNavEqualizer(modifier = Modifier.size(iconSize), tint = tabTint)
-                    NothingXTab.PC_BRIDGE -> CmfIconNavBridge(modifier = Modifier.size(iconSize), tint = tabTint)
-                    NothingXTab.FEATURES -> CmfIconNavTools(modifier = Modifier.size(iconSize), tint = tabTint)
+                    NothingXTab.DEVICE -> CmfIconNavDevice(modifier = Modifier.size(iconSize).scale(iconScale), tint = tabTint)
+                    NothingXTab.EQUALIZER -> CmfIconNavEqualizer(modifier = Modifier.size(iconSize).scale(iconScale), tint = tabTint)
+                    NothingXTab.PC_BRIDGE -> CmfIconNavBridge(modifier = Modifier.size(iconSize).scale(iconScale), tint = tabTint)
+                    NothingXTab.FEATURES -> CmfIconNavTools(modifier = Modifier.size(iconSize).scale(iconScale), tint = tabTint)
                 }
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -116,7 +146,8 @@ fun CmfBottomNav(
                 // Active glowing LED dot indicator
                 Box(
                     modifier = Modifier
-                        .size(4.dp)
+                        .width(indicatorWidth)
+                        .height(4.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) vibe.accent else Color.Transparent)
                 )

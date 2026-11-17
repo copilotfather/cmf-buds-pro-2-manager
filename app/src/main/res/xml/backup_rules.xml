@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content><exclude domain="sharedpref" path="watch_health.xml"/><exclude domain="sharedpref" path="watch_notifications.xml"/></full-backup-content>
+<full-backup-content>
+    <exclude domain="sharedpref" path="watch_health.xml" />
+    <exclude domain="sharedpref" path="watch_notifications.xml" />
+    <exclude domain="sharedpref" path="buds_location.xml" />
+</full-backup-content>

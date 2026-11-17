@@ -9,11 +9,9 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.io.InputStream
-import java.io.OutputStream
+import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
-import java.net.SocketException
 
 enum class RelayMode {
     PC_TO_EARBUDS,
@@ -109,7 +107,7 @@ class CmfAudioRelayManager(private val context: Context) {
 
         serverJob = scope.launch {
             try {
-                serverSocket = ServerSocket(RELAY_PORT).apply {
+                serverSocket = ServerSocket(RELAY_PORT, 1, InetAddress.getLoopbackAddress()).apply {
                     reuseAddress = true
                 }
                 Log.d(TAG, "Audio Relay Server listening on port $RELAY_PORT")
@@ -137,75 +135,92 @@ class CmfAudioRelayManager(private val context: Context) {
     }
 
     private suspend fun handleClientSession(socket: Socket) = withContext(Dispatchers.IO) {
-        val input = socket.getInputStream()
-        val output = socket.getOutputStream()
+        var sessionFailed = false
+        try {
+            val input = socket.getInputStream()
+            val output = socket.getOutputStream()
 
-        // Init Low-Latency AudioTrack for PC audio -> CMF Earbuds
-        initAudioTrack()
+            initAudioTrack()
+            if (_state.value.mode != RelayMode.PC_TO_EARBUDS) initAudioRecord()
 
-        // Init AudioRecord for CMF Earbuds mic -> PC
-        if (_state.value.mode != RelayMode.PC_TO_EARBUDS) {
-            initAudioRecord()
-        }
-
-        // Job 1: Play incoming audio from PC to Earbuds
-        playJob = launch {
-            val minBuf = AudioTrack.getMinBufferSize(
-                SAMPLE_RATE,
-                AudioFormat.CHANNEL_OUT_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT
-            )
-            val chunk = ByteArray((minBuf / 2) * _state.value.bufferPreset.bufferFactor)
-            var bytesTotal = 0L
-            var lastTimer = System.currentTimeMillis()
-
-            try {
-                while (isActive && !socket.isClosed) {
-                    val read = input.read(chunk)
-                    if (read <= 0) break
-
-                    audioTrack?.write(chunk, 0, read)
-                    bytesTotal += read
-
-                    val now = System.currentTimeMillis()
-                    if (now - lastTimer >= 1000) {
-                        val kbps = (bytesTotal * 8f) / (1024f * ((now - lastTimer) / 1000f))
-                        _state.value = _state.value.copy(kbpsSpeed = kbps)
-                        bytesTotal = 0L
-                        lastTimer = now
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Playback stream ended: ${e.message}")
-            }
-        }
-
-        // Job 2: Stream Earbuds Mic to PC over USB
-        if (_state.value.mode != RelayMode.PC_TO_EARBUDS) {
-            recordJob = launch {
-                val micBuf = ByteArray(1024)
+            playJob = launch {
                 try {
-                    audioRecord?.startRecording()
+                    val minBuf = AudioTrack.getMinBufferSize(
+                        SAMPLE_RATE,
+                        AudioFormat.CHANNEL_OUT_STEREO,
+                        AudioFormat.ENCODING_PCM_16BIT
+                    )
+                    check(minBuf > 0) { "Unsupported playback audio format: $minBuf" }
+                    val chunk = ByteArray((minBuf / 2).coerceAtLeast(1) * _state.value.bufferPreset.bufferFactor)
+                    var bytesTotal = 0L
+                    var lastTimer = System.currentTimeMillis()
                     while (isActive && !socket.isClosed) {
-                        val read = audioRecord?.read(micBuf, 0, micBuf.size) ?: -1
-                        if (read > 0) {
-                            output.write(micBuf, 0, read)
-                            output.flush()
+                        val read = input.read(chunk)
+                        if (read <= 0) break
+
+                        audioTrack?.write(chunk, 0, read)
+                        bytesTotal += read
+
+                        val now = System.currentTimeMillis()
+                        if (now - lastTimer >= 1000) {
+                            val kbps = (bytesTotal * 8f) / (1024f * ((now - lastTimer) / 1000f))
+                            _state.value = _state.value.copy(kbpsSpeed = kbps)
+                            bytesTotal = 0L
+                            lastTimer = now
                         }
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Mic stream ended: ${e.message}")
+                    Log.w(TAG, "Playback stream ended: ${e.message}")
+                }
+            }
+
+            if (_state.value.mode != RelayMode.PC_TO_EARBUDS) {
+                recordJob = launch {
+                    try {
+                        val micBuf = ByteArray(1024)
+                        val recorder = audioRecord ?: error("Microphone recorder unavailable")
+                        recorder.startRecording()
+                        while (isActive && !socket.isClosed) {
+                            val read = recorder.read(micBuf, 0, micBuf.size)
+                            check(read >= 0) { "Microphone read failed: $read" }
+                            if (read > 0) {
+                                output.write(micBuf, 0, read)
+                                output.flush()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Mic stream ended: ${e.message}")
+                        runCatching { socket.close() }
+                    }
+                }
+            }
+
+            playJob?.join()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            sessionFailed = true
+            Log.e(TAG, "Client audio session failed", error)
+        } finally {
+            runCatching { socket.close() }
+            playJob?.cancel()
+            recordJob?.cancel()
+            releaseAudioResources()
+            playJob = null
+            recordJob = null
+            if (clientSocket === socket) {
+                clientSocket = null
+                if (_state.value.isRunning) {
+                    _state.value = _state.value.copy(
+                        clientConnected = false,
+                        statusMessage = when {
+                            sessionFailed -> if (AppStrings.isRussian) "Ошибка аудиосессии" else "Audio session failed"
+                            else -> if (AppStrings.isRussian) "ПК отключен" else "PC Disconnected"
+                        }
+                    )
                 }
             }
         }
-
-        playJob?.join()
-        recordJob?.cancel()
-
-        _state.value = _state.value.copy(
-            clientConnected = false,
-            statusMessage = if (AppStrings.isRussian) "ПК отключен" else "PC Disconnected"
-        )
     }
 
     private fun initAudioTrack() {
@@ -214,6 +229,7 @@ class CmfAudioRelayManager(private val context: Context) {
             AudioFormat.CHANNEL_OUT_STEREO,
             AudioFormat.ENCODING_PCM_16BIT
         )
+        check(minBuf > 0) { "Unsupported playback audio format: $minBuf" }
 
         val attributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
@@ -248,18 +264,38 @@ class CmfAudioRelayManager(private val context: Context) {
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT
         )
+        check(minBuf > 0) { "Unsupported microphone audio format: $minBuf" }
         try {
             audioRecord?.release()
-            audioRecord = AudioRecord(
+            val recorder = AudioRecord(
                 MediaRecorder.AudioSource.VOICE_COMMUNICATION,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 minBuf * 2
             )
+            if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+                recorder.release()
+                error("Microphone recorder initialization failed")
+            }
+            audioRecord = recorder
         } catch (e: Exception) {
             Log.e(TAG, "AudioRecord init error", e)
+            throw e
         }
+    }
+
+    @Synchronized
+    private fun releaseAudioResources() {
+        val track = audioTrack
+        val record = audioRecord
+        audioTrack = null
+        audioRecord = null
+
+        runCatching { record?.stop() }
+        runCatching { track?.stop() }
+        runCatching { record?.release() }
+        runCatching { track?.release() }
     }
 
     fun stopRelay() {
@@ -272,15 +308,7 @@ class CmfAudioRelayManager(private val context: Context) {
             serverSocket?.close()
         } catch (_: Exception) {}
 
-        try {
-            audioTrack?.stop()
-            audioTrack?.release()
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (_: Exception) {}
-
-        audioTrack = null
-        audioRecord = null
+        releaseAudioResources()
         clientSocket = null
         serverSocket = null
 

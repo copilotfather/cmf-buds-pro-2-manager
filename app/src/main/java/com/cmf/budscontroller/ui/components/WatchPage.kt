@@ -2,10 +2,25 @@ package com.cmf.budscontroller.ui.components
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -96,7 +112,12 @@ fun WatchPage(manager: WatchBetaManager) {
             }
         }
 
-        if (state.devices.isNotEmpty() && !state.connected) {
+        AnimatedVisibility(
+            visible = state.devices.isNotEmpty() && !state.connected,
+            enter = fadeIn(tween(220)) + expandVertically(tween(260, easing = FastOutSlowInEasing)),
+            exit = fadeOut(tween(140)) + shrinkVertically(tween(200, easing = FastOutSlowInEasing)),
+            label = "watch_devices_visibility"
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SectionLabel(t("НАЙДЕННЫЕ ЧАСЫ", "AVAILABLE WATCHES"))
                 state.devices.forEach { device ->
@@ -104,7 +125,10 @@ fun WatchPage(manager: WatchBetaManager) {
                         modifier = Modifier.fillMaxWidth()) {
                         TextButton(onClick = { manager.connect(device.address) }, enabled = !state.connecting, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Column { Text(device.name, fontWeight = FontWeight.SemiBold); Text(device.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(device.name, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(device.address, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                             Icon(Icons.Outlined.Bluetooth, null, tint = WatchOrange)
                         }
                         }
@@ -146,11 +170,25 @@ private fun SectionLabel(text: String) {
 
 @Composable
 private fun WatchMetricCard(modifier: Modifier, label: String, value: String, accent: Color, unit: String = "") {
-    Column(modifier.clip(RoundedCornerShape(20.dp)).background(WatchCard).border(1.dp, Color.White.copy(alpha = .04f), RoundedCornerShape(20.dp)).padding(16.dp)) {
+    val animatedAccent by animateColorAsState(
+        targetValue = accent,
+        animationSpec = tween(220),
+        label = "watch_metric_color"
+    )
+    Column(modifier.clip(RoundedCornerShape(20.dp)).background(WatchCard).border(1.dp, Color.White.copy(alpha = .04f), RoundedCornerShape(20.dp)).animateContentSize().padding(16.dp)) {
         Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(value, fontSize = 25.sp, fontWeight = FontWeight.Black, color = accent, maxLines = 1)
+            AnimatedContent(
+                targetState = value,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 3 }) togetherWith
+                        (fadeOut(tween(120)) + slideOutVertically(tween(120)) { -it / 3 })
+                },
+                label = "watch_metric_value"
+            ) { currentValue ->
+                Text(currentValue, fontSize = 25.sp, fontWeight = FontWeight.Black, color = animatedAccent, maxLines = 1)
+            }
             if (unit.isNotBlank()) Text(unit, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 3.dp))
         }
     }

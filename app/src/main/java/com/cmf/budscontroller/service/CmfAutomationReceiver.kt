@@ -12,13 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * BroadcastReceiver exposing full programmatic control for automation apps:
- * Tasker, MacroDroid, Automate, ADB Shell.
- *
- * Example ADB Commands:
- * adb shell am broadcast -a com.cmf.budscontroller.SET_ANC_MODE --es mode "anc" --es level "high"
- * adb shell am broadcast -a com.cmf.budscontroller.SET_GAME_MODE --ez enabled true
- * adb shell am broadcast -a com.cmf.budscontroller.SET_BASS_LEVEL --ei level 5
+ * BroadcastReceiver for trusted companion integrations signed with this app's certificate.
+ * Third-party automation tools and ADB shell cannot hold its signature-level permission.
  */
 class CmfAutomationReceiver : BroadcastReceiver() {
 

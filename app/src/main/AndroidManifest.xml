@@ -123,9 +123,10 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Automation Broadcast Receiver for Tasker / MacroDroid / Automate -->
+        <!-- Trusted companion integrations only; guarded by a signature permission. -->
         <receiver
             android:name=".service.CmfAutomationReceiver"
+            android:permission="com.cmf.budscontroller.permission.AUTOMATION"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.cmf.budscontroller.SET_ANC_MODE" />
@@ -141,5 +142,9 @@
 <receiver android:name=".widget.TransparencyWidget" android:exported="false" android:label="CMF · Transparency"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
 <receiver android:name=".widget.ConnectionWidget" android:exported="false" android:label="CMF · Connection"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/buds_tile_info" /></receiver>
     </application>
+
+    <permission
+        android:name="com.cmf.budscontroller.permission.AUTOMATION"
+        android:protectionLevel="signature" />
 
 </manifest>

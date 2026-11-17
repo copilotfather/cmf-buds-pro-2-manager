@@ -6,15 +6,16 @@ echo ========================================================
 echo   :: CMF BUDS PRO 2 // PC - PHONE - EARBUDS RELAY ::
 echo ========================================================
 echo.
-echo [1] Проверка подключения телефона по USB...
+echo [1] Checking the phone's USB ADB connection...
 
 :: Проверка ADB и проброс порта
 adb.exe forward tcp:4242 tcp:4242 >nul 2>&1
 if %ERRORLEVEL% equ 0 (
     echo [OK] ADB обнаружен: порт 4242 проброшен через USB!
 ) else (
-    echo [i] ADB не найден в PATH или USB-отладка выключена.
-    echo     Используется прямое подключение через USB-модем (Tethering) или локальную сеть.
+    echo [!] ADB forwarding is unavailable. Add ADB to PATH, connect by USB, and enable USB debugging.
+    pause
+    exit /b 1
 )
 
 echo.

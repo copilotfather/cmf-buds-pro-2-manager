@@ -1,6 +1,6 @@
 {
-  "versionName": "2.4.3",
-  "versionCode": 2521,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.3/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "CMF Buds Pro 2 Manager v2.4.3:\n• Added a dedicated CMF Watch Pro 2 dashboard\n• Improved watch pairing response handling and fragmented BLE frame parsing\n• Closed updater network connections and download streams reliably"
+  "versionName": "2.4.4",
+  "versionCode": 2522,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.4/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "ВАЖНО ДЛЯ v2.4.3: ключ подписи приложения сменился, поэтому Android отклонит установку поверх старой версии. Нажмите «Браузер», удалите v2.4.3, затем скачайте и установите v2.4.4. Сохраните нужные данные заранее.\n\nIMPORTANT FOR v2.4.3: the app signing key changed, so Android will reject an in-place update. Tap Browser, uninstall v2.4.3, then download and install v2.4.4. Back up any data you need first.\n\n• Security hardening and reliability improvements\n• Battery status in Quick Settings\n• Live audio spectrum visualizer\n• Refined themes, transitions and touch feedback\n• Updated Watch dashboard and health metrics"
 }
