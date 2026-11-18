@@ -213,6 +213,7 @@ fun CmfSpatialAudioCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .scale(modeScale)
                         .clip(RoundedCornerShape(13.dp))
                         .background(modeBackground)

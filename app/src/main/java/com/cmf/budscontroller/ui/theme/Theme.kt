@@ -28,6 +28,7 @@ data class CmfAdaptiveDimens(
     val dialSize: Dp = 50.dp,
     val playButtonSize: Dp = 50.dp,
     val skipButtonSize: Dp = 42.dp,
+    val controlTouchTarget: Dp = 48.dp,
     val isCompact: Boolean = false
 )
 
@@ -42,6 +43,7 @@ val VibeShapes = Shapes(
 @Composable
 fun CMFTheme(
     vibeTheme: VibeColorTheme = VibeColorTheme.CMF_ORANGE,
+    comfortableControls: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val primaryColor by animateColorAsState(
@@ -56,7 +58,7 @@ fun CMFTheme(
     // Adapt to diverse aspect ratios, phone sizes (compact/standard/tall/wide)
     val isCompact = screenWidth < 380 || screenHeight < 740
 
-    val dimens = remember(screenWidth, screenHeight) {
+    val dimens = remember(screenWidth, screenHeight, comfortableControls) {
         if (isCompact) {
             CmfAdaptiveDimens(
                 cardPadding = 14.dp,
@@ -68,6 +70,7 @@ fun CMFTheme(
                 dialSize = 48.dp,
                 playButtonSize = 46.dp,
                 skipButtonSize = 38.dp,
+                controlTouchTarget = if (comfortableControls) 56.dp else 48.dp,
                 isCompact = true
             )
         } else {
@@ -81,6 +84,7 @@ fun CMFTheme(
                 dialSize = 54.dp,
                 playButtonSize = 52.dp,
                 skipButtonSize = 44.dp,
+                controlTouchTarget = if (comfortableControls) 56.dp else 48.dp,
                 isCompact = false
             )
         }

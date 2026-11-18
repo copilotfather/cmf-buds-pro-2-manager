@@ -196,6 +196,7 @@ fun CmfAudioRelayCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .scale(modeScale)
                         .clip(RoundedCornerShape(13.dp))
                         .background(if (isSelected) vibe.accent else Color.Transparent)
@@ -233,6 +234,7 @@ fun CmfAudioRelayCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .scale(presetScale)
                         .clip(RoundedCornerShape(10.dp))
                         .border(

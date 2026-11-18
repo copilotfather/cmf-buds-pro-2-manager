@@ -110,10 +110,12 @@ class MainActivity : ComponentActivity() {
         val initialVibeTheme = VibeColorTheme.values().firstOrNull {
             it.name == preferences.getString("vibe_theme", VibeColorTheme.CMF_ORANGE.name)
         } ?: VibeColorTheme.CMF_ORANGE
+        val initialComfortableControls = preferences.getBoolean("comfortable_controls", false)
 
         setContent {
             var vibeTheme by rememberSaveable { mutableStateOf(initialVibeTheme) }
-            CMFTheme(vibeTheme = vibeTheme) {
+            var comfortableControls by rememberSaveable { mutableStateOf(initialComfortableControls) }
+            CMFTheme(vibeTheme = vibeTheme, comfortableControls = comfortableControls) {
                 HiFiStudioBudsApp(
                     viewModel = viewModel,
                     bluetoothAdapter = bluetoothAdapter,
@@ -121,6 +123,11 @@ class MainActivity : ComponentActivity() {
                     onVibeThemeSelected = { selectedTheme ->
                         vibeTheme = selectedTheme
                         preferences.edit().putString("vibe_theme", selectedTheme.name).apply()
+                    },
+                    comfortableControls = comfortableControls,
+                    onComfortableControlsChanged = { enabled ->
+                        comfortableControls = enabled
+                        preferences.edit().putBoolean("comfortable_controls", enabled).apply()
                     },
                     onConnectClicked = {
                         checkAndRequestPermissions()
@@ -205,6 +212,8 @@ fun HiFiStudioBudsApp(
     bluetoothAdapter: BluetoothAdapter?,
     vibeTheme: VibeColorTheme,
     onVibeThemeSelected: (VibeColorTheme) -> Unit,
+    comfortableControls: Boolean,
+    onComfortableControlsChanged: (Boolean) -> Unit,
     onConnectClicked: () -> Unit
 ) {
     val status by viewModel.deviceStatus.collectAsState()
@@ -1415,6 +1424,39 @@ fun HiFiStudioBudsApp(
                         activeTheme = vibeTheme,
                         onThemeSelected = onVibeThemeSelected
                     )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateContentSize()
+                                .heightIn(min = if (comfortableControls) 72.dp else 64.dp)
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    uiText("Комфортное управление", "Comfortable controls"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    uiText("Крупные зоны нажатия · 56 dp", "Larger tap targets · 56 dp"),
+                                    fontSize = 12.sp,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = comfortableControls,
+                                onCheckedChange = onComfortableControlsChanged
+                            )
+                        }
+                    }
 
                     // Language Switcher (Instant EN / RU)
                     Card(
@@ -2707,6 +2749,7 @@ fun StudioNoiseControlBar(
     onLevelSelected: (AncLevel) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val dimens = com.cmf.budscontroller.ui.theme.LocalCmfDimens.current
     val context = LocalContext.current
     val haptic = remember { com.cmf.budscontroller.ui.haptic.CmfHapticManager(context) }
 
@@ -2803,7 +2846,7 @@ fun StudioNoiseControlBar(
                     modifier = Modifier
                         .offset(x = animatedOffset)
                         .width(animatedWidth)
-                        .height(38.dp)
+                        .height(dimens.controlTouchTarget)
                         .clip(RoundedCornerShape(14.dp))
                         .background(Color(0xFF252830))
                 )
@@ -2836,7 +2879,7 @@ fun StudioNoiseControlBar(
                         Row(
                             modifier = Modifier
                                 .weight(if (mode == AncMode.TRANSPARENCY) 1.25f else 1f)
-                                .height(38.dp)
+                                .heightIn(min = dimens.controlTouchTarget)
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable(
                                     interactionSource = remember(mode) { MutableInteractionSource() },

@@ -1,6 +1,6 @@
 {
-  "versionName": "2.4.4",
-  "versionCode": 2522,
-  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.4/CMF_Buds_Pro_2_Manager.apk",
-  "releaseNotes": "ВАЖНО ДЛЯ v2.4.3: ключ подписи приложения сменился, поэтому Android отклонит установку поверх старой версии. Нажмите «Браузер», удалите v2.4.3, затем скачайте и установите v2.4.4. Сохраните нужные данные заранее.\n\nIMPORTANT FOR v2.4.3: the app signing key changed, so Android will reject an in-place update. Tap Browser, uninstall v2.4.3, then download and install v2.4.4. Back up any data you need first.\n\n• Security hardening and reliability improvements\n• Battery status in Quick Settings\n• Live audio spectrum visualizer\n• Refined themes, transitions and touch feedback\n• Updated Watch dashboard and health metrics"
+  "versionName": "2.4.5",
+  "versionCode": 2523,
+  "downloadUrl": "https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/download/v2.4.5/CMF_Buds_Pro_2_Manager.apk",
+  "releaseNotes": "НОВОЕ: режим «Комфортное управление» в Настройках увеличивает зоны нажатия до 56 dp. Настройка сохраняется после перезапуска.\n\nNEW: Comfortable Controls in Settings increases tap targets to 56 dp. Your choice is saved across restarts.\n\nВажно для пользователей v2.4.3: из-за смены ключа подписи удалите v2.4.3 перед установкой. Для v2.4.4 переустановка не нужна.\n\nFor v2.4.3 users: the signing key changed, so uninstall v2.4.3 before installing. No reinstall is needed for v2.4.4."
 }

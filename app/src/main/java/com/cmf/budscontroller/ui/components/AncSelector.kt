@@ -120,6 +120,7 @@ fun CmfAncSection(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .clip(RoundedCornerShape(11.dp))
                         .background(modeBackground)
                         .scale(pressScale)
@@ -181,6 +182,7 @@ fun CmfAncSection(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
+                                .heightIn(min = dimens.controlTouchTarget)
                                 .clip(RoundedCornerShape(10.dp))
                                 .border(
                                     0.8.dp,

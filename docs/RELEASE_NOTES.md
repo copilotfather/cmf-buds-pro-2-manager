@@ -1,3 +1,21 @@
+## v2.4.5 · Comfortable Controls
+
+### What's new
+
+- Added an optional Comfortable Controls setting with larger 56 dp touch targets for key audio and earbud controls.
+- Saved the accessibility preference across app restarts.
+
+### Новое
+
+- Добавлен переключатель «Комфортное управление»: зоны нажатия основных аудио-настроек и поиска наушников увеличиваются до 56 dp.
+- Выбор сохраняется после перезапуска приложения.
+
+### Обновление
+
+- Пользователи v2.4.3 должны удалить старую версию перед установкой из-за смены ключа подписи. С v2.4.4 обновление устанавливается обычно.
+
+---
+
 ## v2.4.4 · Companion update
 
 ### Важно для пользователей v2.4.3

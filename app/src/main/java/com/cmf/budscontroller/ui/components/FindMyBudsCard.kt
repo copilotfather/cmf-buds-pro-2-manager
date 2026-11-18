@@ -41,6 +41,7 @@ fun FindMyBudsCard(
     onClearLocation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimens = LocalCmfDimens.current
     var chirpLeft by remember { mutableStateOf(true) }
     var chirpRight by remember { mutableStateOf(true) }
     var confirmClearLocation by remember { mutableStateOf(false) }
@@ -111,6 +112,7 @@ fun FindMyBudsCard(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .heightIn(min = dimens.controlTouchTarget)
                     .scale(leftScale)
                     .clip(CircleShape)
                     .border(1.dp, if (chirpLeft) CmfOrange else CmfBorder, CircleShape)
@@ -138,6 +140,7 @@ fun FindMyBudsCard(
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .heightIn(min = dimens.controlTouchTarget)
                     .scale(rightScale)
                     .clip(CircleShape)
                     .border(1.dp, if (chirpRight) CmfOrange else CmfBorder, CircleShape)

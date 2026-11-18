@@ -95,7 +95,7 @@ fun CmfUltraBassSection(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(38.dp)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .clip(RoundedCornerShape(12.dp))
                         .border(
                             0.8.dp,

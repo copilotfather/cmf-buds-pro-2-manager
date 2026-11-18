@@ -124,6 +124,7 @@ fun CmfEqualizerSection(
                 Box(
                     modifier = Modifier
                         .scale(pressScale)
+                        .heightIn(min = dimens.controlTouchTarget)
                         .clip(CircleShape)
                         .border(1.dp, presetBorder, CircleShape)
                         .background(presetBackground)
