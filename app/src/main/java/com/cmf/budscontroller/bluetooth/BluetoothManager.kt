@@ -29,6 +29,15 @@ class CmfBluetoothManager private constructor() {
     val commandStatus: StateFlow<String> = _commandStatus.asStateFlow()
     private var awaitingAnc: AncMode? = null
     private var ancCheckJob: Job? = null
+    private var awaitingEarbudPreset: Int? = null
+    private var awaitingCustomEq: Triple<Int, Int, Int>? = null
+    private var awaitingGameMode: Boolean? = null
+    private var awaitingInEarDetection: Boolean? = null
+    private var awaitingSpatialAudio: Pair<Int, Boolean>? = null
+    private var awaitingGesture: Triple<Int, Int, Int>? = null
+    private var awaitingDualConnectionEnabled: Boolean? = null
+    private var awaitingDualDevice: Pair<String, Boolean>? = null
+    private var dualListPageRequests = 0
 
     private var socket: BluetoothSocket? = null
     private var inputStream: InputStream? = null
@@ -803,6 +812,22 @@ class CmfBluetoothManager private constructor() {
             isConnected = true,
             deviceName = devName,
             deviceAddress = devAddr,
+            earbudListeningPreset = -1,
+            isEarbudListeningPresetAvailable = false,
+            isEarbudCustomEqAvailable = false,
+            earbudCustomBass = 0,
+            earbudCustomMid = 0,
+            earbudCustomTreble = 0,
+            isLatencyModeAvailable = false,
+            isInEarDetectionAvailable = false,
+            isSpatialAudioAvailable = false,
+            spatialAudioMode = -1,
+            isSpatialHeadTrackingEnabled = false,
+            isGestureConfigAvailable = false,
+            isDualConnectionAvailable = false,
+            isRememberedDeviceListAvailable = false,
+            rememberedDevices = emptyList(),
+            hardwareModel = "",
             connectionType = connType,
             isSppActive = isSppConnected,
             isGattActive = isGattConnected,
@@ -824,6 +849,7 @@ class CmfBluetoothManager private constructor() {
 
             sendPacket(CmfProtocol.createReadBatteryPacket())
             sendPacket(CmfProtocol.createReadAncPacket())
+            sendPacket(CmfProtocol.createReadDeviceModelPacket())
             sendPacket(CmfProtocol.createReadFirmwarePacket())
         } else {
             Log.d(TAG, "Operating $devName in BLE GATT / System A2DP mode ($connType)")
@@ -893,19 +919,12 @@ class CmfBluetoothManager private constructor() {
         // 1. Immediate optimistic UI update so buttons respond instantly with zero lag
         _deviceStatus.value = _deviceStatus.value.copy(ancMode = mode, ancLevel = level)
 
-        // 2. Build packets
-        val cmfPacket = CmfProtocol.createSetListenModeCmf(mode, level)
-        val ancPacket = CmfProtocol.createSetAncPacket(mode, level)
+        val sent = sendPacket(CmfProtocol.createSetAncPacket(mode, level))
 
-        // 3. Send CMF native listen mode packet first
-        val cmfSent = sendPacket(cmfPacket)
-        delay(40)
-        // 4. Send standard ANC packet for broad firmware compatibility
-        val ancSent = sendPacket(ancPacket)
-
-        if (cmfSent || ancSent) {
+        if (sent) {
             awaitingAnc = mode
-            _commandStatus.value = if (AppStrings.isRussian) "ANC: режим переключен" else "ANC: mode switched"
+            val pendingStatus = if (AppStrings.isRussian) "ANC: ожидаю ответ наушников" else "ANC: waiting for earbud response"
+            _commandStatus.value = pendingStatus
             ancCheckJob?.cancel()
             ancCheckJob = scope.launch {
                 delay(150)
@@ -913,6 +932,9 @@ class CmfBluetoothManager private constructor() {
                 delay(3000)
                 if (awaitingAnc == mode) {
                     awaitingAnc = null
+                    if (_commandStatus.value == pendingStatus) {
+                        _commandStatus.value = if (AppStrings.isRussian) "ANC: нет подтверждения от наушников" else "ANC: no earbud confirmation"
+                    }
                 }
             }
         } else {
@@ -921,24 +943,202 @@ class CmfBluetoothManager private constructor() {
     }
 
     suspend fun setUltraBass(level: Int) {
+        if (!supportsB172Settings()) {
+            _commandStatus.value = if (AppStrings.isRussian) "Бас: код модели не подтверждён" else "Bass: model not verified"
+            return
+        }
         val clamped = level.coerceIn(0, 5)
-        _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = clamped)
-        val sent = sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))
-        _commandStatus.value = if (sent) {
-            if (AppStrings.isRussian) "Бас: уровень $clamped" else "Bass: level $clamped"
-        } else {
-            if (AppStrings.isRussian) "Бас: уровень $clamped (локально)" else "Bass: level $clamped (local)"
+        if (!sendPacket(CmfProtocol.createSetUltraBassPacket(clamped))) {
+            _commandStatus.value = if (AppStrings.isRussian) "Бас: команда не отправлена" else "Bass: command not sent"
+            return
+        }
+        val pendingStatus = if (AppStrings.isRussian) "Бас: ожидаю подтверждение наушников" else "Bass: waiting for earbud readback"
+        _commandStatus.value = pendingStatus
+        delay(150)
+        sendPacket(CmfProtocol.createReadBassPacket())
+        delay(1800)
+        if (_commandStatus.value == pendingStatus) {
+            _commandStatus.value = if (AppStrings.isRussian) "Бас: наушники не подтвердили изменение" else "Bass: earbuds did not confirm the change"
+        }
+    }
+
+    suspend fun setEarbudListeningPreset(preset: Int) {
+        if (!supportsB172Settings()) {
+            _commandStatus.value = if (AppStrings.isRussian) "Пресет наушников: модель не подтверждена" else "Earbud preset: model not verified"
+            return
+        }
+        if (preset !in 0..6) return
+        if (!sendPacket(CmfProtocol.createSetEarbudListeningPresetPacket(preset))) {
+            _commandStatus.value = if (AppStrings.isRussian) "Пресет наушников: команда не отправлена" else "Earbud preset: command not sent"
+            return
+        }
+        awaitingEarbudPreset = preset
+        val pendingStatus = if (AppStrings.isRussian) "Пресет наушников: ожидаю подтверждение" else "Earbud preset: waiting for confirmation"
+        _commandStatus.value = pendingStatus
+        delay(150)
+        sendPacket(CmfProtocol.createReadEarbudListeningPresetPacket())
+        delay(1800)
+        if (awaitingEarbudPreset == preset) {
+            awaitingEarbudPreset = null
+            if (_commandStatus.value == pendingStatus) {
+                _commandStatus.value = if (AppStrings.isRussian) "Пресет наушников: нет подтверждения" else "Earbud preset: no confirmation"
+            }
+        }
+    }
+
+    suspend fun setEarbudCustomEq(bass: Int, mid: Int, treble: Int) {
+        if (!supportsB172Settings()) {
+            _commandStatus.value = if (AppStrings.isRussian) "EQ наушников: модель не подтверждена" else "Earbud EQ: model not verified"
+            return
+        }
+        val expected = Triple(bass.coerceIn(-6, 6), mid.coerceIn(-6, 6), treble.coerceIn(-6, 6))
+        if (!sendPacket(CmfProtocol.createSetEarbudCustomEqPacket(expected.first, expected.second, expected.third))) {
+            _commandStatus.value = if (AppStrings.isRussian) "EQ наушников: команда не отправлена" else "Earbud EQ: command not sent"
+            return
+        }
+        awaitingCustomEq = expected
+        val pendingStatus = if (AppStrings.isRussian) "EQ наушников: ожидаю подтверждение" else "Earbud EQ: waiting for confirmation"
+        _commandStatus.value = pendingStatus
+        delay(150)
+        sendPacket(CmfProtocol.createReadEarbudCustomEqPacket())
+        delay(1800)
+        if (awaitingCustomEq == expected) {
+            awaitingCustomEq = null
+            if (_commandStatus.value == pendingStatus) {
+                _commandStatus.value = if (AppStrings.isRussian) "EQ наушников: нет подтверждения" else "Earbud EQ: no confirmation"
+            }
+        }
+    }
+
+    suspend fun refreshEarbudCustomEq() {
+        if (!supportsB172Settings()) return
+        if (!sendPacket(CmfProtocol.createReadEarbudCustomEqPacket())) {
+            _commandStatus.value = if (AppStrings.isRussian) "EQ наушников: чтение не отправлено" else "Earbud EQ: read request not sent"
         }
     }
 
     suspend fun setGameMode(enabled: Boolean) {
-        _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled)
-        val sent = sendPacket(CmfProtocol.createSetGameModePacket(enabled))
-        _commandStatus.value = if (sent) {
-            if (AppStrings.isRussian) "Игровой режим: ${if (enabled) "включен" else "выключен"}" else "Game mode: ${if (enabled) "enabled" else "disabled"}"
-        } else {
-            if (AppStrings.isRussian) "Игровой режим: ${if (enabled) "включен" else "выключен"} (локально)" else "Game mode: ${if (enabled) "enabled" else "disabled"} (local)"
+        if (!supportsB172Settings()) {
+            _commandStatus.value = if (AppStrings.isRussian) "Игровой режим: модель не подтверждена" else "Game mode: model not verified"
+            return
         }
+        val sent = sendPacket(CmfProtocol.createSetLatencyPacket(enabled))
+        awaitingGameMode = if (sent) enabled else null
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Игровой режим: ожидаю подтверждение" else "Game mode: waiting for confirmation"
+        } else if (AppStrings.isRussian) "Игровой режим: команда не отправлена" else "Game mode: command not sent"
+        if (sent) {
+            delay(150)
+            sendPacket(CmfProtocol.createReadLatencyPacket())
+            delay(1800)
+            if (awaitingGameMode == enabled) {
+                awaitingGameMode = null
+                if (AppStrings.isRussian) _commandStatus.value = "Игровой режим: наушники не подтвердили изменение"
+                else _commandStatus.value = "Game mode: earbuds did not confirm the change"
+            }
+        }
+    }
+
+    suspend fun setInEarDetection(enabled: Boolean) {
+        if (!supportsB172Settings()) {
+            _commandStatus.value = if (AppStrings.isRussian) "Автопауза: модель не подтверждена" else "In-ear detection: model not verified"
+            return
+        }
+        val sent = sendPacket(CmfProtocol.createSetInEarPacket(enabled))
+        awaitingInEarDetection = if (sent) enabled else null
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Автопауза: ожидаю подтверждение" else "In-ear detection: waiting for confirmation"
+        } else if (AppStrings.isRussian) "Автопауза: команда не отправлена" else "In-ear detection: command not sent"
+        if (sent) {
+            delay(150)
+            sendPacket(CmfProtocol.createReadInEarPacket())
+            delay(1800)
+            if (awaitingInEarDetection == enabled) {
+                awaitingInEarDetection = null
+                if (AppStrings.isRussian) _commandStatus.value = "Автопауза: наушники не подтвердили изменение"
+                else _commandStatus.value = "In-ear detection: earbuds did not confirm the change"
+            }
+        }
+    }
+
+    suspend fun setEarbudSpatialAudio(mode: Int, headTracking: Boolean) {
+        if (!supportsB172Settings()) return
+        val expected = mode.coerceIn(0, 4) to (headTracking && mode != 0)
+        val sent = sendPacket(CmfProtocol.createSetSpatialAudioPacket(expected.first, expected.second))
+        awaitingSpatialAudio = if (sent) expected else null
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Пространственный звук: ожидаю подтверждение" else "Spatial audio: waiting for confirmation"
+        } else if (AppStrings.isRussian) "Пространственный звук: команда не отправлена" else "Spatial audio: command not sent"
+        if (sent) {
+            delay(150)
+            sendPacket(CmfProtocol.createReadSpatialAudioPacket())
+            delay(1800)
+            if (awaitingSpatialAudio == expected) {
+                awaitingSpatialAudio = null
+                _commandStatus.value = if (AppStrings.isRussian) "Пространственный звук: нет подтверждения" else "Spatial audio: no confirmation"
+            }
+        }
+    }
+
+    suspend fun setEarbudGesture(device: Int, gesture: Int, action: Int) {
+        if (!supportsB172Settings()) return
+        val expected = Triple(device, gesture, action)
+        val sent = runCatching {
+            sendPacket(CmfProtocol.createSetEarbudGesturePacket(device, gesture, action))
+        }.getOrDefault(false)
+        awaitingGesture = if (sent) expected else null
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Жест наушников: ожидаю подтверждение" else "Earbud gesture: waiting for confirmation"
+        } else if (AppStrings.isRussian) "Жест наушников: команда не отправлена" else "Earbud gesture: command not sent"
+        if (sent) {
+            delay(150)
+            sendPacket(CmfProtocol.createReadEarbudGesturesPacket())
+            delay(1800)
+            if (awaitingGesture == expected) {
+                awaitingGesture = null
+                _commandStatus.value = if (AppStrings.isRussian) "Жест наушников: нет подтверждения" else "Earbud gesture: no confirmation"
+            }
+        }
+    }
+
+    suspend fun setDualConnectionEnabled(enabled: Boolean) {
+        if (!supportsB172Settings()) return
+        val sent = sendPacket(CmfProtocol.createSetDualConnectionPacket(enabled))
+        awaitingDualConnectionEnabled = if (sent) enabled else null
+        _commandStatus.value = if (sent) {
+            if (AppStrings.isRussian) "Двойное подключение: наушники перезапускаются; переподключитесь для проверки" else "Dual connection: earbuds reboot; reconnect to verify"
+        } else if (AppStrings.isRussian) "Двойное подключение: команда не отправлена" else "Dual connection: command not sent"
+        if (sent) {
+            delay(3000)
+            if (awaitingDualConnectionEnabled == enabled) {
+                awaitingDualConnectionEnabled = null
+                _commandStatus.value = if (AppStrings.isRussian) "Двойное подключение: переподключитесь, чтобы прочитать состояние" else "Dual connection: reconnect to read its state"
+            }
+        }
+    }
+
+    suspend fun setDualDeviceConnected(macAddress: String, connect: Boolean) {
+        if (!supportsB172Settings()) return
+        val packet = runCatching { CmfProtocol.createSetDualDeviceConnectionPacket(macAddress, connect) }.getOrNull()
+            ?: return
+        if (!sendPacket(packet)) {
+            _commandStatus.value = if (AppStrings.isRussian) "Запомненное устройство: команда не отправлена" else "Remembered device: command not sent"
+            return
+        }
+        awaitingDualDevice = macAddress.replace('-', ':').uppercase() to connect
+        delay(250)
+        refreshDualDeviceList()
+        delay(1800)
+        if (awaitingDualDevice != null) {
+            awaitingDualDevice = null
+            _commandStatus.value = if (AppStrings.isRussian) "Запомненное устройство: нет подтверждения" else "Remembered device: no confirmation"
+        }
+    }
+
+    private suspend fun refreshDualDeviceList() {
+        dualListPageRequests = 1
+        _deviceStatus.value = _deviceStatus.value.copy(rememberedDevices = emptyList(), isRememberedDeviceListAvailable = false)
+        sendPacket(CmfProtocol.createReadDualDeviceListPacket(0))
     }
 
     suspend fun setHdAudio(enabled: Boolean): Boolean =
@@ -963,6 +1163,20 @@ class CmfBluetoothManager private constructor() {
         checkProfileBattery()
         sendPacket(CmfProtocol.createReadBatteryPacket())
         sendPacket(CmfProtocol.createReadAncPacket())
+        if (supportsB172Settings()) requestB172Settings()
+    }
+
+    private fun supportsB172Settings(): Boolean =
+        _deviceStatus.value.hardwareModel.equals("B172", ignoreCase = true)
+
+    private suspend fun requestB172Settings() {
+        sendPacket(CmfProtocol.createReadEarbudListeningPresetPacket())
+        sendPacket(CmfProtocol.createReadBassPacket())
+        sendPacket(CmfProtocol.createReadLatencyPacket())
+        sendPacket(CmfProtocol.createReadInEarPacket())
+        sendPacket(CmfProtocol.createReadSpatialAudioPacket())
+        sendPacket(CmfProtocol.createReadEarbudGesturesPacket())
+        sendPacket(CmfProtocol.createReadDualConnectionPacket())
     }
 
     private fun startReading() {
@@ -1121,6 +1335,17 @@ class CmfBluetoothManager private constructor() {
 
     private fun processPacket(packet: PacketResult) {
         when (packet.command) {
+            CmfProtocol.CMD_READ_DEVICE_MODEL -> {
+                if (packet.payload.size >= 2) {
+                    val modelId = ((packet.payload[1].toInt() and 0xFF) shl 8) or
+                        (packet.payload[0].toInt() and 0xFF)
+                    val normalizedModel = modelId.toString(16).uppercase()
+                    _deviceStatus.value = _deviceStatus.value.copy(hardwareModel = normalizedModel)
+                    if (normalizedModel == "B172") {
+                        scope.launch { requestB172Settings() }
+                    }
+                }
+            }
             CmfProtocol.CMD_READ_BATTERY -> {
                 if (packet.payload.size >= 3) {
                     val cur = _deviceStatus.value.battery
@@ -1160,7 +1385,7 @@ class CmfBluetoothManager private constructor() {
                     )
                 }
             }
-            CmfProtocol.CMD_READ_ANC, CmfProtocol.CMD_READ_LISTEN_MODE -> {
+            CmfProtocol.CMD_READ_ANC -> {
                 if (packet.payload.isNotEmpty()) {
                     val (mode, level) = parseAncPayload(packet.command, packet.payload)
                     if (mode != null) {
@@ -1180,10 +1405,158 @@ class CmfBluetoothManager private constructor() {
                     }
                 }
             }
+            CmfProtocol.CMD_READ_LISTEN_MODE -> {
+                if (packet.payload.isNotEmpty()) {
+                    val preset = packet.payload[0].toInt() and 0xFF
+                    if (preset in 0..6) {
+                        _deviceStatus.value = _deviceStatus.value.copy(
+                            earbudListeningPreset = preset,
+                            isEarbudListeningPresetAvailable = true
+                        )
+                        awaitingEarbudPreset?.let { expected ->
+                            _commandStatus.value = if (preset == expected) {
+                                if (AppStrings.isRussian) "Пресет наушников: подтверждён" else "Earbud preset: confirmed"
+                            } else {
+                                if (AppStrings.isRussian) "Активный пресет наушников: $preset" else "Active earbud preset: $preset"
+                            }
+                            awaitingEarbudPreset = null
+                        }
+                        if (preset == 6) scope.launch {
+                            delay(100)
+                            sendPacket(CmfProtocol.createReadEarbudCustomEqPacket())
+                        }
+                    }
+                }
+            }
+            CmfProtocol.CMD_READ_CUSTOM_EQ -> {
+                CmfProtocol.parseEarbudCustomEq(packet.payload)?.let { (bass, mid, treble) ->
+                    _deviceStatus.value = _deviceStatus.value.copy(
+                        isEarbudCustomEqAvailable = true,
+                        earbudCustomBass = bass,
+                        earbudCustomMid = mid,
+                        earbudCustomTreble = treble
+                    )
+                    awaitingCustomEq?.let { expected ->
+                        _commandStatus.value = if (expected == Triple(bass, mid, treble)) {
+                            if (AppStrings.isRussian) "EQ наушников: подтверждён" else "Earbud EQ: confirmed"
+                        } else {
+                            if (AppStrings.isRussian) "EQ наушников: прочитаны фактические значения" else "Earbud EQ: actual values read"
+                        }
+                        awaitingCustomEq = null
+                    }
+                }
+            }
+            CmfProtocol.CMD_READ_LATENCY -> {
+                if (packet.payload.isNotEmpty()) {
+                    val enabled = packet.payload[0].toInt() == 1
+                    _deviceStatus.value = _deviceStatus.value.copy(isGameModeEnabled = enabled, isLatencyModeAvailable = true)
+                    awaitingGameMode = null
+                    _commandStatus.value = if (AppStrings.isRussian) "Игровой режим: ${if (enabled) "включён" else "выключен"} подтверждён наушниками" else "Game mode: ${if (enabled) "enabled" else "disabled"} confirmed by earbuds"
+                }
+            }
+            CmfProtocol.CMD_READ_IN_EAR -> {
+                if (packet.payload.size >= 3) {
+                    val enabled = packet.payload[2].toInt() != 0
+                    _deviceStatus.value = _deviceStatus.value.copy(isInEarDetectionEnabled = enabled, isInEarDetectionAvailable = true)
+                    awaitingInEarDetection = null
+                    _commandStatus.value = if (AppStrings.isRussian) "Автопауза: ${if (enabled) "включена" else "выключена"} подтверждена наушниками" else "In-ear detection: ${if (enabled) "enabled" else "disabled"} confirmed by earbuds"
+                }
+            }
+            CmfProtocol.CMD_READ_SPATIAL -> {
+                if (packet.payload.isNotEmpty()) {
+                    val mode = packet.payload[0].toInt() and 0xFF
+                    val headTracking = packet.payload.getOrNull(1)?.toInt() == 1
+                    _deviceStatus.value = _deviceStatus.value.copy(
+                        spatialAudioMode = if (mode in 0..4) mode else -1,
+                        isSpatialHeadTrackingEnabled = headTracking,
+                        isSpatialAudioAvailable = mode in 0..4
+                    )
+                    awaitingSpatialAudio?.let { expected ->
+                        _commandStatus.value = if (expected == (mode to headTracking)) {
+                            if (AppStrings.isRussian) "Пространственный звук: подтверждён" else "Spatial audio: confirmed"
+                        } else if (AppStrings.isRussian) "Пространственный звук: прочитан фактический режим" else "Spatial audio: actual mode read back"
+                        awaitingSpatialAudio = null
+                    }
+                }
+            }
+            CmfProtocol.CMD_READ_GESTURES -> {
+                CmfProtocol.parseEarbudGestures(packet.payload)?.let { mappings ->
+                    var updated = _deviceStatus.value
+                    for (mapping in mappings) {
+                        if (mapping.button != 1 || mapping.device !in 2..3) continue
+                        updated = when (mapping.device to mapping.gesture) {
+                            2 to 2 -> updated.copy(leftDoubleTapAction = mapping.action)
+                            2 to 3 -> updated.copy(leftTripleTapAction = mapping.action)
+                            2 to 7 -> updated.copy(leftHoldAction = mapping.action)
+                            3 to 2 -> updated.copy(rightDoubleTapAction = mapping.action)
+                            3 to 3 -> updated.copy(rightTripleTapAction = mapping.action)
+                            3 to 7 -> updated.copy(rightHoldAction = mapping.action)
+                            else -> updated
+                        }
+                    }
+                    _deviceStatus.value = updated.copy(isGestureConfigAvailable = true)
+                    awaitingGesture?.let { expected ->
+                        val actual = mappings.firstOrNull {
+                            it.device == expected.first && it.button == 1 && it.gesture == expected.second
+                        }?.action
+                        _commandStatus.value = if (actual == expected.third) {
+                            if (AppStrings.isRussian) "Жест наушников: подтверждён" else "Earbud gesture: confirmed"
+                        } else {
+                            if (AppStrings.isRussian) "Жест наушников: прочитано фактическое действие" else "Earbud gesture: actual action read back"
+                        }
+                        awaitingGesture = null
+                    }
+                }
+            }
+            CmfProtocol.CMD_READ_DUAL_CONNECTION -> {
+                if (packet.payload.isNotEmpty()) {
+                    val enabled = packet.payload[0].toInt() == 1
+                    _deviceStatus.value = _deviceStatus.value.copy(
+                        isDualConnectionEnabled = enabled,
+                        isDualConnectionAvailable = true
+                    )
+                    awaitingDualConnectionEnabled = null
+                    if (enabled) scope.launch { refreshDualDeviceList() }
+                    _commandStatus.value = if (AppStrings.isRussian) "Двойное подключение: ${if (enabled) "включено" else "выключено"} прочитано" else "Dual connection: ${if (enabled) "enabled" else "disabled"} read back"
+                }
+            }
+            CmfProtocol.CMD_READ_DUAL_DEVICE_LIST -> {
+                CmfProtocol.parseDualConnectionDeviceList(packet.payload)?.let { page ->
+                    val current = _deviceStatus.value.rememberedDevices
+                    val merged = (current + page).distinctBy { it.macAddress }
+                    _deviceStatus.value = _deviceStatus.value.copy(rememberedDevices = merged)
+                    val added = merged.size > current.size
+                    if (added && dualListPageRequests < 20) {
+                        dualListPageRequests++
+                        scope.launch {
+                            delay(120)
+                            sendPacket(CmfProtocol.createReadDualDeviceListPacket(merged.size))
+                        }
+                    } else {
+                        _deviceStatus.value = _deviceStatus.value.copy(isRememberedDeviceListAvailable = true)
+                    }
+                    awaitingDualDevice?.let { expected ->
+                        val device = merged.firstOrNull { it.macAddress.equals(expected.first, ignoreCase = true) }
+                        if (device != null && device.isConnected == expected.second) {
+                            _commandStatus.value = if (AppStrings.isRussian) "Запомненное устройство: изменение подтверждено" else "Remembered device: change confirmed"
+                            awaitingDualDevice = null
+                        }
+                    }
+                }
+            }
             CmfProtocol.CMD_READ_FIRMWARE -> {
                 val fw = String(packet.payload).trim { it <= ' ' || it == '\u0000' }
                 if (fw.isNotEmpty()) {
                     _deviceStatus.value = _deviceStatus.value.copy(firmwareVersion = fw)
+                }
+            }
+            CmfProtocol.CMD_READ_BASS -> {
+                if (packet.payload.size >= 2) {
+                    val enabled = packet.payload[0].toInt() != 0
+                    val rawLevel = packet.payload[1].toInt() and 0xFF
+                    val level = if (enabled && rawLevel > 0) ((rawLevel + 1) / 2).coerceIn(1, 5) else 0
+                    _deviceStatus.value = _deviceStatus.value.copy(ultraBassLevel = level)
+                    _commandStatus.value = if (AppStrings.isRussian) "Бас: подтверждён уровень $level" else "Bass: confirmed level $level"
                 }
             }
         }

@@ -1,13 +1,18 @@
 package com.cmf.budscontroller.ui.components
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.cmf.budscontroller.i18n.AppStrings
@@ -31,14 +36,51 @@ private fun FeatureSection(title: String, content: @Composable ColumnScope.() ->
 fun ProfilePanel(vm: MainViewModel) {
     val message by vm.profileMessage.collectAsState()
     FeatureSection(tr("Профили звука", "Listening profiles")) {
-        Text(tr("Применить профиль или сохранить в него текущие ANC, бас, игровой режим и эквалайзер.", "Apply a profile or save your current ANC, bass, game mode and EQ to it."))
-        listOf("metro" to tr("Метро", "Metro"), "work" to tr("Работа", "Work"), "games" to tr("Игры", "Games"), "sleep" to tr("Сон", "Sleep")).forEach { (id, name) ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { vm.applyProfile(id) }, modifier = Modifier.weight(1f)) { Text(name) }
-                OutlinedButton(onClick = { vm.saveProfile(id) }) { Text(tr("Сохранить", "Save")) }
+        Text(
+            tr(
+                "Сохраняйте наборы ANC, баса, игрового режима и телефонного EQ.",
+                "Save combinations of ANC, bass, game mode and phone EQ."
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        listOf("metro" to tr("Метро", "Metro"), "work" to tr("Работа", "Work"), "games" to tr("Игры", "Games"), "sleep" to tr("Сон", "Sleep"))
+            .chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { (id, name) ->
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(name, style = MaterialTheme.typography.titleSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Button(onClick = { vm.applyProfile(id) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp)) {
+                                        Text(tr("Включить", "Apply"), maxLines = 1)
+                                    }
+                                    OutlinedButton(onClick = { vm.saveProfile(id) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 8.dp)) {
+                                        Text(tr("Сохранить", "Save"), maxLines = 1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        if (message.isNotBlank()) {
+            androidx.compose.animation.AnimatedContent(
+                targetState = message,
+                transitionSpec = { androidx.compose.animation.fadeIn() togetherWith androidx.compose.animation.fadeOut() },
+                label = "profile_feedback"
+            ) { currentMessage ->
+                Text(currentMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             }
         }
-        if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -54,8 +96,46 @@ fun DiagnosticsPanel(vm: MainViewModel) {
     }
     FeatureSection(tr("Диагностика подключения", "Connection diagnostics")) {
         Text(if (status.isConnected) status.deviceName else tr("Наушники не подключены", "Earbuds disconnected"))
-        Text("Audio: ${if (output) "✓" else "—"}    SPP: ${if (status.isSppActive) "✓" else "—"}    BLE: ${if (status.isGattActive) "✓" else "—"}")
-        if (command.isNotBlank()) Text(command, style = MaterialTheme.typography.bodySmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Audio" to output, "SPP" to status.isSppActive, "BLE" to status.isGattActive).forEach { (label, active) ->
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Box(Modifier.size(7.dp).background(if (active) Color(0xFF30D158) else MaterialTheme.colorScheme.outlineVariant, CircleShape))
+                            Text(if (active) tr("Активен", "Active") else tr("Нет", "Off"), style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+            }
+        }
+        if (command.isNotBlank()) {
+            val commandColor = when {
+                command.contains("подтвержд", ignoreCase = true) || command.contains("confirmed", ignoreCase = true) -> Color(0xFF30D158)
+                command.contains("нет подтверждения", ignoreCase = true) || command.contains("no confirmation", ignoreCase = true) || command.contains("не подтвердили", ignoreCase = true) || command.contains("did not confirm", ignoreCase = true) || command.contains("не отправлена", ignoreCase = true) || command.contains("not sent", ignoreCase = true) -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.primary
+            }
+            Surface(
+                modifier = Modifier.fillMaxWidth().animateContentSize(),
+                color = commandColor.copy(alpha = 0.10f),
+                shape = MaterialTheme.shapes.small
+            ) {
+                Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Box(Modifier.size(7.dp).background(commandColor, CircleShape))
+                    androidx.compose.animation.AnimatedContent(
+                        targetState = command,
+                        transitionSpec = { androidx.compose.animation.fadeIn() togetherWith androidx.compose.animation.fadeOut() },
+                        label = "command_feedback"
+                    ) { currentCommand ->
+                        Text(currentCommand, style = MaterialTheme.typography.bodySmall, color = commandColor)
+                    }
+                }
+            }
+        }
         Text(when {
             !status.isConnected -> tr("Включите Bluetooth и подключите CMF Buds Pro 2 в настройках телефона.", "Enable Bluetooth and pair CMF Buds Pro 2 in phone settings.")
             !status.isSppActive && !status.isGattActive -> tr("Доступен системный статус. Канал управления ещё не установлен; повторите подключение.", "System status available. Control transport is not ready; retry connection.")

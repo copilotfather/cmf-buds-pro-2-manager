@@ -13,7 +13,7 @@
 
 An independent Android companion for **CMF Buds Pro 2**, with a sound studio, home screen widgets, listening profiles and experimental **CMF Watch Pro 2** integration. Built with Kotlin and Jetpack Compose. English and Russian interfaces.
 
-> **Compatibility status:** the current release passes compilation and four watch-protocol unit tests. Physical-device validation is still pending. Watch integration is beta; command support varies by device firmware. This project is not affiliated with Nothing or CMF.
+> **Compatibility status:** advanced earbud controls are enabled only after the app identifies supported hardware revision B172. Changes are read back from the earbuds where supported; physical validation of this build is still pending. Firmware checks are advisory and installation remains in Nothing X. Watch integration is beta. This project is not affiliated with Nothing or CMF.
 
 <p align="center">
   <a href="https://github.com/copilotfather/cmf-buds-pro-2-manager/releases/latest"><img src="docs/download.svg" alt="Download latest Android APK" width="256" height="56" /></a>
@@ -31,6 +31,8 @@ An independent Android companion for **CMF Buds Pro 2**, with a sound studio, ho
 | Studio equalizer | Five bands, animated curve, presets, custom curves, JSON sharing, ±1 dB adjustments and A/B comparison |
 | Listening profiles | Metro, Work, Games and Sleep; save your own ANC, bass, game mode and EQ settings |
 | Connection diagnostics | Separate audio, SPP and BLE status; ANC readback and explicit command status |
+| Earbud controls | B172 listening presets, custom earbud EQ, bass, game mode, in-ear detection, spatial audio, gestures and dual connection |
+| Firmware | Revision-aware advisory version check with a direct path to official Nothing X updates; no direct flashing |
 | Home screen widgets | Seven variants: controls, battery, ANC, transparency, game mode, bass and connection; light/dark style and accent choices |
 | Battery history | Local seven-day samples, individual earbud curves and charge-imbalance warning |
 | Find earbuds | Left/right acoustic signal with a safety confirmation; last known phone location at disconnect |

@@ -1,3 +1,25 @@
+## v2.4.6 · Sound Studio
+
+### What's new
+
+- Refined the home screen hierarchy, studio layout, card surfaces and navigation motion.
+- Added B172 hardware identification before exposing revision-specific earbud controls.
+- Added earbud preset and custom EQ controls, game mode, in-ear detection, spatial audio, touch gestures and dual-connection device management with readback.
+- Added a revision-aware firmware advisory and official Nothing X update handoff. Direct earbud flashing is not supported.
+- Added saved-device reset guidance based on the official CMF case-button procedure.
+
+### Новое
+
+- Переработаны иерархия главного экрана, студийная вкладка, карточки и анимации переходов.
+- Перед показом расширенных настроек определяется аппаратная ревизия B172.
+- Добавлены настройки пресетов и EQ наушников, игрового режима, автопаузы, пространственного звука, жестов и двойного подключения с чтением состояния.
+- Проверка версии прошивки учитывает ревизию и ведёт к обновлению через Nothing X. Прямая перепрошивка не поддерживается.
+- Добавлена официальная инструкция сброса памяти подключений кнопкой кейса.
+
+Физическая проверка новых команд ещё не проводилась. Для расширенных настроек поддерживается только подтверждённая ревизия B172.
+
+---
+
 ## v2.4.5 · Comfortable Controls
 
 ### What's new

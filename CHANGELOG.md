@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.6 — Sound Studio
+- Reworked the overview hierarchy, studio grouping, card treatment and page motion.
+- Added hardware revision detection and gated B172-specific earbud controls.
+- Added earbud presets, custom EQ, device settings, touch gestures and dual-connection memory management with readback.
+- Added revision-aware firmware guidance and official Nothing X handoff; direct OTA flashing is not implemented.
+- Added official case-button reset instructions for clearing saved-device memory.
+
 ## 2.4.0 — Companion & Watch Beta
 
 ### Sound and everyday controls

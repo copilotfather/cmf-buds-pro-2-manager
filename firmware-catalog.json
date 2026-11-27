@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "models": {
+    "cmf-buds-pro-2": {
+      "confirmedMinimumVersions": [
+        {
+          "modelRevision": "2025",
+          "versionFamilyPrefix": "1.0.1.",
+          "version": "1.0.1.72",
+          "sourceUrl": "https://nothing.community/d/52017-google-fast-pair-update",
+          "sourceType": "manufacturer-community-announcement",
+          "checkedAt": "2026-11-27"
+        }
+      ]
+    }
+  }
+}

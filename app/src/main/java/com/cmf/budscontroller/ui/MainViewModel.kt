@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import com.cmf.budscontroller.update.BudsFirmwareCatalog
+import com.cmf.budscontroller.update.FirmwareCheckResult
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -78,11 +80,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             bluetoothManager.setGameMode(p.game)
             equalizerManager.toggleEqualizer(true)
             p.bands.forEachIndexed { i, db -> equalizerManager.setCustomBand(i, db) }
-            val result = deviceStatus.value
-            val sent = result.ancMode == p.mode && result.ultraBassLevel == p.bass && result.isGameModeEnabled == p.game
-            profileMessage.value = if (sent) {
-                if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Профиль отправлен" else "Profile sent"
-            } else if (com.cmf.budscontroller.i18n.AppStrings.isRussian) "Не все команды отправлены — проверьте соединение" else "Some commands failed — check connection"
+            profileMessage.value = if (com.cmf.budscontroller.i18n.AppStrings.isRussian) {
+                "Команды профиля отправлены. ANC и бас сверяются с ответами наушников; EQ применяется на телефоне."
+            } else {
+                "Profile commands sent. ANC and bass rely on earbud readback; EQ is applied on the phone."
+            }
         }
     }
 
@@ -131,6 +133,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val voiceWhisperManager = VoiceWhisperManager(application)
     val updateManager = com.cmf.budscontroller.update.GitHubUpdateManager(application)
     val updateState = updateManager.updateState
+    private val firmwareCatalog = BudsFirmwareCatalog(application)
+    private val _firmwareCheck = MutableStateFlow<FirmwareCheckResult?>(null)
+    val firmwareCheck: StateFlow<FirmwareCheckResult?> = _firmwareCheck.asStateFlow()
     val whisperSettings: StateFlow<WhisperSettings> = voiceWhisperManager.settings
 
     // Music & Media Tracker
@@ -291,10 +296,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setEarbudListeningPreset(preset: Int) {
+        viewModelScope.launch { bluetoothManager.setEarbudListeningPreset(preset) }
+    }
+
+    fun setEarbudCustomEq(bass: Int, mid: Int, treble: Int) {
+        viewModelScope.launch { bluetoothManager.setEarbudCustomEq(bass, mid, treble) }
+    }
+
+    fun refreshEarbudCustomEq() {
+        viewModelScope.launch { bluetoothManager.refreshEarbudCustomEq() }
+    }
+
     fun setGameMode(enabled: Boolean) {
         viewModelScope.launch {
             bluetoothManager.setGameMode(enabled)
         }
+    }
+
+    fun setInEarDetection(enabled: Boolean) {
+        viewModelScope.launch { bluetoothManager.setInEarDetection(enabled) }
+    }
+
+    fun setEarbudSpatialAudio(mode: Int, headTracking: Boolean) {
+        viewModelScope.launch { bluetoothManager.setEarbudSpatialAudio(mode, headTracking) }
+    }
+
+    fun setEarbudGesture(device: Int, gesture: Int, action: Int) {
+        viewModelScope.launch { bluetoothManager.setEarbudGesture(device, gesture, action) }
+    }
+
+    fun setDualConnectionEnabled(enabled: Boolean) {
+        viewModelScope.launch { bluetoothManager.setDualConnectionEnabled(enabled) }
+    }
+
+    fun setDualDeviceConnected(macAddress: String, connect: Boolean) {
+        viewModelScope.launch { bluetoothManager.setDualDeviceConnected(macAddress, connect) }
     }
 
     fun refreshStatus() {
@@ -538,6 +575,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun openUpdateInBrowser() {
         val url = updateState.value.downloadUrl
         updateManager.openInBrowser(url)
+    }
+
+    fun checkBudsFirmware() {
+        val version = deviceStatus.value.firmwareVersion.trim()
+        if (!deviceStatus.value.hardwareModel.equals("B172", ignoreCase = true)) {
+            _firmwareCheck.value = FirmwareCheckResult(
+                version,
+                null,
+                null,
+                0L,
+                "Hardware revision is not confirmed; check updates in Nothing X"
+            )
+            return
+        }
+        if (version.isBlank() || version.equals("unknown", ignoreCase = true)) {
+            _firmwareCheck.value = FirmwareCheckResult(version, null, null, 0L, "Firmware version is unavailable")
+            return
+        }
+        viewModelScope.launch {
+            _firmwareCheck.value = FirmwareCheckResult(version, null, null, 0L, "Checking")
+            _firmwareCheck.value = firmwareCatalog.check(version)
+        }
     }
 
     override fun onCleared() {

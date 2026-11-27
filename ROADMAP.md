@@ -7,6 +7,9 @@
 - [x] Five-band EQ, presets, JSON sharing and A/B comparison.
 - [x] Listening profiles, seven widgets and appearance settings.
 - [x] Battery history, connection diagnostics and ANC readback.
+- [x] Earbud listening-preset read/write with device readback (physical compatibility remains under validation).
+- [x] Device EQ, game mode, in-ear detection, spatial audio modes, per-ear touch gestures and remembered-device management with readback (physical compatibility remains under validation).
+- [x] Read hardware model before enabling revision-specific controls; show supported memory reset steps when a single saved device cannot be removed.
 - [x] Independent left/right finder with safety confirmation and persisted phone location.
 - [x] Watch Pro 2 BLE beta, session authorization, local health sync and opt-in notifications.
 - [x] Watch protocol tests and release workflow.
@@ -14,6 +17,7 @@
 ## Next: validate on devices
 
 - [ ] Test Buds Pro 2 commands and readback on real firmware; record supported versions.
+- [ ] Capture Nothing X OTA traffic by hardware revision; do not ship a flashing control before the documented OTA safety gates pass ([product plan](docs/PRODUCT_PLAN.md)).
 - [ ] Test Watch Pro 2 pairing, reconnect, sync and notification ACK against physical hardware.
 - [ ] Validate widgets, large fonts, small screens and system insets on Nothing Launcher.
 - [ ] Check EQ behavior across players, phones and audio sessions.

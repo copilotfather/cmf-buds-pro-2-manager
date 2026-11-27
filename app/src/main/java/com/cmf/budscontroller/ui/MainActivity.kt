@@ -25,6 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -233,6 +234,7 @@ fun HiFiStudioBudsApp(
     val codecState by viewModel.codecState.collectAsState()
     val mediaState by viewModel.mediaState.collectAsState()
     val updateState by viewModel.updateState.collectAsState()
+    val firmwareCheck by viewModel.firmwareCheck.collectAsState()
 
     var currentTab by rememberSaveable { mutableStateOf(StudioTab.DEVICE) }
     var showDevicePicker by remember { mutableStateOf(false) }
@@ -277,19 +279,6 @@ fun HiFiStudioBudsApp(
             topBar = {
                 TopAppBar(
                     title = {
-                        val connectionPulse = if (status.isConnected) {
-                            val pulse = rememberInfiniteTransition(label = "connection_pulse")
-                            val scale by pulse.animateFloat(
-                                initialValue = 0.88f,
-                                targetValue = 1.3f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(900, easing = FastOutSlowInEasing),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = "connection_dot_scale"
-                            )
-                            scale
-                        } else 1f
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -310,9 +299,8 @@ fun HiFiStudioBudsApp(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(6.dp)
+                                            .size(7.dp)
                                             .clip(CircleShape)
-                                            .graphicsLayer { scaleX = connectionPulse; scaleY = connectionPulse }
                                             .background(if (status.isConnected) Color(0xFF30D158) else colorScheme.onSurfaceVariant)
                                     )
                                     AnimatedContent(
@@ -415,17 +403,13 @@ fun HiFiStudioBudsApp(
                             val isTabPressed by tabInteraction.collectIsPressedAsState()
                             val tint = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
                             val iconScale by animateFloatAsState(
-                                targetValue = when {
-                                    isTabPressed -> 0.92f
-                                    isSelected -> 1.08f
-                                    else -> 1f
-                                },
-                                animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+                                targetValue = if (isTabPressed) 0.96f else 1f,
+                                animationSpec = tween(150, easing = FastOutSlowInEasing),
                                 label = "tab_icon_bounce"
                             )
                             val indicatorWidth by animateDpAsState(
                                 targetValue = if (isSelected) 16.dp else 4.dp,
-                                animationSpec = spring(dampingRatio = 0.62f, stiffness = 420f),
+                                animationSpec = tween(180, easing = FastOutSlowInEasing),
                                 label = "tab_indicator_morph"
                             )
                             Column(
@@ -628,7 +612,11 @@ fun HiFiStudioBudsApp(
                         BentoCard(
                             modifier = Modifier.weight(1f),
                             title = AppStrings.headerGameMode,
-                            subtitle = if (status.isGameModeEnabled) AppStrings.gameModeActive else AppStrings.gameModeInactive,
+                            subtitle = when {
+                                !status.isLatencyModeAvailable -> uiText("Статус не прочитан", "Status not read")
+                                status.isGameModeEnabled -> AppStrings.gameModeActive
+                                else -> AppStrings.gameModeInactive
+                            },
                             icon = Icons.Outlined.SportsEsports,
                             accentColor = if (status.isGameModeEnabled) Color(0xFF30D158) else colorScheme.onSurfaceVariant,
                             onClick = { viewModel.setGameMode(!status.isGameModeEnabled) }
@@ -654,6 +642,72 @@ fun HiFiStudioBudsApp(
 
                 StudioTab.STUDIO -> {
                     com.cmf.budscontroller.ui.components.ComparisonPanel(viewModel)
+                    if (status.hardwareModel.equals("B172", ignoreCase = true)) {
+                        EarbudListeningPresetCard(
+                            selectedPreset = status.earbudListeningPreset,
+                            presetAvailable = status.isEarbudListeningPresetAvailable,
+                            customEqAvailable = status.isEarbudCustomEqAvailable,
+                            customBass = status.earbudCustomBass,
+                            customMid = status.earbudCustomMid,
+                            customTreble = status.earbudCustomTreble,
+                            onSelect = viewModel::setEarbudListeningPreset,
+                            onApplyCustomEq = viewModel::setEarbudCustomEq,
+                            onRefreshCustomEq = viewModel::refreshEarbudCustomEq
+                        )
+                        EarbudDeviceSettingsCard(
+                            isConnected = status.isConnected,
+                            gameModeEnabled = status.isGameModeEnabled,
+                            gameModeAvailable = status.isLatencyModeAvailable,
+                            inEarEnabled = status.isInEarDetectionEnabled,
+                            inEarAvailable = status.isInEarDetectionAvailable,
+                            spatialAudioMode = status.spatialAudioMode,
+                            spatialHeadTracking = status.isSpatialHeadTrackingEnabled,
+                            spatialAvailable = status.isSpatialAudioAvailable,
+                            onGameModeChange = viewModel::setGameMode,
+                            onInEarChange = viewModel::setInEarDetection,
+                            onSpatialModeChange = viewModel::setEarbudSpatialAudio
+                        )
+                        EarbudGestureCard(
+                            isConnected = status.isConnected,
+                            isAvailable = status.isGestureConfigAvailable,
+                            actions = listOf(
+                                status.leftDoubleTapAction,
+                                status.leftTripleTapAction,
+                                status.leftHoldAction,
+                                status.rightDoubleTapAction,
+                                status.rightTripleTapAction,
+                                status.rightHoldAction
+                            ),
+                            onChange = viewModel::setEarbudGesture,
+                            onRefresh = viewModel::refreshStatus
+                        )
+                        DualConnectionCard(
+                            isConnected = status.isConnected,
+                            isAvailable = status.isDualConnectionAvailable,
+                            enabled = status.isDualConnectionEnabled,
+                            devices = status.rememberedDevices,
+                            deviceListAvailable = status.isRememberedDeviceListAvailable,
+                            onToggle = viewModel::setDualConnectionEnabled,
+                            onDeviceToggle = viewModel::setDualDeviceConnected,
+                            onRefresh = viewModel::refreshStatus
+                        )
+                    } else {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(uiText("Расширенные настройки наушников", "Advanced earbud settings"), fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    if (status.hardwareModel.isBlank()) uiText("Определяем ревизию устройства…", "Detecting hardware revision…")
+                                    else uiText("Ревизия ${status.hardwareModel}: эти команды подтверждены только для B172.", "Revision ${status.hardwareModel}: these commands are verified for B172 only."),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
                     // Hi-Res Codec Engine Card (LDAC, LHDC, aptX HD)
                     BentoCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -744,6 +798,13 @@ fun HiFiStudioBudsApp(
                 StudioTab.FEATURES -> {
                     com.cmf.budscontroller.ui.components.ProfilePanel(viewModel)
                     com.cmf.budscontroller.ui.components.DiagnosticsPanel(viewModel)
+                    FirmwareUpdateCard(
+                        currentVersion = status.firmwareVersion,
+                        isConnected = status.isConnected,
+                        isModelVerified = status.hardwareModel.equals("B172", ignoreCase = true),
+                        result = firmwareCheck,
+                        onCheck = viewModel::checkBudsFirmware
+                    )
                     com.cmf.budscontroller.ui.components.WidgetSettingsPanel()
                     val lastLocation by viewModel.lastLocation.collectAsState()
                     com.cmf.budscontroller.ui.components.FindMyBudsCard(
@@ -1843,6 +1904,524 @@ fun HiFiStudioBudsApp(
 // -------------------------------------------------------------
 
 @Composable
+private fun FirmwareUpdateCard(
+    currentVersion: String,
+    isConnected: Boolean,
+    isModelVerified: Boolean,
+    result: com.cmf.budscontroller.update.FirmwareCheckResult?,
+    onCheck: () -> Unit
+) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val hasVersion = currentVersion.isNotBlank() && !currentVersion.equals("unknown", ignoreCase = true)
+    val checkResult = result?.takeIf { it.currentVersion == currentVersion }
+    val isChecking = checkResult?.error == "Checking"
+    val title: String
+    val detail: String
+    val accent: Color
+    when {
+        !isModelVerified -> {
+            title = uiText("Ревизия не подтверждена", "Hardware revision is unverified")
+            detail = uiText("Каталог проверяет только подтверждённую ревизию B172. Для остальных используйте Nothing X.", "The catalog checks confirmed B172 data only. Use Nothing X for other revisions.")
+            accent = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        !hasVersion -> {
+            title = uiText("Версия прошивки не получена", "Firmware version unavailable")
+            detail = uiText("Подключите наушники по SPP и обновите статус.", "Connect the earbuds over SPP and refresh their status.")
+            accent = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        isChecking -> {
+            title = uiText("Проверяем каталог…", "Checking catalog…")
+            detail = uiText("Сверяем только подтверждённые версии.", "Checking confirmed version data only.")
+            accent = MaterialTheme.colorScheme.primary
+        }
+        checkResult?.isUpdateAvailable == true -> {
+            title = uiText("Есть подтверждённый минимум ${checkResult.latestVersion}", "Confirmed minimum ${checkResult.latestVersion} is available")
+            detail = uiText("Проверьте обновление в официальном приложении Nothing X.", "Check for the update in the official Nothing X app.")
+            accent = Color(0xFFFF9F0A)
+        }
+        checkResult?.isCurrent == true -> {
+            title = uiText("Версия не ниже подтверждённого минимума", "Version meets the confirmed minimum")
+            detail = uiText("Это не гарантирует, что установлена последняя версия.", "This does not guarantee that this is the latest version.")
+            accent = Color(0xFF30D158)
+        }
+        checkResult != null -> {
+            title = uiText("Для этой ревизии нет данных", "No data for this revision")
+            detail = uiText("Проверьте прошивку через Nothing X.", "Check the firmware in Nothing X.")
+            accent = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        else -> {
+            title = uiText("Проверка прошивки", "Firmware status")
+            detail = uiText("Сверьте версию с каталогом подтверждённых данных.", "Compare the version with the confirmed data catalog.")
+            accent = MaterialTheme.colorScheme.primary
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Outlined.SystemUpdateAlt, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                Text(uiText("ПРОШИВКА НАУШНИКОВ", "EARBUD FIRMWARE"), fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.sp, color = accent)
+            }
+            Text("${uiText("Текущая версия", "Current version")}: ${if (hasVersion) currentVersion else "—"}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(detail, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 17.sp)
+            checkResult?.error?.takeIf { it != "Checking" }?.let {
+                Text(uiText("Не удалось обновить каталог; показаны сохранённые данные, если они есть.", "Catalog refresh failed; cached data is shown when available."), fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+            }
+            checkResult?.sourceUrl?.let { source ->
+                TextButton(onClick = { uriHandler.openUri(source) }, contentPadding = PaddingValues(0.dp)) {
+                    Text(uiText("Источник версии", "Version source"), fontSize = 12.sp)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = onCheck, enabled = isConnected && hasVersion && isModelVerified && !isChecking) {
+                    Text(uiText("Проверить", "Check"))
+                }
+                OutlinedButton(onClick = { uriHandler.openUri("https://support.cmf.tech/hc/en-us/categories/22758549066001-Buds") }) {
+                    Text(uiText("Как обновить", "Update guide"))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun EarbudListeningPresetCard(
+    selectedPreset: Int,
+    presetAvailable: Boolean,
+    customEqAvailable: Boolean,
+    customBass: Int,
+    customMid: Int,
+    customTreble: Int,
+    onSelect: (Int) -> Unit,
+    onApplyCustomEq: (Int, Int, Int) -> Unit,
+    onRefreshCustomEq: () -> Unit
+) {
+    var bass by remember(selectedPreset, customBass) { mutableFloatStateOf(customBass.toFloat()) }
+    var mid by remember(selectedPreset, customMid) { mutableFloatStateOf(customMid.toFloat()) }
+    var treble by remember(selectedPreset, customTreble) { mutableFloatStateOf(customTreble.toFloat()) }
+    val presetNames = listOf(
+        uiText("Dirac", "Dirac"),
+        uiText("Рок", "Rock"),
+        uiText("Электроника", "Electronic"),
+        uiText("Поп", "Pop"),
+        uiText("Вокал", "Vocals"),
+        uiText("Классика", "Classical"),
+        uiText("Своя настройка", "Custom")
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(uiText("ПРЕСЕТ НАУШНИКОВ", "EARBUD PRESET"), fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
+            Text(
+                if (selectedPreset in presetNames.indices) presetNames[selectedPreset] else uiText("Не прочитан", "Not read"),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                uiText("Переключает встроенную настройку звука на наушниках. Ответ устройства обновит выбранный пресет.", "Changes the earbuds’ built-in sound preset. The device response updates the selected preset."),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                presetNames.forEachIndexed { index, name ->
+                    FilterChip(
+                        selected = selectedPreset == index,
+                        onClick = { onSelect(index) },
+                        label = { Text(name, maxLines = 1) }
+                    )
+                }
+            }
+            AnimatedVisibility(visible = selectedPreset == 6) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!presetAvailable) {
+                        Text(
+                            uiText("Подключите наушники, чтобы прочитать EQ", "Connect earbuds to read their EQ"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else if (!customEqAvailable) {
+                        Text(
+                            uiText("Настройки ещё не прочитаны с устройства.", "Settings have not been read from the device yet."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedButton(onClick = onRefreshCustomEq) {
+                            Icon(Icons.Outlined.Refresh, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(uiText("Прочитать EQ", "Read EQ"))
+                        }
+                    } else {
+                        listOf(
+                            Triple(uiText("Бас", "Bass"), bass, { value: Float -> bass = value }),
+                            Triple(uiText("Середина", "Mid"), mid, { value: Float -> mid = value }),
+                            Triple(uiText("Верх", "Treble"), treble, { value: Float -> treble = value })
+                        ).forEach { (label, value, onChange) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(label, modifier = Modifier.width(74.dp), style = MaterialTheme.typography.bodyMedium)
+                                Slider(value = value, onValueChange = onChange, valueRange = -6f..6f, steps = 11, modifier = Modifier.weight(1f))
+                                Text("${value.roundToInt()} dB", modifier = Modifier.width(52.dp), style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                        FilledTonalButton(
+                            onClick = { onApplyCustomEq(bass.roundToInt(), mid.roundToInt(), treble.roundToInt()) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Outlined.GraphicEq, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(uiText("Записать в наушники", "Apply to earbuds"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun EarbudDeviceSettingsCard(
+    isConnected: Boolean,
+    gameModeEnabled: Boolean,
+    gameModeAvailable: Boolean,
+    inEarEnabled: Boolean,
+    inEarAvailable: Boolean,
+    spatialAudioMode: Int,
+    spatialHeadTracking: Boolean,
+    spatialAvailable: Boolean,
+    onGameModeChange: (Boolean) -> Unit,
+    onInEarChange: (Boolean) -> Unit,
+    onSpatialModeChange: (Int, Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                uiText("НАСТРОЙКИ В НАУШНИКАХ", "ON-EARBUD SETTINGS"),
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            EarbudSettingRow(
+                title = uiText("Игровой режим", "Game mode"),
+                subtitle = uiText("Уменьшает задержку Bluetooth-аудио", "Reduces Bluetooth audio latency"),
+                checked = gameModeEnabled,
+                available = gameModeAvailable && isConnected,
+                onCheckedChange = onGameModeChange
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            EarbudSettingRow(
+                title = uiText("Автопауза при снятии", "Pause when removed"),
+                subtitle = uiText("Реакция на снятие наушника", "Detects when an earbud is removed"),
+                checked = inEarEnabled,
+                available = inEarAvailable && isConnected,
+                onCheckedChange = onInEarChange
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Text(uiText("Пространственный звук", "Spatial audio"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(
+                uiText("Выбор применяется в DSP наушников", "Mode runs in the earbuds’ DSP"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                listOf(
+                    0 to uiText("Выкл.", "Off"),
+                    1 to uiText("С головой", "Head tracked"),
+                    2 to uiText("Фиксированный", "Fixed"),
+                    3 to uiText("Концерт", "Concert"),
+                    4 to uiText("Кино", "Theatre"),
+                    5 to uiText("Игра", "Game")
+                ).forEach { (mode, title) ->
+                    FilterChip(
+                        selected = when (mode) {
+                            0 -> spatialAudioMode == 0
+                            1 -> spatialAudioMode == 1 && spatialHeadTracking
+                            2 -> spatialAudioMode == 1 && !spatialHeadTracking
+                            else -> spatialAudioMode == mode - 1
+                        },
+                        onClick = {
+                            when (mode) {
+                                0 -> onSpatialModeChange(0, false)
+                                1 -> onSpatialModeChange(1, true)
+                                2 -> onSpatialModeChange(1, false)
+                                else -> onSpatialModeChange(mode - 1, false)
+                            }
+                        },
+                        enabled = isConnected && spatialAvailable,
+                        label = { Text(title) }
+                    )
+                }
+            }
+            if (!gameModeAvailable || !inEarAvailable) {
+                Text(
+                    uiText("Сначала подключитесь по Bluetooth, чтобы прочитать состояние.", "Connect over Bluetooth to read the current state."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EarbudSettingRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    available: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = available)
+    }
+}
+
+@Composable
+private fun EarbudGestureCard(
+    isConnected: Boolean,
+    isAvailable: Boolean,
+    actions: List<Int>,
+    onChange: (Int, Int, Int) -> Unit,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                uiText("СЕНСОРНЫЕ ЖЕСТЫ", "TOUCH GESTURES"),
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                uiText("Настройки отдельно для левого и правого наушника", "Configure the left and right earbuds separately"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!isAvailable) {
+                Text(
+                    uiText("Состояние жестов ещё не прочитано.", "Gesture settings have not been read yet."),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(onClick = onRefresh, enabled = isConnected) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(uiText("Прочитать настройки", "Read settings"))
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(uiText("ЛЕВЫЙ", "LEFT"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        GestureActionPicker(2, uiText("2 касания", "Double tap"), 2, actions[0], isConnected, onChange)
+                        GestureActionPicker(2, uiText("3 касания", "Triple tap"), 3, actions[1], isConnected, onChange)
+                        GestureActionPicker(2, uiText("Удержание", "Hold"), 7, actions[2], isConnected, onChange)
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(uiText("ПРАВЫЙ", "RIGHT"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        GestureActionPicker(3, uiText("2 касания", "Double tap"), 2, actions[3], isConnected, onChange)
+                        GestureActionPicker(3, uiText("3 касания", "Triple tap"), 3, actions[4], isConnected, onChange)
+                        GestureActionPicker(3, uiText("Удержание", "Hold"), 7, actions[5], isConnected, onChange)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GestureActionPicker(
+    device: Int,
+    title: String,
+    gesture: Int,
+    action: Int,
+    enabled: Boolean,
+    onChange: (Int, Int, Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = when (gesture) {
+        2 -> listOf(2 to uiText("Воспроизведение", "Play / pause"), 8 to uiText("Предыдущий трек", "Previous track"), 9 to uiText("Следующий трек", "Next track"), 11 to uiText("Голосовой помощник", "Voice assistant"), 1 to uiText("Без действия", "No action"))
+        3 -> listOf(8 to uiText("Предыдущий трек", "Previous track"), 9 to uiText("Следующий трек", "Next track"), 11 to uiText("Голосовой помощник", "Voice assistant"), 1 to uiText("Без действия", "No action"))
+        else -> listOf(10 to uiText("Управление ANC", "Noise control"), 11 to uiText("Голосовой помощник", "Voice assistant"), 1 to uiText("Без действия", "No action"))
+    }
+    val actionName = options.firstOrNull { it.first == action }?.second
+        ?: if (action >= 0) uiText("Действие $action", "Action $action") else uiText("Не прочитано", "Not read")
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box {
+            OutlinedButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 8.dp)) {
+                Text(actionName, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            expanded = false
+                            onChange(device, gesture, value)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualConnectionCard(
+    isConnected: Boolean,
+    isAvailable: Boolean,
+    enabled: Boolean,
+    devices: List<com.cmf.budscontroller.protocol.DualConnectionDevice>,
+    deviceListAvailable: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onDeviceToggle: (String, Boolean) -> Unit,
+    onRefresh: () -> Unit
+) {
+    var confirmEnabled by remember { mutableStateOf<Boolean?>(null) }
+    var showMemoryResetSteps by remember { mutableStateOf(false) }
+    val connectedCount = devices.count { it.isConnected }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                uiText("ДВОЙНОЕ ПОДКЛЮЧЕНИЕ", "DUAL CONNECTION"),
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(uiText("Два устройства одновременно", "Two devices at once"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        when {
+                            !isAvailable -> uiText("Состояние не прочитано", "Status not read")
+                            enabled -> uiText("Включено • $connectedCount из 2 подключено", "Enabled • $connectedCount of 2 connected")
+                            else -> uiText("Выключено", "Disabled")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { confirmEnabled = it },
+                    enabled = isConnected && isAvailable
+                )
+            }
+            if (enabled) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Text(uiText("ЗАПОМНЕННЫЕ УСТРОЙСТВА", "REMEMBERED DEVICES"), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                when {
+                    devices.isNotEmpty() -> devices.forEach { device ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column(Modifier.weight(1f).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    if (device.isCurrentDevice) uiText("Текущий телефон", "This phone") else device.name.ifBlank { device.macAddress },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (!device.isCurrentDevice) Text(device.macAddress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = device.isConnected,
+                                onCheckedChange = { onDeviceToggle(device.macAddress, it) },
+                                enabled = isConnected && deviceListAvailable && (device.isConnected || connectedCount < 2)
+                            )
+                        }
+                    }
+                    deviceListAvailable -> Text(uiText("Наушники не вернули список.", "The earbuds returned no saved devices."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else -> Text(uiText("Читаю список с наушников…", "Reading the earbuds’ device list…"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                OutlinedButton(onClick = onRefresh, enabled = isConnected) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(uiText("Обновить список", "Refresh list"))
+                }
+                TextButton(onClick = { showMemoryResetSteps = true }) {
+                    Text(uiText("Очистить память устройств…", "Clear saved-device memory…"))
+                }
+            }
+        }
+    }
+    confirmEnabled?.let { target ->
+        AlertDialog(
+            onDismissRequest = { confirmEnabled = null },
+            title = { Text(uiText("Наушники перезапустятся", "Earbuds will reboot")) },
+            text = { Text(uiText("Для переключения двойного подключения наушникам нужен перезапуск. После этого переподключите их, чтобы проверить состояние.", "Changing dual connection restarts the earbuds. Reconnect afterward to verify the setting.")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmEnabled = null
+                    onToggle(target)
+                }) { Text(uiText("Перезапустить", "Reboot earbuds")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmEnabled = null }) { Text(uiText("Отмена", "Cancel")) }
+            }
+        )
+    }
+    if (showMemoryResetSteps) {
+        AlertDialog(
+            onDismissRequest = { showMemoryResetSteps = false },
+            title = { Text(uiText("Сбросить память наушников?", "Reset earbud memory?")) },
+            text = {
+                Text(
+                    uiText(
+                        "Удалить отдельное устройство из списка удалённо нельзя. Для очистки сохранённых подключений и настроек положите оба наушника в открытый кейс и удерживайте кнопку кейса 10 секунд, пока индикатор не мигнёт красным три раза. Это сбросит настройки наушников.",
+                        "A single saved device cannot be removed remotely. To clear saved connections and earbud settings, place both earbuds in the open case and hold the case button for 10 seconds until the light flashes red three times. This resets earbud settings."
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showMemoryResetSteps = false }) {
+                    Text(uiText("Понятно", "Got it"))
+                }
+            }
+        )
+    }
+}
+
+@Composable
 fun StudioMasterEqualizerCard(
     eqState: com.cmf.budscontroller.audio.EqualizerState,
     onToggle: (Boolean) -> Unit,
@@ -2594,10 +3173,26 @@ fun StudioProductStage(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF1C1C1E))
-            .padding(vertical = 14.dp, horizontal = 14.dp),
+            .background(
+                Brush.verticalGradient(
+                    listOf(colorScheme.surfaceVariant.copy(alpha = 0.96f), colorScheme.surface)
+                )
+            )
+            .border(1.dp, colorScheme.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(24.dp))
+            .padding(vertical = 16.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
+        Canvas(Modifier.matchParentSize()) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(colorScheme.primary.copy(alpha = 0.16f), Color.Transparent),
+                    center = Offset(size.width * 0.5f, size.height * 0.38f),
+                    radius = size.width * 0.58f
+                ),
+                radius = size.width * 0.58f,
+                center = Offset(size.width * 0.5f, size.height * 0.38f)
+            )
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
@@ -2605,7 +3200,7 @@ fun StudioProductStage(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(116.dp),
+                    .height(136.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -2658,8 +3253,8 @@ fun StudioProductStage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF000000))
-                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                        .background(colorScheme.background.copy(alpha = 0.62f))
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
